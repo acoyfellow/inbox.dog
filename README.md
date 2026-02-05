@@ -74,6 +74,41 @@ cd worker && npm install && npm run dev
 cd e2e && npm test
 ```
 
+## Setup
+
+### Google OAuth Credentials
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select existing
+3. Enable Gmail API: APIs & Services → Library → Gmail API → Enable
+4. Create OAuth credentials:
+   - APIs & Services → Credentials → Create Credentials → OAuth client ID
+   - Application type: Web application
+   - Authorized redirect URIs: `https://test.inbox.dog/oauth/callback`
+5. Copy Client ID and Client Secret
+
+### Deploy to Cloudflare
+
+```bash
+# Set secrets
+cd worker
+wrangler secret put GOOGLE_CLIENT_ID
+wrangler secret put GOOGLE_CLIENT_SECRET
+wrangler secret put JWT_SECRET
+
+# Optional: Stripe for billing
+wrangler secret put STRIPE_SECRET_KEY
+wrangler secret put STRIPE_WEBHOOK_SECRET
+
+# Deploy
+wrangler deploy --env production
+```
+
+### Live URLs
+
+- **API**: https://test.inbox.dog
+- **Landing**: https://inbox-dog-landing.pages.dev
+
 ## License
 
 MIT
