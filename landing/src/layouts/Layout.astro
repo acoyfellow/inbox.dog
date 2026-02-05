@@ -1,0 +1,39 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'OAuth for email, simplified' } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content={description} />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} | inbox.dog</title>
+  </head>
+  <body class="bg-gray-50 text-gray-900 min-h-screen">
+    <nav class="bg-white shadow-sm">
+      <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+        <a href="/" class="text-xl font-bold text-primary">🐕 inbox.dog</a>
+        <div class="flex gap-6">
+          <a href="/docs" class="hover:text-primary">Docs</a>
+          <a href="/pricing" class="hover:text-primary">Pricing</a>
+          <a href="https://github.com/inbox-dog/oauth" class="hover:text-primary">GitHub</a>
+        </div>
+      </div>
+    </nav>
+    <main>
+      <slot />
+    </main>
+    <footer class="bg-gray-100 mt-20 py-8">
+      <div class="max-w-6xl mx-auto px-4 text-center text-gray-600">
+        <p>&copy; 2025 inbox.dog. Open source under MIT license.</p>
+      </div>
+    </footer>
+  </body>
+</html>

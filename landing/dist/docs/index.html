@@ -1,0 +1,53 @@
+<!DOCTYPE html><html lang="en"> <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="description" content="OAuth for email, simplified"><link rel="icon" type="image/svg+xml" href="/favicon.svg"><title>Documentation | inbox.dog</title><link rel="stylesheet" href="/_astro/docs.DkAw8ElR.css"></head> <body class="bg-gray-50 text-gray-900 min-h-screen"> <nav class="bg-white shadow-sm"> <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between"> <a href="/" class="text-xl font-bold text-primary">🐕 inbox.dog</a> <div class="flex gap-6"> <a href="/docs" class="hover:text-primary">Docs</a> <a href="/pricing" class="hover:text-primary">Pricing</a> <a href="https://github.com/inbox-dog/oauth" class="hover:text-primary">GitHub</a> </div> </div> </nav> <main>  <div class="max-w-4xl mx-auto px-4 py-12"> <h1 class="text-4xl font-bold mb-8">Documentation</h1> <nav class="bg-gray-100 rounded-lg p-4 mb-12"> <h2 class="font-semibold mb-2">Contents</h2> <ul class="space-y-1 text-primary"> <li><a href="#quickstart">Quick Start</a></li> <li><a href="#api-keys">API Keys</a></li> <li><a href="#oauth-flow">OAuth Flow</a></li> <li><a href="#token-exchange">Token Exchange</a></li> <li><a href="#refresh-tokens">Refresh Tokens</a></li> <li><a href="#scopes">Scopes</a></li> <li><a href="#billing">Billing</a></li> </ul> </nav> <section id="quickstart" class="mb-12"> <h2 class="text-2xl font-bold mb-4">Quick Start</h2> <ol class="list-decimal list-inside space-y-4 text-gray-700"> <li> <strong>Create an API key</strong> <div class="bg-gray-900 rounded p-4 mt-2 text-sm overflow-x-auto"> <pre class="text-gray-100"><code>curl -X POST https://test.inbox.dog/api/keys   -H &quot;Content-Type: application/json&quot;   -d &#39;{&quot;name&quot;: &quot;my-app&quot;}&#39;</code></pre> </div> </li> <li> <strong>Redirect users to authenticate</strong> <div class="bg-gray-900 rounded p-4 mt-2 text-sm overflow-x-auto"> <pre class="text-gray-100"><code>https://test.inbox.dog/oauth/authorize?
+  client_id=YOUR_CLIENT_ID&amp;
+  redirect_uri=https://yourapp.com/callback&amp;
+  scope=email</code></pre> </div> </li> <li> <strong>Exchange code for tokens</strong> <div class="bg-gray-900 rounded p-4 mt-2 text-sm overflow-x-auto"> <pre class="text-gray-100"><code>curl -X POST https://test.inbox.dog/oauth/token   -H &quot;Content-Type: application/json&quot;   -d &#39;{
+    &quot;code&quot;: &quot;AUTH_CODE&quot;,
+    &quot;client_id&quot;: &quot;YOUR_CLIENT_ID&quot;,
+    &quot;client_secret&quot;: &quot;YOUR_CLIENT_SECRET&quot;
+  }&#39;</code></pre> </div> </li> </ol> </section> <section id="api-keys" class="mb-12"> <h2 class="text-2xl font-bold mb-4">API Keys</h2> <p class="text-gray-700 mb-4">
+Create an API key to get your <code class="bg-gray-100 px-1 rounded">client_id</code> and <code class="bg-gray-100 px-1 rounded">client_secret</code>.
+</p> <h3 class="text-lg font-semibold mt-6 mb-2">Create Key</h3> <div class="bg-gray-900 rounded p-4 text-sm overflow-x-auto"> <pre class="text-gray-100"><code>POST /api/keys
+Content-Type: application/json
+
+{&quot;name&quot;: &quot;my-app&quot;}</code></pre> </div> <p class="text-gray-600 mt-2">Response:</p> <div class="bg-gray-900 rounded p-4 text-sm overflow-x-auto mt-2"> <pre class="text-gray-100"><code>{
+  &quot;client_id&quot;: &quot;id_abc123...&quot;,
+  &quot;client_secret&quot;: &quot;sk_xyz789...&quot;,
+  &quot;name&quot;: &quot;my-app&quot;,
+  &quot;credits&quot;: 10
+}</code></pre> </div> <h3 class="text-lg font-semibold mt-6 mb-2">Check Key Info</h3> <div class="bg-gray-900 rounded p-4 text-sm overflow-x-auto"> <pre class="text-gray-100"><code>GET /api/keys/{client_id}
+X-Client-Secret: YOUR_CLIENT_SECRET</code></pre> </div> </section> <section id="oauth-flow" class="mb-12"> <h2 class="text-2xl font-bold mb-4">OAuth Flow</h2> <p class="text-gray-700 mb-4">Standard OAuth 2.0 authorization code flow:</p> <ol class="list-decimal list-inside space-y-2 text-gray-700"> <li>Redirect user to <code class="bg-gray-100 px-1 rounded">/oauth/authorize</code></li> <li>User authenticates with Google</li> <li>User is redirected back to your <code class="bg-gray-100 px-1 rounded">redirect_uri</code> with a code</li> <li>Exchange code for tokens at <code class="bg-gray-100 px-1 rounded">/oauth/token</code></li> </ol> <h3 class="text-lg font-semibold mt-6 mb-2">Authorization Request</h3> <div class="bg-gray-900 rounded p-4 text-sm overflow-x-auto"> <pre class="text-gray-100"><code>GET /oauth/authorize?
+  client_id=YOUR_CLIENT_ID&amp;
+  redirect_uri=https://yourapp.com/callback&amp;
+  scope=email&amp;
+  state=random_state_value</code></pre> </div> <table class="w-full mt-4 text-sm"> <thead class="bg-gray-100"> <tr> <th class="text-left p-2">Parameter</th> <th class="text-left p-2">Required</th> <th class="text-left p-2">Description</th> </tr> </thead> <tbody> <tr class="border-b"><td class="p-2">client_id</td><td class="p-2">Yes</td><td class="p-2">Your API key client ID</td></tr> <tr class="border-b"><td class="p-2">redirect_uri</td><td class="p-2">Yes</td><td class="p-2">Where to redirect after auth</td></tr> <tr class="border-b"><td class="p-2">scope</td><td class="p-2">No</td><td class="p-2">Permission scope (default: email)</td></tr> <tr class="border-b"><td class="p-2">state</td><td class="p-2">No</td><td class="p-2">Opaque value for CSRF protection</td></tr> </tbody> </table> </section> <section id="token-exchange" class="mb-12"> <h2 class="text-2xl font-bold mb-4">Token Exchange</h2> <p class="text-gray-700 mb-4">Exchange the authorization code for access tokens:</p> <div class="bg-gray-900 rounded p-4 text-sm overflow-x-auto"> <pre class="text-gray-100"><code>POST /oauth/token
+Content-Type: application/json
+
+{
+  &quot;code&quot;: &quot;AUTH_CODE_FROM_CALLBACK&quot;,
+  &quot;client_id&quot;: &quot;YOUR_CLIENT_ID&quot;,
+  &quot;client_secret&quot;: &quot;YOUR_CLIENT_SECRET&quot;
+}</code></pre> </div> <p class="text-gray-600 mt-4">Response:</p> <div class="bg-gray-900 rounded p-4 text-sm overflow-x-auto mt-2"> <pre class="text-gray-100"><code>{
+  &quot;access_token&quot;: &quot;ya29.a0AfH6...&quot;,
+  &quot;refresh_token&quot;: &quot;1//0eXyz...&quot;,
+  &quot;token_type&quot;: &quot;Bearer&quot;,
+  &quot;expires_in&quot;: 3600,
+  &quot;email&quot;: &quot;user@example.com&quot;
+}</code></pre> </div> </section> <section id="refresh-tokens" class="mb-12"> <h2 class="text-2xl font-bold mb-4">Refresh Tokens</h2> <p class="text-gray-700 mb-4">Use the refresh token to get new access tokens:</p> <div class="bg-gray-900 rounded p-4 text-sm overflow-x-auto"> <pre class="text-gray-100"><code>POST /oauth/token
+Content-Type: application/json
+
+{
+  &quot;grant_type&quot;: &quot;refresh_token&quot;,
+  &quot;refresh_token&quot;: &quot;YOUR_REFRESH_TOKEN&quot;,
+  &quot;client_id&quot;: &quot;YOUR_CLIENT_ID&quot;,
+  &quot;client_secret&quot;: &quot;YOUR_CLIENT_SECRET&quot;
+}</code></pre> </div> </section> <section id="scopes" class="mb-12"> <h2 class="text-2xl font-bold mb-4">Scopes</h2> <table class="w-full text-sm"> <thead class="bg-gray-100"> <tr> <th class="text-left p-2">Scope</th> <th class="text-left p-2">Gmail Permission</th> </tr> </thead> <tbody> <tr class="border-b"><td class="p-2">email</td><td class="p-2">Read-only access (default)</td></tr> <tr class="border-b"><td class="p-2">email:read</td><td class="p-2">Read-only access</td></tr> <tr class="border-b"><td class="p-2">email:send</td><td class="p-2">Send emails only</td></tr> <tr class="border-b"><td class="p-2">email:full</td><td class="p-2">Full access (read, send, modify)</td></tr> </tbody> </table> </section> <section id="billing" class="mb-12"> <h2 class="text-2xl font-bold mb-4">Billing</h2> <p class="text-gray-700 mb-4">
+Each OAuth token exchange costs 1 credit. New API keys come with 10 free credits.
+</p> <p class="text-gray-700 mb-4">Purchase more credits:</p> <div class="bg-gray-900 rounded p-4 text-sm overflow-x-auto"> <pre class="text-gray-100"><code>POST /api/checkout
+Content-Type: application/json
+
+{
+  &quot;client_id&quot;: &quot;YOUR_CLIENT_ID&quot;,
+  &quot;client_secret&quot;: &quot;YOUR_CLIENT_SECRET&quot;,
+  &quot;credits&quot;: 100
+}</code></pre> </div> <p class="text-gray-600 mt-2">Returns a Stripe checkout URL. Price: $0.10 per credit.</p> </section> </div>  </main> <footer class="bg-gray-100 mt-20 py-8"> <div class="max-w-6xl mx-auto px-4 text-center text-gray-600"> <p>&copy; 2025 inbox.dog. Open source under MIT license.</p> </div> </footer> </body></html>

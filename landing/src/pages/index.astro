@@ -1,0 +1,107 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="OAuth for Email">
+  <!-- Hero -->
+  <section class="py-20 bg-gradient-to-b from-blue-50 to-white">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <h1 class="text-5xl font-bold mb-6">
+        OAuth for Email,<br/>
+        <span class="text-primary">Simplified</span>
+      </h1>
+      <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+        Get Gmail access tokens without implementing OAuth yourself.
+        Your users authenticate once, you get tokens to read and send emails.
+      </p>
+      <div class="flex gap-4 justify-center">
+        <a href="/docs" class="bg-primary text-white px-6 py-3 rounded-lg font-medium hover:bg-secondary transition">
+          Get Started
+        </a>
+        <a href="https://github.com/inbox-dog/oauth" class="border border-gray-300 px-6 py-3 rounded-lg font-medium hover:border-gray-400 transition">
+          View on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Code Example -->
+  <section class="py-16">
+    <div class="max-w-4xl mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center mb-12">Simple Integration</h2>
+      <div class="bg-gray-900 rounded-lg p-6 text-sm overflow-x-auto">
+        <pre class="text-gray-100"><code>{`// 1. Redirect user to authenticate
+window.location.href = 'https://test.inbox.dog/oauth/authorize?' +
+  'client_id=YOUR_KEY&redirect_uri=YOUR_CALLBACK';
+
+// 2. Exchange code for token (in your backend)
+const response = await fetch('https://test.inbox.dog/oauth/token', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({
+    code: 'AUTH_CODE_FROM_CALLBACK',
+    client_id: 'YOUR_KEY',
+    client_secret: 'YOUR_SECRET'
+  })
+});
+const { access_token } = await response.json();
+
+// 3. Use token with Gmail API
+const emails = await fetch(
+  'https://gmail.googleapis.com/gmail/v1/users/me/messages',
+  { headers: { Authorization: \`Bearer \${access_token}\` } }
+);`}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="py-16 bg-gray-50">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="text-3xl font-bold text-center mb-12">Features</h2>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+          <div class="text-3xl mb-4">🔐</div>
+          <h3 class="text-xl font-semibold mb-2">Complete OAuth Flow</h3>
+          <p class="text-gray-600">We handle the entire Google OAuth dance. You just redirect and receive tokens.</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+          <div class="text-3xl mb-4">📧</div>
+          <h3 class="text-xl font-semibold mb-2">Gmail API Access</h3>
+          <p class="text-gray-600">Get tokens that work directly with Gmail API. Read emails, send messages, manage labels.</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+          <div class="text-3xl mb-4">🔄</div>
+          <h3 class="text-xl font-semibold mb-2">Token Refresh</h3>
+          <p class="text-gray-600">Automatic token management. Refresh tokens when they expire without user intervention.</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+          <div class="text-3xl mb-4">💳</div>
+          <h3 class="text-xl font-semibold mb-2">Usage-Based Billing</h3>
+          <p class="text-gray-600">Pay only for what you use. $0.10 per OAuth flow. Start with 10 free credits.</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+          <div class="text-3xl mb-4">📚</div>
+          <h3 class="text-xl font-semibold mb-2">Standard OAuth 2.0</h3>
+          <p class="text-gray-600">Familiar OAuth 2.0 endpoints. Works with any HTTP client or OAuth library.</p>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-sm">
+          <div class="text-3xl mb-4">🔓</div>
+          <h3 class="text-xl font-semibold mb-2">Open Source</h3>
+          <p class="text-gray-600">Self-host if you prefer. MIT licensed. Full source code on GitHub.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section class="py-20">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <h2 class="text-3xl font-bold mb-4">Ready to get started?</h2>
+      <p class="text-xl text-gray-600 mb-8">Create your API key and start authenticating users in minutes.</p>
+      <a href="/docs" class="bg-primary text-white px-8 py-4 rounded-lg font-medium text-lg hover:bg-secondary transition">
+        Read the Docs
+      </a>
+    </div>
+  </section>
+</Layout>
