@@ -116,8 +116,10 @@ wrangler deploy --env production
 ✅ Landing page deployed to Cloudflare Pages  
 ✅ E2E tests passing (9/9)  
 ✅ KV namespace configured  
+✅ TypeScript compiles cleanly  
 ⚠️ Google OAuth credentials needed (set via `wrangler secret put`)  
 ⚠️ Stripe credentials needed for billing  
+⚠️ GitHub repo needed (create inbox-dog/oauth)  
 
 ## API Endpoints
 
