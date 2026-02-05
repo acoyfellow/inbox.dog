@@ -51,11 +51,29 @@
 
 html {
   background: #fafaf9;
+  scroll-behavior: smooth;
 }
 
 body {
   letter-spacing: -0.2px;
   background: transparent;
+  overflow-x: hidden;
+}
+
+/* Premium selection color */
+::selection {
+  background: rgba(28, 25, 23, 0.1);
+}
+
+/* Smooth transitions for all interactive elements */
+a, button {
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Focus states with subtle glow */
+a:focus-visible, button:focus-visible {
+  outline: 2px solid rgba(28, 25, 23, 0.2);
+  outline-offset: 4px;
 }
 
 /* Syntax highlighting */

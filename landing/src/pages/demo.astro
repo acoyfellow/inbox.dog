@@ -3,39 +3,82 @@ import Layout from '../layouts/Layout.astro';
 ---
 
 <Layout title="Demo">
-  <div class="max-w-2xl mx-auto py-12 px-4">
-    <h1 class="text-3xl font-bold mb-6 text-primary-900">OAuth Demo</h1>
-    
-    <div class="bg-white rounded-lg border border-primary-200 p-6 mb-6">
-      <h2 class="text-xl font-semibold mb-4 text-primary-900">1. Get API Credentials</h2>
-      <button id="create-key" class="bg-primary-900 text-white px-4 py-2 rounded hover:bg-primary-800 transition">
-        Create API Key
-      </button>
-      <div id="credentials" class="mt-4 hidden">
-        <div class="bg-primary-100 rounded p-4 text-sm font-mono text-primary-700">
-          <div>Client ID: <span id="client-id"></span></div>
-          <div>Client Secret: <span id="client-secret"></span></div>
-          <div>Credits: <span id="credits"></span></div>
+  <div class="min-h-[80vh] flex items-center justify-center py-20">
+    <div class="max-w-lg w-full mx-auto px-4">
+      <div class="text-center mb-12">
+        <p class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4">Interactive Demo</p>
+        <h1 class="text-4xl font-bold text-primary-900 tracking-tight">Try it yourself</h1>
+      </div>
+      
+      <!-- Step 1 -->
+      <div class="step-card mb-4 p-6 bg-white rounded-2xl border border-primary-100 transition-all duration-300" id="step-1">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="step-number w-8 h-8 rounded-full bg-primary-900 text-white flex items-center justify-center text-sm font-semibold">1</div>
+          <h2 class="text-lg font-semibold text-primary-900">Get API Credentials</h2>
+        </div>
+        <button id="create-key" class="w-full py-3 bg-primary-900 text-white font-medium rounded-xl hover:bg-primary-800 transition-all duration-300 hover:shadow-lg">
+          Create API Key
+        </button>
+        <div id="credentials" class="mt-4 hidden">
+          <div class="p-4 bg-primary-50 rounded-xl border border-primary-100">
+            <div class="space-y-2 text-sm font-mono">
+              <div class="flex justify-between items-center">
+                <span class="text-primary-400">Client ID</span>
+                <span id="client-id" class="text-primary-700 truncate max-w-[200px]"></span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-primary-400">Secret</span>
+                <span id="client-secret" class="text-primary-700 truncate max-w-[200px]"></span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-primary-400">Credits</span>
+                <span id="credits" class="text-primary-700"></span>
+              </div>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center gap-2 text-green-600 text-sm">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+            <span>Credentials created</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="bg-white rounded-lg border border-primary-200 p-6 mb-6">
-      <h2 class="text-xl font-semibold mb-4 text-primary-900">2. Start OAuth Flow</h2>
-      <p class="text-primary-500 mb-4">Click below to start the OAuth flow. You'll be redirected to Google to authenticate.</p>
-      <button id="start-oauth" class="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800 transition disabled:opacity-50" disabled>
-        Connect Gmail
-      </button>
-    </div>
+      <!-- Step 2 -->
+      <div class="step-card mb-4 p-6 bg-white rounded-2xl border border-primary-100 transition-all duration-300 opacity-50" id="step-2">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="step-number w-8 h-8 rounded-full bg-primary-200 text-primary-500 flex items-center justify-center text-sm font-semibold">2</div>
+          <h2 class="text-lg font-semibold text-primary-900">Start OAuth Flow</h2>
+        </div>
+        <p class="text-primary-500 text-sm mb-4">Click below to authenticate with Google. You'll be redirected back here.</p>
+        <button id="start-oauth" class="w-full py-3 bg-green-700 text-white font-medium rounded-xl hover:bg-green-800 transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-none" disabled>
+          Connect Gmail
+        </button>
+      </div>
 
-    <div class="bg-white rounded-lg border border-primary-200 p-6">
-      <h2 class="text-xl font-semibold mb-4 text-primary-900">3. Use Token</h2>
-      <p class="text-primary-500 mb-4">After OAuth completes, you'll receive tokens to access Gmail API.</p>
-      <div id="token-result" class="hidden">
-        <div class="bg-green-100 rounded p-4 text-sm border border-green-200">
-          <div class="font-semibold text-green-800">Success!</div>
-          <div class="text-green-700">Access Token: <code id="access-token" class="text-xs font-mono"></code></div>
-          <div class="text-green-700">Email: <span id="user-email"></span></div>
+      <!-- Step 3 -->
+      <div class="step-card p-6 bg-white rounded-2xl border border-primary-100 transition-all duration-300 opacity-50" id="step-3">
+        <div class="flex items-center gap-4 mb-4">
+          <div class="step-number w-8 h-8 rounded-full bg-primary-200 text-primary-500 flex items-center justify-center text-sm font-semibold">3</div>
+          <h2 class="text-lg font-semibold text-primary-900">Use Token</h2>
+        </div>
+        <p class="text-primary-500 text-sm">After OAuth completes, you'll receive tokens to access Gmail API.</p>
+        <div id="token-result" class="mt-4 hidden">
+          <div class="p-4 bg-green-50 rounded-xl border border-green-200">
+            <div class="flex items-center gap-2 text-green-700 font-semibold mb-3">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
+              <span>Success</span>
+            </div>
+            <div class="space-y-2 text-sm">
+              <div>
+                <span class="text-green-600">Access Token:</span>
+                <code id="access-token" class="text-xs font-mono text-green-800 block mt-1 truncate"></code>
+              </div>
+              <div>
+                <span class="text-green-600">Email:</span>
+                <span id="user-email" class="text-green-800 ml-2"></span>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -54,11 +97,22 @@ import Layout from '../layouts/Layout.astro';
       clientSecret = localStorage.getItem('demo_client_secret') || '';
       
       if (clientId && clientSecret) {
+        // Show loading state
+        document.getElementById('step-2')!.classList.remove('opacity-50');
+        document.getElementById('step-2')!.querySelector('.step-number')!.classList.remove('bg-primary-200', 'text-primary-500');
+        document.getElementById('step-2')!.querySelector('.step-number')!.classList.add('bg-primary-900', 'text-white');
+        document.getElementById('step-3')!.classList.remove('opacity-50');
+        document.getElementById('step-3')!.querySelector('.step-number')!.classList.remove('bg-primary-200', 'text-primary-500');
+        document.getElementById('step-3')!.querySelector('.step-number')!.classList.add('bg-primary-900', 'text-white');
         exchangeToken(code);
       }
     }
 
     document.getElementById('create-key')?.addEventListener('click', async () => {
+      const btn = document.getElementById('create-key') as HTMLButtonElement;
+      btn.textContent = 'Creating...';
+      btn.disabled = true;
+      
       const res = await fetch(`${API_URL}/api/keys`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -73,9 +127,18 @@ import Layout from '../layouts/Layout.astro';
       localStorage.setItem('demo_client_secret', clientSecret);
       
       document.getElementById('client-id')!.textContent = clientId;
-      document.getElementById('client-secret')!.textContent = clientSecret;
+      document.getElementById('client-secret')!.textContent = clientSecret.substring(0, 20) + '...';
       document.getElementById('credits')!.textContent = data.credits;
       document.getElementById('credentials')!.classList.remove('hidden');
+      
+      btn.textContent = 'Created';
+      btn.classList.remove('bg-primary-900', 'hover:bg-primary-800');
+      btn.classList.add('bg-green-700');
+      
+      // Unlock step 2
+      document.getElementById('step-2')!.classList.remove('opacity-50');
+      document.getElementById('step-2')!.querySelector('.step-number')!.classList.remove('bg-primary-200', 'text-primary-500');
+      document.getElementById('step-2')!.querySelector('.step-number')!.classList.add('bg-primary-900', 'text-white');
       document.getElementById('start-oauth')!.removeAttribute('disabled');
     });
 
@@ -99,7 +162,7 @@ import Layout from '../layouts/Layout.astro';
       const data = await res.json();
       
       if (data.access_token) {
-        document.getElementById('access-token')!.textContent = data.access_token.substring(0, 30) + '...';
+        document.getElementById('access-token')!.textContent = data.access_token.substring(0, 40) + '...';
         document.getElementById('user-email')!.textContent = data.email || 'N/A';
         document.getElementById('token-result')!.classList.remove('hidden');
         window.history.replaceState({}, '', window.location.pathname);
@@ -108,4 +171,14 @@ import Layout from '../layouts/Layout.astro';
       }
     }
   </script>
+
+  <style>
+    .step-card {
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .step-card:not(.opacity-50):hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 40px -15px rgba(0,0,0,0.1);
+    }
+  </style>
 </Layout>
