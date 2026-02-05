@@ -1,0 +1,11 @@
+# Copy to .dev.vars and fill in your values
+# Get these from Google Cloud Console
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-your-secret
+
+# Get from Stripe Dashboard
+STRIPE_SECRET_KEY=sk_test_...
+STRIPE_WEBHOOK_SECRET=whsec_...
+
+# Generate random secret: openssl rand -hex 32
+JWT_SECRET=your-jwt-secret-here
