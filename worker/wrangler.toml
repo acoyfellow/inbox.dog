@@ -8,7 +8,15 @@ ENVIRONMENT = "development"
 # KV namespace for storing OAuth state, tokens, etc.
 [[kv_namespaces]]
 binding = "KV"
-id = "placeholder-will-create"
+id = "736caa214df54d34b05585940aff18c8"
+
+[env.production]
+route = { pattern = "test.inbox.dog/*", zone_name = "inbox.dog" }
+vars = { ENVIRONMENT = "production" }
+
+[[env.production.kv_namespaces]]
+binding = "KV"
+id = "736caa214df54d34b05585940aff18c8"
 
 # Secrets (set via wrangler secret put):
 # - GOOGLE_CLIENT_ID
