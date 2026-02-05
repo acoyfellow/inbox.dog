@@ -2,6 +2,11 @@ name = "inbox-dog-oauth"
 main = "src/index.ts"
 compatibility_date = "2024-12-18"
 
+# Static assets from the landing page build
+[assets]
+directory = "../landing/dist"
+binding = "ASSETS"
+
 [vars]
 ENVIRONMENT = "development"
 
@@ -14,6 +19,10 @@ id = "736caa214df54d34b05585940aff18c8"
 route = { pattern = "test.inbox.dog/*", zone_name = "inbox.dog" }
 vars = { ENVIRONMENT = "staging" }
 
+[env.staging.assets]
+directory = "../landing/dist"
+binding = "ASSETS"
+
 [[env.staging.kv_namespaces]]
 binding = "KV"
 id = "736caa214df54d34b05585940aff18c8"
@@ -21,6 +30,10 @@ id = "736caa214df54d34b05585940aff18c8"
 [env.production]
 route = { pattern = "inbox.dog/*", zone_name = "inbox.dog" }
 vars = { ENVIRONMENT = "production" }
+
+[env.production.assets]
+directory = "../landing/dist"
+binding = "ASSETS"
 
 [[env.production.kv_namespaces]]
 binding = "KV"

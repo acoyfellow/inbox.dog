@@ -2,6 +2,9 @@ export interface Env {
   // KV namespace
   KV: KVNamespace;
 
+  // Assets binding for static files
+  ASSETS: Fetcher;
+
   // Environment variables
   ENVIRONMENT: string;
 

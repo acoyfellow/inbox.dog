@@ -9,13 +9,13 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "effect": "^3.12.0",
     "@effect/schema": "^0.75.0",
+    "effect": "^3.12.0",
     "hono": "^4.4.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20241218.0",
     "typescript": "^5.5.0",
-    "wrangler": "^3.100.0"
+    "wrangler": "^4.63.0"
   }
 }
