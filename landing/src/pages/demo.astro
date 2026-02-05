@@ -1,0 +1,116 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Demo | inbox.dog">
+  <div class="max-w-2xl mx-auto py-12 px-4">
+    <h1 class="text-3xl font-bold mb-6">OAuth Demo</h1>
+    
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4">1. Get API Credentials</h2>
+      <button id="create-key" class="bg-primary text-white px-4 py-2 rounded hover:bg-secondary transition">
+        Create API Key
+      </button>
+      <div id="credentials" class="mt-4 hidden">
+        <div class="bg-gray-100 rounded p-4 text-sm font-mono">
+          <div>Client ID: <span id="client-id"></span></div>
+          <div>Client Secret: <span id="client-secret"></span></div>
+          <div>Credits: <span id="credits"></span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6 mb-6">
+      <h2 class="text-xl font-semibold mb-4">2. Start OAuth Flow</h2>
+      <p class="text-gray-600 mb-4">Click below to start the OAuth flow. You'll be redirected to Google to authenticate.</p>
+      <button id="start-oauth" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition disabled:opacity-50" disabled>
+        Connect Gmail
+      </button>
+    </div>
+
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold mb-4">3. Use Token</h2>
+      <p class="text-gray-600 mb-4">After OAuth completes, you'll receive tokens to access Gmail API.</p>
+      <div id="token-result" class="hidden">
+        <div class="bg-green-100 rounded p-4 text-sm">
+          <div class="font-semibold text-green-800">Success!</div>
+          <div>Access Token: <code id="access-token" class="text-xs"></code></div>
+          <div>Email: <span id="user-email"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = 'https://test.inbox.dog';
+    let clientId = '';
+    let clientSecret = '';
+
+    // Check for OAuth callback
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    
+    if (code) {
+      // Get stored credentials
+      clientId = localStorage.getItem('demo_client_id') || '';
+      clientSecret = localStorage.getItem('demo_client_secret') || '';
+      
+      if (clientId && clientSecret) {
+        exchangeToken(code);
+      }
+    }
+
+    document.getElementById('create-key')?.addEventListener('click', async () => {
+      const res = await fetch(`${API_URL}/api/keys`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'demo-app' })
+      });
+      
+      const data = await res.json();
+      clientId = data.client_id;
+      clientSecret = data.client_secret;
+      
+      // Store for later
+      localStorage.setItem('demo_client_id', clientId);
+      localStorage.setItem('demo_client_secret', clientSecret);
+      
+      document.getElementById('client-id')!.textContent = clientId;
+      document.getElementById('client-secret')!.textContent = clientSecret;
+      document.getElementById('credits')!.textContent = data.credits;
+      document.getElementById('credentials')!.classList.remove('hidden');
+      document.getElementById('start-oauth')!.removeAttribute('disabled');
+    });
+
+    document.getElementById('start-oauth')?.addEventListener('click', () => {
+      const redirectUri = window.location.origin + '/demo';
+      const authUrl = `${API_URL}/oauth/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=email`;
+      window.location.href = authUrl;
+    });
+
+    async function exchangeToken(code: string) {
+      const res = await fetch(`${API_URL}/oauth/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          client_id: clientId,
+          client_secret: clientSecret
+        })
+      });
+      
+      const data = await res.json();
+      
+      if (data.access_token) {
+        document.getElementById('access-token')!.textContent = data.access_token.substring(0, 30) + '...';
+        document.getElementById('user-email')!.textContent = data.email || 'N/A';
+        document.getElementById('token-result')!.classList.remove('hidden');
+        
+        // Clean up URL
+        window.history.replaceState({}, '', window.location.pathname);
+      } else {
+        alert('Error: ' + (data.error || 'Unknown error'));
+      }
+    }
+  </script>
+</Layout>
