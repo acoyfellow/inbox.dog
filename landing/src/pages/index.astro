@@ -32,7 +32,7 @@ import AnimatedAgentBackground from '../components/AnimatedAgentBackground.astro
     <div class="max-w-4xl mx-auto px-4">
       <h2 class="text-3xl font-bold text-center mb-12 text-primary-900">Simple Integration</h2>
       <div class="bg-primary-900 rounded-lg p-6 text-sm overflow-x-auto">
-        <pre class="text-primary-100 font-mono"><code>{`// 1. Redirect user to authenticate
+        <pre><code class="language-javascript">{`// 1. Redirect user to authenticate
 window.location.href = 'https://test.inbox.dog/oauth/authorize?' +
   'client_id=YOUR_KEY&redirect_uri=YOUR_CALLBACK';
 

@@ -17,8 +17,9 @@ const { title, description = 'OAuth for email, simplified' } = Astro.props;
     <meta name="description" content={description} />
     <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <title>{title} | inbox.dog</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
   </head>
-  <body class="bg-white text-primary-900 min-h-screen font-sans">
+  <body class="bg-transparent text-primary-900 min-h-screen font-sans">
     <nav class="bg-white border-b border-primary-200">
       <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
         <a href="/" class="flex items-center gap-2 font-bold text-primary-900">
@@ -40,5 +41,13 @@ const { title, description = 'OAuth for email, simplified' } = Astro.props;
         <p>&copy; 2025 inbox.dog. Open source under MIT license.</p>
       </div>
     </footer>
+    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script is:inline>
+      document.addEventListener('DOMContentLoaded', function() {
+        if (typeof hljs !== 'undefined') {
+          hljs.highlightAll();
+        }
+      });
+    </script>
   </body>
 </html>
