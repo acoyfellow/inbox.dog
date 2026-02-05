@@ -1,6 +1,0 @@
-{
-  "main": "../dist/cjs/JSONSchema.js",
-  "module": "../dist/esm/JSONSchema.js",
-  "types": "../dist/dts/JSONSchema.d.ts",
-  "sideEffects": []
-}
