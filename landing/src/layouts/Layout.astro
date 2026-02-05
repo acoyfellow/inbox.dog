@@ -1,4 +1,6 @@
 ---
+import '../styles/global.css';
+
 interface Props {
   title: string;
   description?: string;
@@ -13,25 +15,28 @@ const { title, description = 'OAuth for email, simplified' } = Astro.props;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description} />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/logo.svg" />
     <title>{title} | inbox.dog</title>
   </head>
-  <body class="bg-gray-50 text-gray-900 min-h-screen">
-    <nav class="bg-white shadow-sm">
+  <body class="bg-white text-primary-900 min-h-screen font-sans">
+    <nav class="bg-white border-b border-primary-200">
       <div class="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
-        <a href="/" class="text-xl font-bold text-primary">🐕 inbox.dog</a>
-        <div class="flex gap-6">
-          <a href="/docs" class="hover:text-primary">Docs</a>
-          <a href="/pricing" class="hover:text-primary">Pricing</a>
-          <a href="https://github.com/inbox-dog/oauth" class="hover:text-primary">GitHub</a>
+        <a href="/" class="flex items-center gap-2 font-bold text-primary-900">
+          <img src="/logo.svg" alt="inbox.dog" class="h-8 w-auto" />
+          <span>inbox.dog</span>
+        </a>
+        <div class="flex gap-6 text-primary-600">
+          <a href="/docs" class="hover:text-primary-900 transition">Docs</a>
+          <a href="/pricing" class="hover:text-primary-900 transition">Pricing</a>
+          <a href="https://github.com/acoyfellow/inbox.dog" class="hover:text-primary-900 transition">GitHub</a>
         </div>
       </div>
     </nav>
     <main>
       <slot />
     </main>
-    <footer class="bg-gray-100 mt-20 py-8">
-      <div class="max-w-6xl mx-auto px-4 text-center text-gray-600">
+    <footer class="bg-primary-100 mt-20 py-8">
+      <div class="max-w-6xl mx-auto px-4 text-center text-primary-500">
         <p>&copy; 2025 inbox.dog. Open source under MIT license.</p>
       </div>
     </footer>

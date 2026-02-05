@@ -1,0 +1,246 @@
+---
+interface Props {
+  seed?: number;
+  hash?: string | null;
+  size?: number;
+  inverted?: boolean;
+  strokeColor?: string | null;
+  fillColor?: string | null;
+  bgColor?: string | null;
+}
+
+const {
+  seed = Math.random(),
+  hash = null,
+  size = 140,
+  inverted = false,
+  strokeColor: customStrokeColor = null,
+  fillColor: customFillColor = null,
+  bgColor: customBgColor = null,
+} = Astro.props;
+
+// FNV-1a hash function for better distribution
+function stringToHash(str: string) {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return Math.abs(hash >>> 0);
+}
+
+const finalSeed = hash ? stringToHash(hash) : seed;
+
+function seededRandom(seed: number) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+function getRandomValues(baseSeed: number, count: number) {
+  const values = [];
+  for (let i = 0; i < count; i++) {
+    values.push(seededRandom(baseSeed + i * 0.1));
+  }
+  return values;
+}
+
+const randoms = getRandomValues(finalSeed, 15);
+
+function getTailwindColor(randomValue: number, colorType: 'stroke' | 'fill' | 'bg') {
+  const colorSchemes = [
+    { stroke: '#dc2626', fill: '#ef4444', bg: '#fef2f2' },
+    { stroke: '#ea580c', fill: '#f97316', bg: '#fff7ed' },
+    { stroke: '#d97706', fill: '#f59e0b', bg: '#fffbeb' },
+    { stroke: '#65a30d', fill: '#84cc16', bg: '#f7fee7' },
+    { stroke: '#16a34a', fill: '#22c55e', bg: '#f0fdf4' },
+    { stroke: '#059669', fill: '#10b981', bg: '#ecfdf5' },
+    { stroke: '#0891b2', fill: '#06b6d4', bg: '#f0fdfa' },
+    { stroke: '#0284c7', fill: '#0ea5e9', bg: '#f0f9ff' },
+    { stroke: '#2563eb', fill: '#3b82f6', bg: '#eff6ff' },
+    { stroke: '#7c3aed', fill: '#8b5cf6', bg: '#f5f3ff' },
+    { stroke: '#9333ea', fill: '#a855f7', bg: '#faf5ff' },
+    { stroke: '#c026d3', fill: '#d946ef', bg: '#fdf4ff' },
+    { stroke: '#db2777', fill: '#ec4899', bg: '#fdf2f8' },
+    { stroke: '#be185d', fill: '#e11d48', bg: '#fff1f2' },
+  ];
+  const schemeIndex = Math.floor(randomValue * colorSchemes.length);
+  return colorSchemes[schemeIndex][colorType];
+}
+
+const robotTypes = ['rectangular', 'rounded', 'dome'];
+const eyeVariations = ['standard', 'large', 'small', 'offset'];
+const mouthVariations = ['standard', 'wide', 'small'];
+const antennaVariations = ['single', 'none', 'double'];
+const decorVariations = ['none', 'dots', 'triangle'];
+
+const robotType = robotTypes[Math.floor(randoms[0] * robotTypes.length)];
+const eyeVariation = eyeVariations[Math.floor(randoms[1] * eyeVariations.length)];
+const mouthVariation = mouthVariations[Math.floor(randoms[2] * mouthVariations.length)];
+const antennaVariation = antennaVariations[Math.floor(randoms[3] * antennaVariations.length)];
+const decor = decorVariations[Math.floor(randoms[4] * decorVariations.length)];
+
+const strokeColor = customStrokeColor || getTailwindColor(randoms[5], 'stroke');
+const fillColor = customFillColor || getTailwindColor(randoms[5], 'fill');
+const bgColor = customBgColor || getTailwindColor(randoms[5], 'bg');
+---
+
+<svg
+  class="max-w-full max-h-full rounded-full overflow-hidden border flex-none flex-shrink-0"
+  width={size}
+  height={size}
+  viewBox="0 0 140 130"
+  style={`background: ${bgColor}; border-color: ${strokeColor}; border-width: .5px;`}
+>
+  {robotType === 'rectangular' && (
+    <>
+      {antennaVariation === 'single' && (
+        <>
+          <circle cx="70" cy="20" r="4" fill="none" stroke={strokeColor} stroke-width="6" />
+          <line x1="70" y1="24" x2="70" y2="45" stroke={strokeColor} stroke-width="6" />
+        </>
+      )}
+      {antennaVariation === 'double' && (
+        <>
+          <circle cx="60" cy="18" r="3" fill="none" stroke={strokeColor} stroke-width="6" />
+          <circle cx="80" cy="18" r="3" fill="none" stroke={strokeColor} stroke-width="6" />
+          <line x1="60" y1="21" x2="60" y2="45" stroke={strokeColor} stroke-width="6" />
+          <line x1="80" y1="21" x2="80" y2="45" stroke={strokeColor} stroke-width="6" />
+        </>
+      )}
+      <rect x="40" y="45" width="60" height="50" rx="6" fill="none" stroke={strokeColor} stroke-width="6" />
+      <rect x="28" y="58" width="10" height="24" rx="3" fill="none" stroke={strokeColor} stroke-width="6" />
+      <rect x="102" y="58" width="10" height="24" rx="3" fill="none" stroke={strokeColor} stroke-width="6" />
+      {eyeVariation === 'standard' && (
+        <>
+          <circle cx="55" cy="62" r="5" fill={fillColor} />
+          <circle cx="85" cy="62" r="5" fill={fillColor} />
+        </>
+      )}
+      {eyeVariation === 'large' && (
+        <>
+          <circle cx="55" cy="62" r="7" fill={fillColor} />
+          <circle cx="85" cy="62" r="7" fill={fillColor} />
+        </>
+      )}
+      {eyeVariation === 'small' && (
+        <>
+          <circle cx="55" cy="62" r="3" fill={fillColor} />
+          <circle cx="85" cy="62" r="3" fill={fillColor} />
+        </>
+      )}
+      {eyeVariation === 'offset' && (
+        <>
+          <circle cx="55" cy="60" r="5" fill={fillColor} />
+          <circle cx="85" cy="64" r="5" fill={fillColor} />
+        </>
+      )}
+      {mouthVariation === 'standard' && <rect x="64" y="78" width="12" height="4" rx="2" fill={fillColor} />}
+      {mouthVariation === 'wide' && <rect x="58" y="78" width="24" height="4" rx="2" fill={fillColor} />}
+      {mouthVariation === 'small' && <rect x="67" y="78" width="6" height="3" rx="1" fill={fillColor} />}
+      {decor === 'dots' && (
+        <>
+          <circle cx="48" cy="52" r="2" fill={fillColor} />
+          <circle cx="92" cy="52" r="2" fill={fillColor} />
+        </>
+      )}
+      {decor === 'triangle' && <polygon points="70,50 73,56 67,56" fill={fillColor} />}
+    </>
+  )}
+  {robotType === 'rounded' && (
+    <>
+      {antennaVariation === 'single' && (
+        <>
+          <circle cx="70" cy="20" r="4" fill="none" stroke={strokeColor} stroke-width="6" />
+          <line x1="70" y1="24" x2="70" y2="45" stroke={strokeColor} stroke-width="6" />
+        </>
+      )}
+      {antennaVariation === 'double' && (
+        <>
+          <circle cx="60" cy="18" r="3" fill="none" stroke={strokeColor} stroke-width="6" />
+          <circle cx="80" cy="18" r="3" fill="none" stroke={strokeColor} stroke-width="6" />
+          <line x1="60" y1="21" x2="60" y2="45" stroke={strokeColor} stroke-width="6" />
+          <line x1="80" y1="21" x2="80" y2="45" stroke={strokeColor} stroke-width="6" />
+        </>
+      )}
+      <rect x="40" y="45" width="60" height="50" rx="25" fill="none" stroke={strokeColor} stroke-width="6" />
+      <circle cx="32" cy="70" r="8" fill="none" stroke={strokeColor} stroke-width="6" />
+      <circle cx="108" cy="70" r="8" fill="none" stroke={strokeColor} stroke-width="6" />
+      {eyeVariation === 'standard' && (
+        <>
+          <circle cx="55" cy="62" r="5" fill={fillColor} />
+          <circle cx="85" cy="62" r="5" fill={fillColor} />
+        </>
+      )}
+      {eyeVariation === 'large' && (
+        <>
+          <circle cx="55" cy="62" r="7" fill={fillColor} />
+          <circle cx="85" cy="62" r="7" fill={fillColor} />
+        </>
+      )}
+      {eyeVariation === 'small' && (
+        <>
+          <circle cx="55" cy="62" r="3" fill={fillColor} />
+          <circle cx="85" cy="62" r="3" fill={fillColor} />
+        </>
+      )}
+      {eyeVariation === 'offset' && (
+        <>
+          <circle cx="55" cy="60" r="5" fill={fillColor} />
+          <circle cx="85" cy="64" r="5" fill={fillColor} />
+        </>
+      )}
+      {mouthVariation === 'standard' && <path d="M 58 78 Q 70 86 82 78" fill="none" stroke={strokeColor} stroke-width="6" stroke-linecap="round" />}
+      {mouthVariation === 'wide' && <path d="M 52 78 Q 70 90 88 78" fill="none" stroke={strokeColor} stroke-width="6" stroke-linecap="round" />}
+      {mouthVariation === 'small' && <path d="M 62 78 Q 70 82 78 78" fill="none" stroke={strokeColor} stroke-width="6" stroke-linecap="round" />}
+      {decor === 'dots' && (
+        <>
+          <circle cx="48" cy="55" r="2" fill={fillColor} />
+          <circle cx="92" cy="55" r="2" fill={fillColor} />
+        </>
+      )}
+      {decor === 'triangle' && <polygon points="70,52 72,57 68,57" fill={fillColor} />}
+    </>
+  )}
+  {robotType === 'dome' && (
+    <>
+      <path d="M 40 95 L 40 65 Q 40 45 70 45 Q 100 45 100 65 L 100 95 Z" fill="none" stroke={strokeColor} stroke-width="6" />
+      <path d="M 46 62 L 94 62" stroke={strokeColor} stroke-width="6" stroke-linecap="round" />
+      {eyeVariation === 'standard' && (
+        <>
+          <circle cx="55" cy="75" r="5" fill={fillColor} />
+          <circle cx="85" cy="75" r="5" fill={fillColor} />
+        </>
+      )}
+      {eyeVariation === 'large' && (
+        <>
+          <circle cx="55" cy="75" r="7" fill={fillColor} />
+          <circle cx="85" cy="75" r="7" fill={fillColor} />
+        </>
+      )}
+      {eyeVariation === 'small' && (
+        <>
+          <circle cx="55" cy="75" r="3" fill={fillColor} />
+          <circle cx="85" cy="75" r="3" fill={fillColor} />
+        </>
+      )}
+      {eyeVariation === 'offset' && (
+        <>
+          <circle cx="55" cy="73" r="5" fill={fillColor} />
+          <circle cx="85" cy="77" r="5" fill={fillColor} />
+        </>
+      )}
+      <circle cx="34" cy="82" r="4" fill="none" stroke={strokeColor} stroke-width="6" />
+      <circle cx="106" cy="82" r="4" fill="none" stroke={strokeColor} stroke-width="6" />
+      {mouthVariation === 'standard' && <line x1="64" y1="85" x2="76" y2="85" stroke={strokeColor} stroke-width="4" stroke-linecap="round" />}
+      {mouthVariation === 'wide' && <line x1="58" y1="85" x2="82" y2="85" stroke={strokeColor} stroke-width="4" stroke-linecap="round" />}
+      {mouthVariation === 'small' && <line x1="67" y1="85" x2="73" y2="85" stroke={strokeColor} stroke-width="4" stroke-linecap="round" />}
+      {decor === 'dots' && (
+        <>
+          <circle cx="60" cy="68" r="1.5" fill={fillColor} />
+          <circle cx="80" cy="68" r="1.5" fill={fillColor} />
+        </>
+      )}
+      {decor === 'triangle' && <polygon points="70,66 71.5,69 68.5,69" fill={fillColor} />}
+    </>
+  )}
+</svg>

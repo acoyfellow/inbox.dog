@@ -1,0 +1,76 @@
+---
+import AgentAvatar from './AgentAvatar.astro';
+
+const colorPalettes = [
+  { stroke: '#3B82F6', fill: '#3B82F6', bg: '#EFF6FF' },
+  { stroke: '#10B981', fill: '#10B981', bg: '#ECFDF5' },
+  { stroke: '#F59E0B', fill: '#F59E0B', bg: '#FFFBEB' },
+  { stroke: '#EF4444', fill: '#EF4444', bg: '#FEF2F2' },
+  { stroke: '#8B5CF6', fill: '#8B5CF6', bg: '#F5F3FF' },
+  { stroke: '#06B6D4', fill: '#06B6D4', bg: '#ECFEFF' },
+  { stroke: '#F97316', fill: '#F97316', bg: '#FFF7ED' },
+  { stroke: '#EC4899', fill: '#EC4899', bg: '#FDF2F8' },
+];
+
+function seededRandom(seed: number) {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+}
+
+const agents = Array.from({ length: 15 }, (_, i) => {
+  const seed = i * 0.1;
+  return {
+    id: i,
+    seed: seededRandom(seed),
+    size: 40 + seededRandom(seed + 1) * 80,
+    x: seededRandom(seed + 2) * 100,
+    y: seededRandom(seed + 3) * 100,
+    opacity: 0.1 + seededRandom(seed + 4) * 0.3,
+    duration: 15 + seededRandom(seed + 5) * 25,
+    delay: seededRandom(seed + 6) * -20,
+    inverted: seededRandom(seed + 7) > 0.7,
+    colorPalette: colorPalettes[Math.floor(seededRandom(seed + 8) * colorPalettes.length)],
+  };
+});
+---
+
+<div class="fixed inset-0 overflow-hidden pointer-events-none -z-10 min-h-screen">
+  {agents.map((agent) => (
+    <div
+      class="absolute animate-float rounded-full overflow-hidden flex-none shrink-0 aspect-square"
+      style={`left: ${agent.x}%; top: ${agent.y}%; opacity: ${agent.opacity}; animation-duration: ${agent.duration}s; animation-delay: ${agent.delay}s; transform: translate(-50%, -50%);`}
+    >
+      <AgentAvatar
+        seed={agent.seed}
+        size={agent.size}
+        inverted={agent.inverted}
+        strokeColor={agent.colorPalette.stroke}
+        fillColor={agent.colorPalette.fill}
+        bgColor={agent.colorPalette.bg}
+      />
+    </div>
+  ))}
+</div>
+
+<style>
+  @keyframes float {
+    0%, 100% {
+      transform: translate(-50%, -50%) translateY(0px) rotate(0deg) scale(1);
+    }
+    25% {
+      transform: translate(-50%, -50%) translateY(-20px) rotate(2deg) scale(1.05);
+    }
+    50% {
+      transform: translate(-50%, -50%) translateY(10px) rotate(-1deg) scale(0.95);
+    }
+    75% {
+      transform: translate(-50%, -50%) translateY(-15px) rotate(1deg) scale(1.02);
+    }
+  }
+
+  .animate-float {
+    animation-name: float;
+    animation-timing-function: ease-in-out;
+    animation-iteration-count: infinite;
+  }
+</style>
