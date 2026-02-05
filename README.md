@@ -108,6 +108,29 @@ wrangler deploy --env production
 
 - **API**: https://test.inbox.dog
 - **Landing**: https://inbox-dog-landing.pages.dev
+- **Docs**: https://inbox-dog-landing.pages.dev/docs
+
+## Current Status
+
+✅ Worker deployed to test.inbox.dog  
+✅ Landing page deployed to Cloudflare Pages  
+✅ E2E tests passing (9/9)  
+✅ KV namespace configured  
+⚠️ Google OAuth credentials needed (set via `wrangler secret put`)  
+⚠️ Stripe credentials needed for billing  
+
+## API Endpoints
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/health` | GET | Health check |
+| `/api/keys` | POST | Create API key |
+| `/api/keys/:id` | GET | Get key info |
+| `/api/checkout` | POST | Create Stripe checkout |
+| `/oauth/authorize` | GET | Start OAuth flow |
+| `/oauth/callback` | GET | Google callback |
+| `/oauth/token` | POST | Exchange/refresh tokens |
+| `/webhooks/stripe` | POST | Stripe webhook |
 
 ## License
 
