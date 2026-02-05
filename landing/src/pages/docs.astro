@@ -25,7 +25,7 @@ import Layout from '../layouts/Layout.astro';
         <li>
           <strong class="text-primary-900">Create an API key</strong>
           <div class="bg-primary-900 rounded p-4 mt-2 text-sm overflow-x-auto">
-            <pre class="text-primary-100 font-mono"><code>{`curl -X POST https://test.inbox.dog/api/keys \
+            <pre class="text-primary-100 font-mono"><code>{`curl -X POST https://inbox.dog/api/keys \
   -H "Content-Type: application/json" \
   -d '{"name": "my-app"}'`}</code></pre>
           </div>
@@ -33,7 +33,7 @@ import Layout from '../layouts/Layout.astro';
         <li>
           <strong class="text-primary-900">Redirect users to authenticate</strong>
           <div class="bg-primary-900 rounded p-4 mt-2 text-sm overflow-x-auto">
-            <pre class="text-primary-100 font-mono"><code>{`https://test.inbox.dog/oauth/authorize?
+            <pre class="text-primary-100 font-mono"><code>{`https://inbox.dog/oauth/authorize?
   client_id=YOUR_CLIENT_ID&
   redirect_uri=https://yourapp.com/callback&
   scope=email`}</code></pre>
@@ -42,7 +42,7 @@ import Layout from '../layouts/Layout.astro';
         <li>
           <strong class="text-primary-900">Exchange code for tokens</strong>
           <div class="bg-primary-900 rounded p-4 mt-2 text-sm overflow-x-auto">
-            <pre class="text-primary-100 font-mono"><code>{`curl -X POST https://test.inbox.dog/oauth/token \
+            <pre class="text-primary-100 font-mono"><code>{`curl -X POST https://inbox.dog/oauth/token \
   -H "Content-Type: application/json" \
   -d '{
     "code": "AUTH_CODE",

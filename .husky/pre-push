@@ -1,0 +1,23 @@
+#!/bin/sh
+
+echo "Running pre-push checks..."
+
+# Type check worker
+echo "Type checking worker..."
+cd worker && npx tsc --noEmit
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript errors in worker"
+  exit 1
+fi
+cd ..
+
+# Build landing page
+echo "Building landing page..."
+cd landing && npm run build > /dev/null 2>&1
+if [ $? -ne 0 ]; then
+  echo "❌ Landing page build failed"
+  exit 1
+fi
+cd ..
+
+echo "✅ All pre-push checks passed"

@@ -10,8 +10,16 @@ ENVIRONMENT = "development"
 binding = "KV"
 id = "736caa214df54d34b05585940aff18c8"
 
-[env.production]
+[env.staging]
 route = { pattern = "test.inbox.dog/*", zone_name = "inbox.dog" }
+vars = { ENVIRONMENT = "staging" }
+
+[[env.staging.kv_namespaces]]
+binding = "KV"
+id = "736caa214df54d34b05585940aff18c8"
+
+[env.production]
+route = { pattern = "inbox.dog/*", zone_name = "inbox.dog" }
 vars = { ENVIRONMENT = "production" }
 
 [[env.production.kv_namespaces]]

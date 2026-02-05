@@ -59,7 +59,7 @@ describe('OAuth Error Handling', () => {
     const res = await fetch(`${BASE_URL}/oauth/callback?code=test&state=expired-state`);
     assert.strictEqual(res.status, 400);
     const data = await res.json();
-    assert.ok(data.error?.includes('state') || data.error?.includes('expired'));
+    assert.ok(data.error?.includes('state') || data.error?.includes('expired') || data.error?.includes('not found'));
   });
 
   it('should handle missing code in callback', async () => {

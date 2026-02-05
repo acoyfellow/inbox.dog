@@ -69,11 +69,11 @@ import AnimatedAgentBackground from '../components/AnimatedAgentBackground.astro
           
           <div class="p-6 overflow-x-auto">
             <pre class="text-sm"><code class="language-javascript">{`// 1. Redirect user to authenticate
-window.location.href = 'https://test.inbox.dog/oauth/authorize?' +
+window.location.href = 'https://inbox.dog/oauth/authorize?' +
   'client_id=YOUR_KEY&redirect_uri=YOUR_CALLBACK';
 
 // 2. Exchange code for token (in your backend)
-const response = await fetch('https://test.inbox.dog/oauth/token', {
+const response = await fetch('https://inbox.dog/oauth/token', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({

@@ -1,139 +1,167 @@
-# inbox.dog OAuth-as-a-Service
+# inbox.dog
 
-OAuth for email, simplified. Get Gmail/email access tokens without implementing OAuth yourself.
+**OAuth for email, simplified.** Get Gmail access tokens without implementing OAuth yourself.
+
+[![Live Demo](https://img.shields.io/badge/demo-inbox.dog-blue)](https://inbox.dog)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 ## What is this?
 
 A hosted OAuth service that handles the complexity of Google OAuth for email access. Your users authenticate once, and you get tokens to read/send emails via Gmail API.
 
-## Quick Start
+**3 lines of code:**
 
-```typescript
-// Redirect user to authenticate
-window.location.href = 'https://test.inbox.dog/oauth/authorize?client_id=YOUR_KEY&redirect_uri=YOUR_CALLBACK';
+```javascript
+// 1. Redirect user
+window.location.href = 'https://inbox.dog/oauth/authorize?client_id=YOUR_KEY&redirect_uri=YOUR_CALLBACK';
 
-// Exchange code for token (in your backend)
-const response = await fetch('https://test.inbox.dog/oauth/token', {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({
-    code: 'AUTH_CODE_FROM_CALLBACK',
-    client_id: 'YOUR_KEY',
-    client_secret: 'YOUR_SECRET'
-  })
-});
-const { access_token, refresh_token } = await response.json();
+// 2. Exchange code for token
+const { access_token } = await fetch('https://inbox.dog/oauth/token', { ... }).then(r => r.json());
 
-// Use token with Gmail API
-const emails = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages', {
-  headers: { Authorization: `Bearer ${access_token}` }
-});
+// 3. Use with Gmail API
+const emails = await fetch('https://gmail.googleapis.com/...', { headers: { Authorization: `Bearer ${access_token}` } });
 ```
 
 ## Features
 
-- 🔐 **OAuth Flow** - Complete Google OAuth implementation
-- 📧 **Gmail Access** - Read and send emails via Gmail API
-- 🔄 **Token Refresh** - Automatic token management
-- 💳 **Usage-Based Billing** - Pay per OAuth flow via Stripe
-- 📚 **Simple API** - Standard OAuth 2.0 endpoints
+- **Complete OAuth Flow** - We handle the Google OAuth dance
+- **Gmail API Access** - Read emails, send messages, manage labels
+- **Token Refresh** - Automatic token management
+- **Usage-Based Billing** - $0.10 per OAuth flow, 10 free credits
+- **Standard OAuth 2.0** - Works with any HTTP client
+- **Open Source** - Self-host with your own Google credentials
 
 ## Architecture
 
 ```
 ┌─────────────┐    ┌──────────────┐    ┌─────────────┐
 │  Your App   │───▶│  inbox.dog   │───▶│  Google     │
-│             │◀───│  OAuth       │◀───│  OAuth      │
+│             │◀───│  (Effect-TS) │◀───│  OAuth      │
 └─────────────┘    └──────────────┘    └─────────────┘
-                          │
-                   ┌──────┴──────┐
-                   │   Stripe    │
-                   │   Billing   │
-                   └─────────────┘
 ```
+
+Built with:
+- **[Effect](https://effect.website)** - Type-safe error handling, services, schemas
+- **[Hono](https://hono.dev)** - Fast web framework for Cloudflare Workers
+- **[Astro](https://astro.build)** - Static landing page
+- **Cloudflare Workers** - Edge deployment
 
 ## Project Structure
 
 ```
-├── landing/      # Astro landing page + docs
-├── worker/       # Cloudflare Worker (Effect-TS)
-├── e2e/          # End-to-end tests
-└── README.md
+├── landing/          # Astro landing page + docs
+│   ├── src/pages/    # index, docs, pricing, demo
+│   └── public/       # fonts, logo
+├── worker/           # Cloudflare Worker (Effect-TS)
+│   ├── src/
+│   │   ├── routes/   # oauth, api, webhooks
+│   │   ├── services/ # google, kv (Effect services)
+│   │   ├── schemas.ts
+│   │   └── errors.ts # Tagged errors
+│   └── wrangler.toml
+├── e2e/              # End-to-end tests
+└── .husky/           # Git hooks
 ```
 
-## Development
+## Self-Hosting
+
+### Prerequisites
+
+1. [Cloudflare account](https://cloudflare.com)
+2. [Google Cloud project](https://console.cloud.google.com) with Gmail API enabled
+3. Node.js 18+
+
+### Setup
 
 ```bash
-# Landing page
-cd landing && npm install && npm run dev
+# Clone
+git clone https://github.com/acoyfellow/inbox.dog
+cd inbox.dog
 
-# Worker
-cd worker && npm install && npm run dev
+# Install dependencies
+cd worker && npm install
+cd ../landing && npm install
 
-# E2E tests
-cd e2e && npm test
-```
+# Create KV namespace
+wrangler kv:namespace create KV
+# Update wrangler.toml with the ID
 
-## Setup
-
-### Google OAuth Credentials
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a new project or select existing
-3. Enable Gmail API: APIs & Services → Library → Gmail API → Enable
-4. Create OAuth credentials:
-   - APIs & Services → Credentials → Create Credentials → OAuth client ID
-   - Application type: Web application
-   - Authorized redirect URIs: `https://test.inbox.dog/oauth/callback`
-5. Copy Client ID and Client Secret
-
-### Deploy to Cloudflare
-
-```bash
 # Set secrets
-cd worker
 wrangler secret put GOOGLE_CLIENT_ID
 wrangler secret put GOOGLE_CLIENT_SECRET
-wrangler secret put JWT_SECRET
+wrangler secret put JWT_SECRET  # openssl rand -hex 32
 
 # Optional: Stripe for billing
 wrangler secret put STRIPE_SECRET_KEY
 wrangler secret put STRIPE_WEBHOOK_SECRET
 
 # Deploy
-wrangler deploy --env production
+cd worker && wrangler deploy
+cd ../landing && npm run build && wrangler pages deploy dist
 ```
 
-### Live URLs
+### Google OAuth Setup
 
-- **API**: https://test.inbox.dog
-- **Landing**: https://inbox-dog-landing.pages.dev
-- **Docs**: https://inbox-dog-landing.pages.dev/docs
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create project → Enable Gmail API
+3. Create OAuth credentials (Web application)
+4. Add redirect URI: `https://your-domain.com/oauth/callback`
 
-## Current Status
+## API Reference
 
-✅ Worker deployed to test.inbox.dog  
-✅ Landing page deployed to Cloudflare Pages  
-✅ E2E tests passing (9/9)  
-✅ KV namespace configured  
-✅ TypeScript compiles cleanly  
-⚠️ Google OAuth credentials needed (set via `wrangler secret put`)  
-⚠️ Stripe credentials needed for billing  
-⚠️ GitHub repo needed (create inbox-dog/oauth)  
+### Create API Key
 
-## API Endpoints
+```bash
+POST /api/keys
+{"name": "my-app"}
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check |
-| `/api/keys` | POST | Create API key |
-| `/api/keys/:id` | GET | Get key info |
-| `/api/checkout` | POST | Create Stripe checkout |
-| `/oauth/authorize` | GET | Start OAuth flow |
-| `/oauth/callback` | GET | Google callback |
-| `/oauth/token` | POST | Exchange/refresh tokens |
-| `/webhooks/stripe` | POST | Stripe webhook |
+# Response
+{"client_id": "id_...", "client_secret": "sk_...", "credits": 10}
+```
+
+### OAuth Flow
+
+```bash
+# 1. Authorize
+GET /oauth/authorize?client_id=...&redirect_uri=...&scope=email
+
+# 2. Callback (automatic redirect)
+GET /oauth/callback?code=...&state=...
+
+# 3. Exchange token
+POST /oauth/token
+{"code": "...", "client_id": "...", "client_secret": "..."}
+
+# Response
+{"access_token": "...", "refresh_token": "...", "email": "user@example.com"}
+```
+
+### Scopes
+
+| Scope | Permission |
+|-------|------------|
+| `email` | Read-only (default) |
+| `email:read` | Read-only |
+| `email:send` | Send only |
+| `email:full` | Full access |
+
+## Development
+
+```bash
+# Worker (with local KV)
+cd worker && wrangler dev
+
+# Landing page
+cd landing && npm run dev
+
+# Run tests
+cd e2e && npm test
+```
+
+## Contributing
+
+PRs welcome! Please run `npm run build` and `npx tsc --noEmit` before submitting.
 
 ## License
 
-MIT
+MIT - see [LICENSE](LICENSE)
