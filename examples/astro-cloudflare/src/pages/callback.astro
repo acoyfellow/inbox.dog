@@ -1,0 +1,63 @@
+---
+import { InboxDog, InboxDogError } from "inbox.dog";
+
+const code = Astro.url.searchParams.get("code");
+const error = Astro.url.searchParams.get("error");
+
+const clientId = import.meta.env.INBOX_DOG_CLIENT_ID;
+const clientSecret = import.meta.env.INBOX_DOG_CLIENT_SECRET;
+
+let tokens: { access_token: string; refresh_token: string; email: string; expires_in: number } | null = null;
+let errorMessage: string | null = null;
+
+if (error) {
+  errorMessage = `OAuth error: ${error}`;
+} else if (!code) {
+  errorMessage = "No authorization code received.";
+} else {
+  try {
+    const dog = new InboxDog();
+    tokens = await dog.exchangeCode(code, clientId, clientSecret);
+  } catch (e) {
+    if (e instanceof InboxDogError) {
+      errorMessage = `${e.code}: ${e.message}`;
+    } else {
+      errorMessage = "Failed to exchange code for tokens.";
+    }
+  }
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>OAuth Callback</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 600px; margin: 4rem auto; padding: 0 1rem; }
+      h1 { font-size: 1.5rem; }
+      pre { background: #f4f4f5; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; font-size: 0.85em; }
+      .error { color: #dc2626; background: #fef2f2; padding: 1rem; border-radius: 0.5rem; }
+      .success { color: #16a34a; }
+      a { color: #1a1a1a; }
+    </style>
+  </head>
+  <body>
+    {errorMessage ? (
+      <div>
+        <h1>OAuth Failed</h1>
+        <p class="error">{errorMessage}</p>
+        <p><a href="/">Try again</a></p>
+      </div>
+    ) : tokens ? (
+      <div>
+        <h1 class="success">Connected!</h1>
+        <p>Gmail account <strong>{tokens.email}</strong> is now connected.</p>
+        <h2 style="font-size: 1.1rem; margin-top: 1.5rem;">Your tokens</h2>
+        <pre>{JSON.stringify({ access_token: tokens.access_token.slice(0, 20) + "...", refresh_token: tokens.refresh_token.slice(0, 20) + "...", email: tokens.email, expires_in: tokens.expires_in }, null, 2)}</pre>
+        <p style="color: #71717a; font-size: 0.85em; margin-top: 1rem;">In production, store the refresh_token securely and never expose tokens to the client.</p>
+        <p><a href="/">Back to home</a></p>
+      </div>
+    ) : null}
+  </body>
+</html>

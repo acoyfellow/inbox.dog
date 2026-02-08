@@ -1,0 +1,42 @@
+---
+import { InboxDog } from "inbox.dog";
+
+const dog = new InboxDog();
+
+const clientId = import.meta.env.INBOX_DOG_CLIENT_ID;
+const origin = Astro.url.origin;
+
+const authUrl = dog.getAuthUrl({
+  clientId,
+  redirectUri: `${origin}/callback`,
+  scope: "email",
+});
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>inbox.dog Astro Example</title>
+    <style>
+      body { font-family: system-ui, sans-serif; max-width: 600px; margin: 4rem auto; padding: 0 1rem; }
+      h1 { font-size: 1.5rem; }
+      a.btn { display: inline-block; background: #1a1a1a; color: white; padding: 0.75rem 1.5rem; border-radius: 0.5rem; text-decoration: none; margin-top: 1rem; }
+      a.btn:hover { background: #333; }
+      code { background: #f4f4f5; padding: 0.15rem 0.4rem; border-radius: 0.25rem; font-size: 0.9em; }
+      pre { background: #f4f4f5; padding: 1rem; border-radius: 0.5rem; overflow-x: auto; }
+    </style>
+  </head>
+  <body>
+    <h1>inbox.dog + Astro + Cloudflare</h1>
+    <p>Click the button to connect your Gmail account via OAuth.</p>
+    <a href={authUrl} class="btn">Connect Gmail</a>
+    <h2 style="margin-top: 2rem; font-size: 1.2rem;">How it works</h2>
+    <ol>
+      <li>Click "Connect Gmail" to start the OAuth flow</li>
+      <li>Authenticate with Google and grant permission</li>
+      <li>You'll be redirected back with an access token</li>
+    </ol>
+    <p>This example uses the <code>inbox.dog</code> npm package. See <a href="https://inbox.dog/docs/tutorial">the tutorial</a> for a full walkthrough.</p>
+  </body>
+</html>
