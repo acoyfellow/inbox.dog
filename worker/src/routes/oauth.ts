@@ -33,27 +33,108 @@ const runWithServices = async <A, E>(
   return { ok: false, error: result.left };
 };
 
-// Map errors to HTTP responses
-const errorToResponse = (error: unknown): { status: number; body: { error: string; details?: string } } => {
+// Structured error response for agent-friendly consumption
+interface StructuredError {
+  error: {
+    code: string;
+    message: string;
+    action: string;
+    docs: string;
+  };
+}
+
+// Map errors to HTTP responses with structured error bodies
+const errorToResponse = (error: unknown): { status: number; body: StructuredError } => {
   if (error instanceof InvalidCredentialsError) {
-    return { status: 401, body: { error: error.message } };
+    return {
+      status: 401,
+      body: {
+        error: {
+          code: 'INVALID_CREDENTIALS',
+          message: error.message,
+          action: 'Check your client_id and client_secret',
+          docs: 'https://inbox.dog/docs#authentication',
+        },
+      },
+    };
   }
   if (error instanceof InsufficientCreditsError) {
-    return { status: 402, body: { error: `Insufficient credits. Current: ${error.credits}` } };
+    return {
+      status: 402,
+      body: {
+        error: {
+          code: 'INSUFFICIENT_CREDITS',
+          message: `No credits remaining. Current balance: ${error.credits}`,
+          action: 'Purchase credits via POST /api/checkout',
+          docs: 'https://inbox.dog/docs#billing',
+        },
+      },
+    };
   }
   if (error instanceof NotFoundError) {
-    return { status: 400, body: { error: `${error.resource} not found` } };
+    const code = error.resource === 'oauth_state' ? 'STATE_NOT_FOUND' : error.resource === 'auth_code' ? 'AUTH_CODE_NOT_FOUND' : 'NOT_FOUND';
+    return {
+      status: 400,
+      body: {
+        error: {
+          code,
+          message: `${error.resource} not found: ${error.id}`,
+          action: code === 'STATE_NOT_FOUND' || code === 'AUTH_CODE_NOT_FOUND' ? 'Restart the OAuth flow' : 'Check the endpoint URL and parameters',
+          docs: 'https://inbox.dog/docs#failure-modes',
+        },
+      },
+    };
   }
   if (error instanceof StateError) {
-    return { status: 400, body: { error: error.message } };
+    return {
+      status: 400,
+      body: {
+        error: {
+          code: 'STATE_NOT_FOUND',
+          message: error.message,
+          action: 'Restart the OAuth flow (states expire after 10 minutes)',
+          docs: 'https://inbox.dog/docs#failure-modes',
+        },
+      },
+    };
   }
   if (error instanceof ValidationError) {
-    return { status: 400, body: { error: `${error.field}: ${error.message}` } };
+    return {
+      status: 400,
+      body: {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: `${error.field}: ${error.message}`,
+          action: 'Check the required fields for this endpoint',
+          docs: 'https://inbox.dog/docs#endpoints',
+        },
+      },
+    };
   }
   if (error instanceof TokenExchangeError) {
-    return { status: 500, body: { error: error.message, details: error.details } };
+    return {
+      status: 500,
+      body: {
+        error: {
+          code: 'TOKEN_EXCHANGE_FAILED',
+          message: error.message,
+          action: 'Retry the request or check Google OAuth configuration',
+          docs: 'https://inbox.dog/docs#failure-modes',
+        },
+      },
+    };
   }
-  return { status: 500, body: { error: 'Internal server error' } };
+  return {
+    status: 500,
+    body: {
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Internal server error',
+        action: 'Retry the request. If the problem persists, check https://inbox.dog/health',
+        docs: 'https://inbox.dog/docs#error-codes',
+      },
+    },
+  };
 };
 
 // GET /oauth/authorize
@@ -64,7 +145,7 @@ oauthRoutes.get('/authorize', async (c) => {
   const scope = c.req.query('scope') ?? 'email';
 
   if (!clientId || !redirectUri) {
-    return c.json({ error: 'Missing client_id or redirect_uri' }, 400);
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing client_id or redirect_uri', action: 'Provide both client_id and redirect_uri query parameters', docs: 'https://inbox.dog/docs#endpoints' } }, 400);
   }
 
   const program = Effect.gen(function* () {
@@ -109,11 +190,11 @@ oauthRoutes.get('/callback', async (c) => {
   const error = c.req.query('error');
 
   if (error) {
-    return c.json({ error: `OAuth error: ${error}` }, 400);
+    return c.json({ error: { code: 'OAUTH_ERROR', message: `OAuth error: ${error}`, action: 'User may have denied consent. Restart the OAuth flow.', docs: 'https://inbox.dog/docs#failure-modes' } }, 400);
   }
 
   if (!code || !stateId) {
-    return c.json({ error: 'Missing code or state' }, 400);
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing code or state', action: 'This endpoint is called automatically during the OAuth callback', docs: 'https://inbox.dog/docs#endpoints' } }, 400);
   }
 
   const program = Effect.gen(function* () {
@@ -183,7 +264,7 @@ oauthRoutes.post('/token', async (c) => {
   const { code, client_id, client_secret } = body;
 
   if (!code || !client_id || !client_secret) {
-    return c.json({ error: 'Missing required fields' }, 400);
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing required fields: code, client_id, and client_secret are required', action: 'Provide code (from OAuth callback), client_id, and client_secret in the request body', docs: 'https://inbox.dog/docs#endpoints' } }, 400);
   }
 
   const program = Effect.gen(function* () {
@@ -237,7 +318,7 @@ async function handleRefreshToken(
   const { refresh_token, client_id, client_secret } = body;
 
   if (!refresh_token || !client_id || !client_secret) {
-    return c.json({ error: 'Missing required fields' }, 400);
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing required fields: refresh_token, client_id, and client_secret are required', action: 'Provide refresh_token, client_id, and client_secret in the request body with grant_type=refresh_token', docs: 'https://inbox.dog/docs#endpoints' } }, 400);
   }
 
   const program = Effect.gen(function* () {

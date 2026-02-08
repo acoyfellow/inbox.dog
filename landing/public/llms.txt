@@ -1,0 +1,79 @@
+# inbox.dog
+
+> OAuth for email, simplified. Three API calls to get Gmail access tokens for your users.
+
+## What it does
+
+Handles the complete Google OAuth 2.0 flow for Gmail API access.
+You redirect users to inbox.dog → they authenticate with Google → you get access_token and refresh_token.
+Tokens work directly with Gmail API (gmail.googleapis.com).
+
+## Quick Start
+
+1. Create an API key: POST https://inbox.dog/api/keys
+2. Redirect user: GET https://inbox.dog/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=YOUR_CALLBACK&scope=email
+3. Exchange code: POST https://inbox.dog/oauth/token with { code, client_id, client_secret }
+
+## API Endpoints
+
+### POST /api/keys
+Create an API key. Returns client_id, client_secret, and 10 free credits.
+- Body: { "name": "my-app" }
+- Returns: { "client_id": "id_...", "client_secret": "sk_...", "name": "my-app", "credits": 10 }
+
+### GET /api/keys/{client_id}
+Get API key info. Requires X-Client-Secret header.
+- Headers: X-Client-Secret: YOUR_CLIENT_SECRET
+- Returns: { "client_id": "...", "name": "...", "credits": 10, "created_at": 1234567890 }
+
+### GET /oauth/authorize
+Start OAuth flow. Redirects user to Google consent screen.
+- Params: client_id (required), redirect_uri (required), scope (optional, default: "email"), state (optional)
+- After consent: Redirects to your redirect_uri with ?code=AUTH_CODE&state=YOUR_STATE
+
+### POST /oauth/token (authorization_code)
+Exchange authorization code for tokens. Costs 1 credit.
+- Body: { "code": "AUTH_CODE", "client_id": "YOUR_CLIENT_ID", "client_secret": "YOUR_CLIENT_SECRET" }
+- Returns: { "access_token": "ya29...", "refresh_token": "1//...", "token_type": "Bearer", "expires_in": 3600, "email": "user@example.com" }
+
+### POST /oauth/token (refresh_token)
+Refresh an expired access token. Free, no credit cost.
+- Body: { "grant_type": "refresh_token", "refresh_token": "YOUR_REFRESH_TOKEN", "client_id": "YOUR_CLIENT_ID", "client_secret": "YOUR_CLIENT_SECRET" }
+- Returns: { "access_token": "ya29...", "token_type": "Bearer", "expires_in": 3600 }
+
+### POST /api/checkout
+Purchase more credits via Stripe.
+- Body: { "client_id": "YOUR_CLIENT_ID", "client_secret": "YOUR_CLIENT_SECRET", "credits": 100 }
+- Returns: { "checkout_url": "https://checkout.stripe.com/...", "session_id": "cs_..." }
+
+## Scopes
+
+| Scope       | Gmail Permission                      |
+|-------------|---------------------------------------|
+| email       | Read-only access (default)            |
+| email:read  | Read-only access                      |
+| email:send  | Send emails only                      |
+| email:full  | Full access (read, send, modify)      |
+
+## Error Codes
+
+| Code                    | HTTP | Description                                    | Action                              |
+|-------------------------|------|------------------------------------------------|-------------------------------------|
+| INVALID_CREDENTIALS     | 401  | Invalid client_id or client_secret             | Check your API credentials          |
+| INSUFFICIENT_CREDITS    | 402  | No credits remaining                           | Purchase credits via /api/checkout  |
+| VALIDATION_ERROR        | 400  | Missing or invalid request parameters          | Check required fields               |
+| STATE_NOT_FOUND         | 400  | OAuth state expired or invalid                 | Restart the OAuth flow              |
+| AUTH_CODE_NOT_FOUND     | 400  | Authorization code expired (5 min TTL)         | Restart the OAuth flow              |
+| TOKEN_EXCHANGE_FAILED   | 500  | Google token exchange failed                   | Retry or check Google OAuth config  |
+
+## Pricing
+
+$0.10 per OAuth token exchange. 10 free credits on signup.
+Token refresh is free.
+Self-host option available (MIT license).
+
+## Links
+
+- Docs: https://inbox.dog/docs
+- GitHub: https://github.com/acoyfellow/inbox.dog
+- Pricing: https://inbox.dog/pricing
