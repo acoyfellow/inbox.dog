@@ -1,0 +1,74 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Documentation">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">Documentation</h1>
+    <p class="text-primary-600 mb-12">Everything you need to integrate Gmail OAuth with inbox.dog.</p>
+
+    <!-- Get Started -->
+    <section class="mb-12">
+      <h2 class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4">Get Started</h2>
+      <div class="grid md:grid-cols-2 gap-4">
+        <a href="/docs/tutorial" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Tutorial</h3>
+          <p class="text-primary-500 text-sm">Build a working Gmail OAuth integration from scratch in 5 minutes.</p>
+        </a>
+        <a href="/demo" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Interactive Demo</h3>
+          <p class="text-primary-500 text-sm">Try the OAuth flow in your browser before writing any code.</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- Guides -->
+    <section class="mb-12">
+      <h2 class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4">Guides</h2>
+      <div class="grid md:grid-cols-3 gap-4">
+        <a href="/docs/guides/nextjs" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Next.js</h3>
+          <p class="text-primary-500 text-sm">Add Gmail OAuth to a Next.js app with App Router.</p>
+        </a>
+        <a href="/docs/guides/sveltekit" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">SvelteKit</h3>
+          <p class="text-primary-500 text-sm">Add Gmail OAuth to a SvelteKit app.</p>
+        </a>
+        <a href="/docs/guides/refresh" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Token Refresh</h3>
+          <p class="text-primary-500 text-sm">Handle token expiry and refresh tokens correctly.</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- Reference -->
+    <section class="mb-12">
+      <h2 class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4">Reference</h2>
+      <div class="grid md:grid-cols-2 gap-4">
+        <a href="/docs/api" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">API Reference</h3>
+          <p class="text-primary-500 text-sm">Every endpoint, request shape, response shape, and parameter.</p>
+        </a>
+        <a href="/docs/errors" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Errors &amp; Troubleshooting</h3>
+          <p class="text-primary-500 text-sm">Error codes, failure modes, and how to handle them.</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- Understand -->
+    <section class="mb-12">
+      <h2 class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4">Understand</h2>
+      <div class="grid md:grid-cols-2 gap-4">
+        <a href="/docs/how-it-works" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">How inbox.dog Works</h3>
+          <p class="text-primary-500 text-sm">Architecture, security model, and what happens under the hood.</p>
+        </a>
+        <a href="/pricing" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Pricing</h3>
+          <p class="text-primary-500 text-sm">$0.10 per OAuth flow. 10 free credits. Self-host for free.</p>
+        </a>
+      </div>
+    </section>
+  </div>
+</Layout>

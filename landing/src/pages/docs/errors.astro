@@ -1,0 +1,131 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Errors & Troubleshooting">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">Errors &amp; Troubleshooting</h1>
+    <p class="text-primary-600 mb-8">All errors return a structured JSON object for programmatic handling.</p>
+
+    <!-- Error Format -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Error Response Format</h2>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
+        <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "error": {
+    "code": "INSUFFICIENT_CREDITS",
+    "message": "No credits remaining. Current balance: 0",
+    "action": "Purchase credits via POST /api/checkout",
+    "docs": "https://inbox.dog/docs/errors#INSUFFICIENT_CREDITS"
+  }
+}`}</code></pre>
+      </div>
+      <p class="text-primary-500 text-sm mt-3">Every error includes a machine-readable <code class="bg-primary-100 px-1 rounded font-mono">code</code>, a human-readable <code class="bg-primary-100 px-1 rounded font-mono">message</code>, a suggested <code class="bg-primary-100 px-1 rounded font-mono">action</code>, and a link to relevant <code class="bg-primary-100 px-1 rounded font-mono">docs</code>.</p>
+    </section>
+
+    <!-- Error Codes -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Error Codes</h2>
+      <table class="w-full text-sm">
+        <thead class="bg-primary-100">
+          <tr>
+            <th class="text-left p-2 text-primary-900">Code</th>
+            <th class="text-left p-2 text-primary-900">HTTP</th>
+            <th class="text-left p-2 text-primary-900">Description</th>
+            <th class="text-left p-2 text-primary-900">Action</th>
+          </tr>
+        </thead>
+        <tbody class="text-primary-600">
+          <tr id="INVALID_CREDENTIALS" class="border-b border-primary-200">
+            <td class="p-2 font-mono text-xs">INVALID_CREDENTIALS</td>
+            <td class="p-2">401</td>
+            <td class="p-2">Invalid client_id or client_secret</td>
+            <td class="p-2">Check your API credentials</td>
+          </tr>
+          <tr id="INSUFFICIENT_CREDITS" class="border-b border-primary-200">
+            <td class="p-2 font-mono text-xs">INSUFFICIENT_CREDITS</td>
+            <td class="p-2">402</td>
+            <td class="p-2">No credits remaining</td>
+            <td class="p-2">Purchase credits via <code class="font-mono text-xs">POST /api/checkout</code></td>
+          </tr>
+          <tr id="VALIDATION_ERROR" class="border-b border-primary-200">
+            <td class="p-2 font-mono text-xs">VALIDATION_ERROR</td>
+            <td class="p-2">400</td>
+            <td class="p-2">Missing or invalid request parameters</td>
+            <td class="p-2">Check the required fields for the endpoint</td>
+          </tr>
+          <tr id="STATE_NOT_FOUND" class="border-b border-primary-200">
+            <td class="p-2 font-mono text-xs">STATE_NOT_FOUND</td>
+            <td class="p-2">400</td>
+            <td class="p-2">OAuth state expired or invalid</td>
+            <td class="p-2">Restart the OAuth flow (states expire after 10 minutes)</td>
+          </tr>
+          <tr id="AUTH_CODE_NOT_FOUND" class="border-b border-primary-200">
+            <td class="p-2 font-mono text-xs">AUTH_CODE_NOT_FOUND</td>
+            <td class="p-2">400</td>
+            <td class="p-2">Authorization code expired or already used</td>
+            <td class="p-2">Restart the OAuth flow (codes expire after 5 minutes)</td>
+          </tr>
+          <tr id="TOKEN_EXCHANGE_FAILED" class="border-b border-primary-200">
+            <td class="p-2 font-mono text-xs">TOKEN_EXCHANGE_FAILED</td>
+            <td class="p-2">500</td>
+            <td class="p-2">Google token exchange failed</td>
+            <td class="p-2">Retry the request or check Google OAuth configuration</td>
+          </tr>
+          <tr id="NOT_FOUND" class="border-b border-primary-200">
+            <td class="p-2 font-mono text-xs">NOT_FOUND</td>
+            <td class="p-2">404</td>
+            <td class="p-2">Resource not found</td>
+            <td class="p-2">Check the endpoint URL and parameters</td>
+          </tr>
+          <tr id="OAUTH_ERROR" class="border-b border-primary-200">
+            <td class="p-2 font-mono text-xs">OAUTH_ERROR</td>
+            <td class="p-2">400</td>
+            <td class="p-2">User denied consent or Google returned an error</td>
+            <td class="p-2">Prompt the user to try again</td>
+          </tr>
+          <tr id="INTERNAL_ERROR" class="border-b border-primary-200">
+            <td class="p-2 font-mono text-xs">INTERNAL_ERROR</td>
+            <td class="p-2">500</td>
+            <td class="p-2">Internal server error</td>
+            <td class="p-2">Retry the request</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Failure Modes -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Failure Modes</h2>
+      <p class="text-primary-600 mb-4">Common failure scenarios and how to handle them:</p>
+
+      <div class="space-y-4">
+        <div class="border border-primary-200 rounded-lg p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">User denies Google consent</h3>
+          <p class="text-primary-600 text-sm">The callback redirects with <code class="bg-primary-100 px-1 rounded font-mono">?error=access_denied</code>. No code is returned. No credit is charged. Prompt the user to try again.</p>
+        </div>
+        <div class="border border-primary-200 rounded-lg p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">Authorization code expires</h3>
+          <p class="text-primary-600 text-sm">Codes are valid for 5 minutes after the callback. If you call <code class="bg-primary-100 px-1 rounded font-mono">POST /oauth/token</code> after expiry, you get <code class="bg-primary-100 px-1 rounded font-mono">AUTH_CODE_NOT_FOUND</code>. No credit is charged. Restart the flow.</p>
+        </div>
+        <div class="border border-primary-200 rounded-lg p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">OAuth state expires</h3>
+          <p class="text-primary-600 text-sm">If the user takes more than 10 minutes on the Google consent screen, the state expires. The callback fails with <code class="bg-primary-100 px-1 rounded font-mono">STATE_NOT_FOUND</code>. Restart the flow.</p>
+        </div>
+        <div class="border border-primary-200 rounded-lg p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">Access token expires</h3>
+          <p class="text-primary-600 text-sm">Access tokens expire after 1 hour (set by Google). Use the <code class="bg-primary-100 px-1 rounded font-mono">refresh_token</code> to get a new one. See <a href="/docs/guides/refresh" class="text-primary-900 underline">Token Refresh guide</a>. This is free.</p>
+        </div>
+        <div class="border border-primary-200 rounded-lg p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">Refresh token revoked</h3>
+          <p class="text-primary-600 text-sm">If the user revokes your app's access in their Google account settings, the refresh token becomes invalid. You'll get <code class="bg-primary-100 px-1 rounded font-mono">TOKEN_EXCHANGE_FAILED</code>. The user must re-authenticate through the full OAuth flow.</p>
+        </div>
+        <div class="border border-primary-200 rounded-lg p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">Out of credits</h3>
+          <p class="text-primary-600 text-sm">Token exchange returns <code class="bg-primary-100 px-1 rounded font-mono">INSUFFICIENT_CREDITS</code> (402). Purchase more via <code class="bg-primary-100 px-1 rounded font-mono">POST /api/checkout</code>, or <a href="https://github.com/acoyfellow/inbox.dog" class="text-primary-900 underline">self-host</a> for unlimited usage.</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layout>

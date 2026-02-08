@@ -39,17 +39,17 @@ apiRoutes.get('/keys/:clientId', async (c) => {
   const clientSecret = c.req.header('X-Client-Secret');
 
   if (!clientSecret) {
-    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing X-Client-Secret header', action: 'Include your client_secret in the X-Client-Secret request header', docs: 'https://inbox.dog/docs#authentication' } }, 401);
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing X-Client-Secret header', action: 'Include your client_secret in the X-Client-Secret request header', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 401);
   }
 
   const apiKeyJson = await c.env.KV.get(`apikey:${clientId}`);
   if (!apiKeyJson) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'API key not found', action: 'Check your client_id or create a new key via POST /api/keys', docs: 'https://inbox.dog/docs#endpoints' } }, 404);
+    return c.json({ error: { code: 'NOT_FOUND', message: 'API key not found', action: 'Check your client_id or create a new key via POST /api/keys', docs: 'https://inbox.dog/docs/api' } }, 404);
   }
 
   const apiKey = JSON.parse(apiKeyJson) as ApiKey;
   if (apiKey.clientSecret !== clientSecret) {
-    return c.json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', action: 'Check your client_secret', docs: 'https://inbox.dog/docs#authentication' } }, 401);
+    return c.json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', action: 'Check your client_secret', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 401);
   }
 
   return c.json({
@@ -72,18 +72,18 @@ apiRoutes.post('/checkout', async (c) => {
   const { client_id, client_secret, credits = 100 } = body;
 
   if (!client_id || !client_secret) {
-    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing client_id or client_secret', action: 'Provide client_id and client_secret in the request body', docs: 'https://inbox.dog/docs#authentication' } }, 400);
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing client_id or client_secret', action: 'Provide client_id and client_secret in the request body', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 400);
   }
 
   // Validate credentials
   const apiKeyJson = await c.env.KV.get(`apikey:${client_id}`);
   if (!apiKeyJson) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'API key not found', action: 'Check your client_id or create a new key via POST /api/keys', docs: 'https://inbox.dog/docs#endpoints' } }, 401);
+    return c.json({ error: { code: 'NOT_FOUND', message: 'API key not found', action: 'Check your client_id or create a new key via POST /api/keys', docs: 'https://inbox.dog/docs/api' } }, 401);
   }
 
   const apiKey = JSON.parse(apiKeyJson) as ApiKey;
   if (apiKey.clientSecret !== client_secret) {
-    return c.json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', action: 'Check your client_secret', docs: 'https://inbox.dog/docs#authentication' } }, 401);
+    return c.json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', action: 'Check your client_secret', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 401);
   }
 
   // Price: $0.10 per credit (10 cents)
@@ -113,7 +113,7 @@ apiRoutes.post('/checkout', async (c) => {
   if (!response.ok) {
     const error = await response.text();
     console.error('Stripe error:', error);
-    return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to create checkout session', action: 'Retry the request. If the problem persists, check https://inbox.dog/health', docs: 'https://inbox.dog/docs#error-codes' } }, 500);
+    return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to create checkout session', action: 'Retry the request. If the problem persists, check https://inbox.dog/health', docs: 'https://inbox.dog/docs/errors' } }, 500);
   }
 
   const session = (await response.json()) as { id: string; url: string };

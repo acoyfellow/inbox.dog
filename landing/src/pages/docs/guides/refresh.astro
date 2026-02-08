@@ -1,0 +1,153 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="Handle Token Refresh">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">Handle Token Refresh</h1>
+    <p class="text-primary-600 mb-12">Keep your Gmail API access alive by refreshing tokens before they expire.</p>
+
+    <!-- When to Refresh -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">When to refresh</h2>
+      <p class="text-primary-600 mb-4">Access tokens expire after 1 hour (3600 seconds). The token response includes an <code class="bg-primary-100 px-1 rounded font-mono">expires_in</code> field that tells you exactly when.</p>
+      <p class="text-primary-600 mb-4">You have two options:</p>
+      <ul class="list-disc list-inside text-primary-600 space-y-2 mb-4">
+        <li><strong>Proactive:</strong> Check if the token is expired before each API call</li>
+        <li><strong>Reactive:</strong> Catch 401 Unauthorized responses from Gmail and refresh then</li>
+      </ul>
+      <p class="text-primary-600">Both work. Proactive is cleaner. Reactive handles edge cases like manual revocation.</p>
+    </section>
+
+    <!-- Refresh API Call -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Refresh API call</h2>
+      <p class="text-primary-600 mb-4">To get a new access token, POST to the token endpoint with <code class="bg-primary-100 px-1 rounded font-mono">grant_type: "refresh_token"</code>:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-javascript">{`const response = await fetch("https://inbox.dog/oauth/token", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    grant_type: "refresh_token",
+    refresh_token: "YOUR_REFRESH_TOKEN",
+    client_id: "YOUR_CLIENT_ID",
+    client_secret: "YOUR_CLIENT_SECRET"
+  })
+});
+
+const data = await response.json();`}</code></pre>
+      </div>
+    </section>
+
+    <!-- Response Shape -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Response shape</h2>
+      <p class="text-primary-600 mb-4">On success, you get a new access token:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "access_token": "ya29.a0ARrdaM...",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}`}</code></pre>
+      </div>
+      <p class="text-primary-600">The <code class="bg-primary-100 px-1 rounded font-mono">refresh_token</code> stays the same. You don't get a new one.</p>
+    </section>
+
+    <!-- Helper Function -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Complete helper function</h2>
+      <p class="text-primary-600 mb-4">Here's a complete TypeScript function that handles token refresh automatically:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-typescript">{`interface TokenCache {
+  access_token: string;
+  expires_at: number; // Unix timestamp in milliseconds
+}
+
+const tokens = new Map<string, TokenCache>();
+
+async function callGmailAPI(
+  refreshToken: string,
+  gmailApiUrl: string,
+  clientId: string,
+  clientSecret: string
+): Promise<any> {
+  // Check if we have a cached, valid token
+  let cached = tokens.get(refreshToken);
+
+  if (!cached || Date.now() >= cached.expires_at) {
+    // Token expired or missing — refresh it
+    const response = await fetch("https://inbox.dog/oauth/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+        client_id: clientId,
+        client_secret: clientSecret
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(\`Token refresh failed: \${error.error}\`);
+    }
+
+    const data = await response.json();
+
+    // Cache the new token (expires_in is in seconds)
+    cached = {
+      access_token: data.access_token,
+      expires_at: Date.now() + (data.expires_in * 1000) - 60000 // 1min buffer
+    };
+    tokens.set(refreshToken, cached);
+  }
+
+  // Make the Gmail API call with the valid token
+  const gmailResponse = await fetch(gmailApiUrl, {
+    headers: {
+      Authorization: \`Bearer \${cached.access_token}\`
+    }
+  });
+
+  return gmailResponse.json();
+}
+
+// Usage
+const messages = await callGmailAPI(
+  userRefreshToken,
+  "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+  process.env.CLIENT_ID!,
+  process.env.CLIENT_SECRET!
+);`}</code></pre>
+      </div>
+    </section>
+
+    <!-- Free Refresh -->
+    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-2">Refresh is FREE</h2>
+      <p class="text-primary-600 text-sm">Token refresh does not cost credits. You only pay for the initial OAuth flow. Refresh as many times as you need.</p>
+    </section>
+
+    <!-- Failure Mode -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Failure mode</h2>
+      <p class="text-primary-600 mb-4">If the user revokes access in their Google account settings, the refresh token becomes invalid. You'll get an error response:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "error": "TOKEN_EXCHANGE_FAILED"
+}`}</code></pre>
+      </div>
+      <p class="text-primary-600">When this happens, the user needs to re-authenticate. Send them back through the OAuth flow. See <a href="/docs/errors" class="text-primary-900 underline hover:text-primary-600">error handling docs</a> for details.</p>
+    </section>
+
+    <!-- Next Steps -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Next steps</h2>
+      <ul class="space-y-3">
+        <li><a href="/docs/api" class="text-primary-900 underline hover:text-primary-600">Full API reference</a></li>
+        <li><a href="/docs/errors" class="text-primary-900 underline hover:text-primary-600">Error codes &amp; troubleshooting</a></li>
+      </ul>
+    </section>
+  </div>
+</Layout>

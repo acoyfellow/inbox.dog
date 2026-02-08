@@ -14,6 +14,8 @@ Tokens work directly with Gmail API (gmail.googleapis.com).
 2. Redirect user: GET https://inbox.dog/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=YOUR_CALLBACK&scope=email
 3. Exchange code: POST https://inbox.dog/oauth/token with { code, client_id, client_secret }
 
+Full tutorial: https://inbox.dog/docs/tutorial
+
 ## API Endpoints
 
 ### POST /api/keys
@@ -100,6 +102,12 @@ Available tools:
 ## Links
 
 - Docs: https://inbox.dog/docs
+- Tutorial: https://inbox.dog/docs/tutorial
+- API Reference: https://inbox.dog/docs/api
+- Errors: https://inbox.dog/docs/errors
+- Next.js Guide: https://inbox.dog/docs/guides/nextjs
+- SvelteKit Guide: https://inbox.dog/docs/guides/sveltekit
+- OpenAPI Spec: https://inbox.dog/openapi.json
 - GitHub: https://github.com/acoyfellow/inbox.dog
 - MCP Server: https://github.com/acoyfellow/inbox.dog/tree/main/mcp
 - Pricing: https://inbox.dog/pricing
