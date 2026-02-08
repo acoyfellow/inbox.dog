@@ -53,7 +53,7 @@ const errorToResponse = (error: unknown): { status: number; body: StructuredErro
           code: 'INVALID_CREDENTIALS',
           message: error.message,
           action: 'Check your client_id and client_secret',
-          docs: 'https://inbox.dog/docs#authentication',
+          docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS',
         },
       },
     };
@@ -66,7 +66,7 @@ const errorToResponse = (error: unknown): { status: number; body: StructuredErro
           code: 'INSUFFICIENT_CREDITS',
           message: `No credits remaining. Current balance: ${error.credits}`,
           action: 'Purchase credits via POST /api/checkout',
-          docs: 'https://inbox.dog/docs#billing',
+          docs: 'https://inbox.dog/docs/errors#INSUFFICIENT_CREDITS',
         },
       },
     };
@@ -80,7 +80,7 @@ const errorToResponse = (error: unknown): { status: number; body: StructuredErro
           code,
           message: `${error.resource} not found: ${error.id}`,
           action: code === 'STATE_NOT_FOUND' || code === 'AUTH_CODE_NOT_FOUND' ? 'Restart the OAuth flow' : 'Check the endpoint URL and parameters',
-          docs: 'https://inbox.dog/docs#failure-modes',
+          docs: 'https://inbox.dog/docs/errors',
         },
       },
     };
@@ -93,7 +93,7 @@ const errorToResponse = (error: unknown): { status: number; body: StructuredErro
           code: 'STATE_NOT_FOUND',
           message: error.message,
           action: 'Restart the OAuth flow (states expire after 10 minutes)',
-          docs: 'https://inbox.dog/docs#failure-modes',
+          docs: 'https://inbox.dog/docs/errors',
         },
       },
     };
@@ -106,7 +106,7 @@ const errorToResponse = (error: unknown): { status: number; body: StructuredErro
           code: 'VALIDATION_ERROR',
           message: `${error.field}: ${error.message}`,
           action: 'Check the required fields for this endpoint',
-          docs: 'https://inbox.dog/docs#endpoints',
+          docs: 'https://inbox.dog/docs/api',
         },
       },
     };
@@ -119,7 +119,7 @@ const errorToResponse = (error: unknown): { status: number; body: StructuredErro
           code: 'TOKEN_EXCHANGE_FAILED',
           message: error.message,
           action: 'Retry the request or check Google OAuth configuration',
-          docs: 'https://inbox.dog/docs#failure-modes',
+          docs: 'https://inbox.dog/docs/errors',
         },
       },
     };
@@ -131,7 +131,7 @@ const errorToResponse = (error: unknown): { status: number; body: StructuredErro
         code: 'INTERNAL_ERROR',
         message: 'Internal server error',
         action: 'Retry the request. If the problem persists, check https://inbox.dog/health',
-        docs: 'https://inbox.dog/docs#error-codes',
+        docs: 'https://inbox.dog/docs/errors',
       },
     },
   };
@@ -145,7 +145,7 @@ oauthRoutes.get('/authorize', async (c) => {
   const scope = c.req.query('scope') ?? 'email';
 
   if (!clientId || !redirectUri) {
-    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing client_id or redirect_uri', action: 'Provide both client_id and redirect_uri query parameters', docs: 'https://inbox.dog/docs#endpoints' } }, 400);
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing client_id or redirect_uri', action: 'Provide both client_id and redirect_uri query parameters', docs: 'https://inbox.dog/docs/api' } }, 400);
   }
 
   const program = Effect.gen(function* () {
@@ -190,11 +190,11 @@ oauthRoutes.get('/callback', async (c) => {
   const error = c.req.query('error');
 
   if (error) {
-    return c.json({ error: { code: 'OAUTH_ERROR', message: `OAuth error: ${error}`, action: 'User may have denied consent. Restart the OAuth flow.', docs: 'https://inbox.dog/docs#failure-modes' } }, 400);
+    return c.json({ error: { code: 'OAUTH_ERROR', message: `OAuth error: ${error}`, action: 'User may have denied consent. Restart the OAuth flow.', docs: 'https://inbox.dog/docs/errors' } }, 400);
   }
 
   if (!code || !stateId) {
-    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing code or state', action: 'This endpoint is called automatically during the OAuth callback', docs: 'https://inbox.dog/docs#endpoints' } }, 400);
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing code or state', action: 'This endpoint is called automatically during the OAuth callback', docs: 'https://inbox.dog/docs/api' } }, 400);
   }
 
   const program = Effect.gen(function* () {
@@ -264,7 +264,7 @@ oauthRoutes.post('/token', async (c) => {
   const { code, client_id, client_secret } = body;
 
   if (!code || !client_id || !client_secret) {
-    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing required fields: code, client_id, and client_secret are required', action: 'Provide code (from OAuth callback), client_id, and client_secret in the request body', docs: 'https://inbox.dog/docs#endpoints' } }, 400);
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing required fields: code, client_id, and client_secret are required', action: 'Provide code (from OAuth callback), client_id, and client_secret in the request body', docs: 'https://inbox.dog/docs/api' } }, 400);
   }
 
   const program = Effect.gen(function* () {
@@ -318,7 +318,7 @@ async function handleRefreshToken(
   const { refresh_token, client_id, client_secret } = body;
 
   if (!refresh_token || !client_id || !client_secret) {
-    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing required fields: refresh_token, client_id, and client_secret are required', action: 'Provide refresh_token, client_id, and client_secret in the request body with grant_type=refresh_token', docs: 'https://inbox.dog/docs#endpoints' } }, 400);
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing required fields: refresh_token, client_id, and client_secret are required', action: 'Provide refresh_token, client_id, and client_secret in the request body with grant_type=refresh_token', docs: 'https://inbox.dog/docs/api' } }, 400);
   }
 
   const program = Effect.gen(function* () {

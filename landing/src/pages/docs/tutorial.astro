@@ -1,0 +1,149 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Tutorial">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">Get Gmail OAuth Working in 5 Minutes</h1>
+    <p class="text-primary-600 mb-12">Build a Node.js app that authenticates a user with Gmail and displays their email address. No OAuth knowledge required.</p>
+
+    <!-- What you'll build -->
+    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-2">What you'll build</h2>
+      <p class="text-primary-600 text-sm">A minimal Express server with one button: "Connect Gmail." When clicked, the user authenticates with Google, and your app receives their email address and API tokens. The entire app is under 50 lines of code.</p>
+    </section>
+
+    <!-- Prerequisites -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Prerequisites</h2>
+      <ul class="list-disc list-inside text-primary-600 space-y-1">
+        <li>Node.js 18 or higher</li>
+        <li>A terminal</li>
+      </ul>
+    </section>
+
+    <!-- Step 1 -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Step 1: Create an inbox.dog API key</h2>
+      <p class="text-primary-600 mb-4">Run this in your terminal:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`curl -s -X POST https://inbox.dog/api/keys \\
+  -H "Content-Type: application/json" \\
+  -d '{"name": "tutorial"}' | npx -y json`}</code></pre>
+      </div>
+      <p class="text-primary-600 mb-4">You'll get back something like:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "client_id": "id_abc123def456...",
+  "client_secret": "sk_xyz789ghi012...",
+  "name": "tutorial",
+  "credits": 10
+}`}</code></pre>
+      </div>
+      <p class="text-primary-600">Save both values. You'll need them in the next step.</p>
+    </section>
+
+    <!-- Step 2 -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Step 2: Create the app</h2>
+      <p class="text-primary-600 mb-4">Set up the project:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-6">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`mkdir inbox-dog-tutorial && cd inbox-dog-tutorial
+npm init -y
+npm install express`}</code></pre>
+      </div>
+      <p class="text-primary-600 mb-4">Create <code class="bg-primary-100 px-1 rounded font-mono">server.js</code> with this content:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
+        <pre class="text-primary-100 font-mono"><code class="language-javascript">{`const express = require("express");
+const app = express();
+
+const CLIENT_ID = "YOUR_CLIENT_ID";       // Replace with your client_id
+const CLIENT_SECRET = "YOUR_CLIENT_SECRET"; // Replace with your client_secret
+const REDIRECT_URI = "http://localhost:3000/callback";
+
+// Home page with "Connect Gmail" button
+app.get("/", (req, res) => {
+  res.send(\`
+    <h1>inbox.dog Tutorial</h1>
+    <a href="https://inbox.dog/oauth/authorize?client_id=\${CLIENT_ID}&redirect_uri=\${encodeURIComponent(REDIRECT_URI)}&scope=email">
+      Connect Gmail
+    </a>
+  \`);
+});
+
+// OAuth callback — exchange code for tokens
+app.get("/callback", async (req, res) => {
+  const { code } = req.query;
+  if (!code) return res.send("Error: no code received");
+
+  const response = await fetch("https://inbox.dog/oauth/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      code,
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET,
+    }),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    return res.send(\`<h1>Error</h1><pre>\${JSON.stringify(data, null, 2)}</pre>\`);
+  }
+
+  res.send(\`
+    <h1>Connected!</h1>
+    <p><strong>Email:</strong> \${data.email}</p>
+    <p><strong>Access Token:</strong> \${data.access_token.slice(0, 20)}...</p>
+    <p><strong>Refresh Token:</strong> \${data.refresh_token.slice(0, 20)}...</p>
+    <p>This access token works directly with the
+      <a href="https://developers.google.com/gmail/api/reference/rest">Gmail API</a>.</p>
+  \`);
+});
+
+app.listen(3000, () => console.log("Open http://localhost:3000"));`}</code></pre>
+      </div>
+    </section>
+
+    <!-- Step 3 -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Step 3: Run it</h2>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`node server.js`}</code></pre>
+      </div>
+      <ol class="list-decimal list-inside text-primary-600 space-y-2">
+        <li>Open <a href="http://localhost:3000" class="text-primary-900 underline">http://localhost:3000</a></li>
+        <li>Click <strong>"Connect Gmail"</strong></li>
+        <li>Sign in with your Google account and grant permission</li>
+        <li>You'll be redirected back with your email and tokens</li>
+      </ol>
+    </section>
+
+    <!-- What just happened -->
+    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-3">What just happened</h2>
+      <ol class="list-decimal list-inside text-primary-600 space-y-2 text-sm">
+        <li>Your app redirected the user to <code class="bg-primary-100 px-1 rounded font-mono">inbox.dog/oauth/authorize</code></li>
+        <li>inbox.dog redirected them to Google's consent screen</li>
+        <li>After consent, Google redirected back to inbox.dog, which redirected to your <code class="bg-primary-100 px-1 rounded font-mono">/callback</code> with a short-lived code</li>
+        <li>Your app exchanged that code for an <code class="bg-primary-100 px-1 rounded font-mono">access_token</code> and <code class="bg-primary-100 px-1 rounded font-mono">refresh_token</code></li>
+        <li>The <code class="bg-primary-100 px-1 rounded font-mono">access_token</code> works directly with <code class="bg-primary-100 px-1 rounded font-mono">gmail.googleapis.com</code> for 1 hour</li>
+        <li>Use the <code class="bg-primary-100 px-1 rounded font-mono">refresh_token</code> to get a new access token when it expires (free, no credit cost)</li>
+      </ol>
+    </section>
+
+    <!-- Next steps -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Next steps</h2>
+      <ul class="space-y-3">
+        <li><a href="/docs/guides/nextjs" class="text-primary-900 underline hover:text-primary-600">Add Gmail OAuth to Next.js</a></li>
+        <li><a href="/docs/guides/sveltekit" class="text-primary-900 underline hover:text-primary-600">Add Gmail OAuth to SvelteKit</a></li>
+        <li><a href="/docs/guides/refresh" class="text-primary-900 underline hover:text-primary-600">Handle token refresh</a></li>
+        <li><a href="/docs/api" class="text-primary-900 underline hover:text-primary-600">Full API reference</a></li>
+        <li><a href="/docs/errors" class="text-primary-900 underline hover:text-primary-600">Error codes &amp; troubleshooting</a></li>
+      </ul>
+    </section>
+  </div>
+</Layout>

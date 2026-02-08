@@ -1,0 +1,77 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="How inbox.dog Works">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">How inbox.dog Works</h1>
+    <p class="text-primary-600 mb-8">inbox.dog is an OAuth proxy. It handles the Google OAuth 2.0 flow so you don't have to.</p>
+
+    <!-- Architecture -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Architecture</h2>
+      <div class="bg-primary-900 rounded-lg p-6 text-sm overflow-x-auto mb-6">
+        <pre class="text-primary-100 font-mono text-center"><code>{`┌─────────────┐    ┌──────────────┐    ┌─────────────┐
+│  Your App   │───▶│  inbox.dog   │───▶│   Google    │
+│             │◀───│              │◀───│   OAuth     │
+└─────────────┘    └──────────────┘    └─────────────┘`}</code></pre>
+      </div>
+      <ol class="list-decimal list-inside text-primary-600 space-y-2">
+        <li>Your app redirects the user to <code class="bg-primary-100 px-1 rounded font-mono">inbox.dog/oauth/authorize</code></li>
+        <li>inbox.dog redirects the user to Google's consent screen with the correct scopes and credentials</li>
+        <li>The user authenticates with Google and grants permission</li>
+        <li>Google redirects back to inbox.dog with an authorization code</li>
+        <li>inbox.dog redirects the user to your <code class="bg-primary-100 px-1 rounded font-mono">redirect_uri</code> with a short-lived code</li>
+        <li>Your app exchanges that code for tokens via <code class="bg-primary-100 px-1 rounded font-mono">POST /oauth/token</code></li>
+        <li>The tokens work directly with <code class="bg-primary-100 px-1 rounded font-mono">gmail.googleapis.com</code> — inbox.dog is no longer in the path</li>
+      </ol>
+    </section>
+
+    <!-- What inbox.dog stores -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">What inbox.dog stores</h2>
+      <table class="w-full text-sm">
+        <thead class="bg-primary-100">
+          <tr>
+            <th class="text-left p-2 text-primary-900">Data</th>
+            <th class="text-left p-2 text-primary-900">Stored by inbox.dog</th>
+            <th class="text-left p-2 text-primary-900">Notes</th>
+          </tr>
+        </thead>
+        <tbody class="text-primary-600">
+          <tr class="border-b border-primary-200"><td class="p-2">Your API key (client_id, client_secret)</td><td class="p-2">Yes</td><td class="p-2">In Cloudflare KV</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">OAuth state (CSRF token)</td><td class="p-2">Temporarily</td><td class="p-2">Expires after 10 minutes</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">Authorization codes</td><td class="p-2">Temporarily</td><td class="p-2">Expires after 5 minutes</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">Access tokens</td><td class="p-2">No</td><td class="p-2">Returned to you, never stored</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">Refresh tokens</td><td class="p-2">No</td><td class="p-2">Returned to you, never stored</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">User emails</td><td class="p-2">No</td><td class="p-2">inbox.dog never reads email content</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Security -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Security model</h2>
+      <ul class="list-disc list-inside text-primary-600 space-y-2">
+        <li>inbox.dog never sees or stores your users' emails, tokens, or email content</li>
+        <li>Tokens are passed through to your app and discarded</li>
+        <li>All traffic is HTTPS</li>
+        <li>OAuth state tokens prevent CSRF attacks</li>
+        <li>Authorization codes are single-use and expire in 5 minutes</li>
+        <li>The entire codebase is <a href="https://github.com/acoyfellow/inbox.dog" class="text-primary-900 underline">open source (MIT)</a> — audit it yourself</li>
+      </ul>
+    </section>
+
+    <!-- Tech Stack -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Tech stack</h2>
+      <ul class="list-disc list-inside text-primary-600 space-y-1">
+        <li><a href="https://effect.website" class="text-primary-900 underline">Effect-TS</a> — Type-safe error handling and services</li>
+        <li><a href="https://hono.dev" class="text-primary-900 underline">Hono</a> — Web framework for Cloudflare Workers</li>
+        <li><a href="https://astro.build" class="text-primary-900 underline">Astro</a> — Static landing page and docs</li>
+        <li><strong>Cloudflare Workers</strong> — Edge deployment, KV storage</li>
+      </ul>
+    </section>
+  </div>
+</Layout>

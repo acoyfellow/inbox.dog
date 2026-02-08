@@ -1,0 +1,295 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="API Reference">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">API Reference</h1>
+    <p class="text-primary-600 mb-2">Base URL: <code class="bg-primary-100 px-1 rounded font-mono">https://inbox.dog</code></p>
+    <p class="text-primary-500 text-sm mb-8">All endpoints accept and return JSON. CORS is enabled on all API and OAuth routes.</p>
+
+    <!-- Authentication -->
+    <section id="authentication" class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Authentication</h2>
+      <p class="text-primary-600 mb-4">
+        Authenticated requests use your <code class="bg-primary-100 px-1 rounded font-mono">client_id</code> and <code class="bg-primary-100 px-1 rounded font-mono">client_secret</code>, obtained from <code class="bg-primary-100 px-1 rounded font-mono">POST /api/keys</code>.
+      </p>
+      <table class="w-full text-sm mb-4">
+        <thead class="bg-primary-100">
+          <tr>
+            <th class="text-left p-2 text-primary-900">Credential</th>
+            <th class="text-left p-2 text-primary-900">Format</th>
+            <th class="text-left p-2 text-primary-900">Usage</th>
+          </tr>
+        </thead>
+        <tbody class="text-primary-600">
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono">client_id</td><td class="p-2">id_...</td><td class="p-2">Query param or request body</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono">client_secret</td><td class="p-2">sk_...</td><td class="p-2">Request body or X-Client-Secret header</td></tr>
+        </tbody>
+      </table>
+      <p class="text-primary-500 text-sm">Never expose <code class="bg-primary-100 px-1 rounded font-mono">client_secret</code> in client-side code.</p>
+    </section>
+
+    <!-- Endpoints -->
+    <section id="endpoints" class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 text-primary-900">Endpoints</h2>
+
+      <!-- POST /api/keys -->
+      <div id="post-api-keys" class="mb-10 border border-primary-200 rounded-lg overflow-hidden">
+        <div class="bg-primary-100 px-4 py-3 flex items-center gap-3">
+          <span class="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded">POST</span>
+          <code class="font-mono text-primary-900">/api/keys</code>
+          <span class="text-primary-500 text-sm ml-auto">Create API key</span>
+        </div>
+        <div class="p-4">
+          <p class="text-primary-600 text-sm mb-3">Create a new API key. Returns credentials and 10 free credits. No authentication required.</p>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Request Body</h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto mb-3">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "name": "my-app"  // optional, defaults to "default"
+}`}</code></pre>
+          </div>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Response <span class="text-primary-400 font-normal">200</span></h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "client_id": "id_abc123...",
+  "client_secret": "sk_xyz789...",
+  "name": "my-app",
+  "credits": 10
+}`}</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /api/keys/:clientId -->
+      <div id="get-api-keys" class="mb-10 border border-primary-200 rounded-lg overflow-hidden">
+        <div class="bg-primary-100 px-4 py-3 flex items-center gap-3">
+          <span class="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">GET</span>
+          <code class="font-mono text-primary-900">/api/keys/{'{client_id}'}</code>
+          <span class="text-primary-500 text-sm ml-auto">Get key info</span>
+        </div>
+        <div class="p-4">
+          <p class="text-primary-600 text-sm mb-3">Retrieve API key details including remaining credits.</p>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Headers</h4>
+          <table class="w-full text-sm mb-3">
+            <tbody class="text-primary-600">
+              <tr class="border-b border-primary-200">
+                <td class="p-2 font-mono">X-Client-Secret</td>
+                <td class="p-2">Required. Your client secret.</td>
+              </tr>
+            </tbody>
+          </table>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Response <span class="text-primary-400 font-normal">200</span></h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "client_id": "id_abc123...",
+  "name": "my-app",
+  "credits": 10,
+  "created_at": 1700000000000
+}`}</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- GET /oauth/authorize -->
+      <div id="oauth-authorize" class="mb-10 border border-primary-200 rounded-lg overflow-hidden">
+        <div class="bg-primary-100 px-4 py-3 flex items-center gap-3">
+          <span class="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">GET</span>
+          <code class="font-mono text-primary-900">/oauth/authorize</code>
+          <span class="text-primary-500 text-sm ml-auto">Start OAuth flow</span>
+        </div>
+        <div class="p-4">
+          <p class="text-primary-600 text-sm mb-3">Redirects the user to Google's consent screen.</p>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Query Parameters</h4>
+          <table class="w-full text-sm mb-3">
+            <thead class="bg-primary-50">
+              <tr>
+                <th class="text-left p-2 text-primary-900">Parameter</th>
+                <th class="text-left p-2 text-primary-900">Required</th>
+                <th class="text-left p-2 text-primary-900">Description</th>
+              </tr>
+            </thead>
+            <tbody class="text-primary-600">
+              <tr class="border-b border-primary-200"><td class="p-2 font-mono">client_id</td><td class="p-2">Yes</td><td class="p-2">Your API key client ID</td></tr>
+              <tr class="border-b border-primary-200"><td class="p-2 font-mono">redirect_uri</td><td class="p-2">Yes</td><td class="p-2">URL to redirect after authentication</td></tr>
+              <tr class="border-b border-primary-200"><td class="p-2 font-mono">scope</td><td class="p-2">No</td><td class="p-2">Permission scope. Default: <code class="font-mono">email</code></td></tr>
+              <tr class="border-b border-primary-200"><td class="p-2 font-mono">state</td><td class="p-2">No</td><td class="p-2">Opaque value for CSRF protection, passed back in redirect</td></tr>
+            </tbody>
+          </table>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Callback</h4>
+          <p class="text-primary-600 text-sm">After consent, the user is redirected to:</p>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto mt-2">
+            <pre class="text-primary-100 font-mono"><code>{`https://yourapp.com/callback?code=AUTH_CODE&state=YOUR_STATE`}</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST /oauth/token (authorization_code) -->
+      <div id="oauth-token" class="mb-10 border border-primary-200 rounded-lg overflow-hidden">
+        <div class="bg-primary-100 px-4 py-3 flex items-center gap-3">
+          <span class="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded">POST</span>
+          <code class="font-mono text-primary-900">/oauth/token</code>
+          <span class="text-primary-500 text-sm ml-auto">Exchange code for tokens</span>
+        </div>
+        <div class="p-4">
+          <p class="text-primary-600 text-sm mb-3">Exchange an authorization code for access and refresh tokens. Costs 1 credit. Auth codes expire after 5 minutes.</p>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Request Body</h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto mb-3">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "code": "AUTH_CODE_FROM_CALLBACK",
+  "client_id": "YOUR_CLIENT_ID",
+  "client_secret": "YOUR_CLIENT_SECRET"
+}`}</code></pre>
+          </div>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Response <span class="text-primary-400 font-normal">200</span></h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "access_token": "ya29.a0AfH6...",
+  "refresh_token": "1//0eXyz...",
+  "token_type": "Bearer",
+  "expires_in": 3600,
+  "email": "user@example.com"
+}`}</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST /oauth/token (refresh_token) -->
+      <div id="oauth-refresh" class="mb-10 border border-primary-200 rounded-lg overflow-hidden">
+        <div class="bg-primary-100 px-4 py-3 flex items-center gap-3">
+          <span class="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded">POST</span>
+          <code class="font-mono text-primary-900">/oauth/token</code>
+          <span class="text-primary-500 text-sm ml-auto">Refresh access token</span>
+        </div>
+        <div class="p-4">
+          <p class="text-primary-600 text-sm mb-3">Use a refresh token to obtain a new access token. Free — no credit cost.</p>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Request Body</h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto mb-3">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "grant_type": "refresh_token",
+  "refresh_token": "YOUR_REFRESH_TOKEN",
+  "client_id": "YOUR_CLIENT_ID",
+  "client_secret": "YOUR_CLIENT_SECRET"
+}`}</code></pre>
+          </div>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Response <span class="text-primary-400 font-normal">200</span></h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "access_token": "ya29.a0AfH6...",
+  "token_type": "Bearer",
+  "expires_in": 3600
+}`}</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- POST /api/checkout -->
+      <div id="api-checkout" class="mb-10 border border-primary-200 rounded-lg overflow-hidden">
+        <div class="bg-primary-100 px-4 py-3 flex items-center gap-3">
+          <span class="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded">POST</span>
+          <code class="font-mono text-primary-900">/api/checkout</code>
+          <span class="text-primary-500 text-sm ml-auto">Purchase credits</span>
+        </div>
+        <div class="p-4">
+          <p class="text-primary-600 text-sm mb-3">Create a Stripe checkout session to purchase additional credits.</p>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Request Body</h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto mb-3">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "client_id": "YOUR_CLIENT_ID",
+  "client_secret": "YOUR_CLIENT_SECRET",
+  "credits": 100  // optional, defaults to 100
+}`}</code></pre>
+          </div>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Response <span class="text-primary-400 font-normal">200</span></h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "checkout_url": "https://checkout.stripe.com/c/pay/...",
+  "session_id": "cs_live_..."
+}`}</code></pre>
+          </div>
+          <p class="text-primary-500 text-sm mt-2">Redirect the user to <code class="bg-primary-100 px-1 rounded font-mono">checkout_url</code> to complete payment.</p>
+        </div>
+      </div>
+
+      <!-- GET /health -->
+      <div id="health" class="mb-10 border border-primary-200 rounded-lg overflow-hidden">
+        <div class="bg-primary-100 px-4 py-3 flex items-center gap-3">
+          <span class="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded">GET</span>
+          <code class="font-mono text-primary-900">/health</code>
+          <span class="text-primary-500 text-sm ml-auto">Health check</span>
+        </div>
+        <div class="p-4">
+          <p class="text-primary-600 text-sm mb-3">Check if the service is running.</p>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Response <span class="text-primary-400 font-normal">200</span></h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{ "status": "ok", "service": "inbox.dog-oauth" }`}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scopes -->
+    <section id="scopes" class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Scopes</h2>
+      <p class="text-primary-600 mb-4">Pass the <code class="bg-primary-100 px-1 rounded font-mono">scope</code> parameter to <code class="bg-primary-100 px-1 rounded font-mono">/oauth/authorize</code> to control Gmail permissions.</p>
+      <table class="w-full text-sm">
+        <thead class="bg-primary-100">
+          <tr>
+            <th class="text-left p-2 text-primary-900">Scope</th>
+            <th class="text-left p-2 text-primary-900">Gmail Permission</th>
+            <th class="text-left p-2 text-primary-900">Google Scope</th>
+          </tr>
+        </thead>
+        <tbody class="text-primary-600">
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono">email</td><td class="p-2">Read-only access (default)</td><td class="p-2 font-mono text-xs">gmail.readonly + userinfo.email</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono">email:read</td><td class="p-2">Read-only access</td><td class="p-2 font-mono text-xs">gmail.readonly + userinfo.email</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono">email:send</td><td class="p-2">Send emails only</td><td class="p-2 font-mono text-xs">gmail.send + userinfo.email</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono">email:full</td><td class="p-2">Full access (read, send, modify)</td><td class="p-2 font-mono text-xs">gmail.modify + userinfo.email</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Rate Limits -->
+    <section id="rate-limits" class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Rate Limits &amp; Quotas</h2>
+      <table class="w-full text-sm">
+        <thead class="bg-primary-100">
+          <tr>
+            <th class="text-left p-2 text-primary-900">Limit</th>
+            <th class="text-left p-2 text-primary-900">Value</th>
+            <th class="text-left p-2 text-primary-900">Notes</th>
+          </tr>
+        </thead>
+        <tbody class="text-primary-600">
+          <tr class="border-b border-primary-200"><td class="p-2">OAuth state TTL</td><td class="p-2">10 minutes</td><td class="p-2">User must complete consent within this window</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">Authorization code TTL</td><td class="p-2">5 minutes</td><td class="p-2">Exchange the code promptly after callback</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">Access token lifetime</td><td class="p-2">3600 seconds (1 hour)</td><td class="p-2">Set by Google. Use refresh token to renew.</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">Credits per exchange</td><td class="p-2">1 credit</td><td class="p-2">Only on POST /oauth/token with authorization_code</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">Token refresh cost</td><td class="p-2">Free</td><td class="p-2">No credit charge</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Billing -->
+    <section id="billing" class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Billing</h2>
+      <table class="w-full text-sm mb-4">
+        <thead class="bg-primary-100">
+          <tr>
+            <th class="text-left p-2 text-primary-900">Item</th>
+            <th class="text-left p-2 text-primary-900">Cost</th>
+          </tr>
+        </thead>
+        <tbody class="text-primary-600">
+          <tr class="border-b border-primary-200"><td class="p-2">New API key</td><td class="p-2">Free (includes 10 credits)</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">OAuth token exchange</td><td class="p-2">1 credit ($0.10)</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">Token refresh</td><td class="p-2">Free</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">Additional credits</td><td class="p-2">$0.10 per credit via Stripe</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">Self-hosted</td><td class="p-2">Free (MIT license)</td></tr>
+        </tbody>
+      </table>
+      <p class="text-primary-600 text-sm">Credits are only deducted on successful token exchanges. Failed flows, denied consent, and refreshes are free.</p>
+    </section>
+  </div>
+</Layout>
