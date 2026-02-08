@@ -46,6 +46,24 @@ Built with:
 - **[Astro](https://astro.build)** - Static landing page
 - **Cloudflare Workers** - Edge deployment
 
+## npm Package
+
+```bash
+npm install inbox.dog
+```
+
+```ts
+import { InboxDog } from "inbox.dog";
+
+const dog = new InboxDog();
+const key = await dog.createKey("my-app");
+const url = dog.getAuthUrl({ clientId: key.client_id, redirectUri: "http://localhost:3000/callback" });
+// redirect user → exchange code → get tokens
+const tokens = await dog.exchangeCode(code, key.client_id, key.client_secret);
+```
+
+See [`package/README.md`](package/README.md) for full API docs.
+
 ## MCP Server (Agent Integration)
 
 inbox.dog includes an MCP server so AI agents can handle Gmail OAuth directly:
@@ -76,6 +94,8 @@ Tools: `inbox_dog_create_key`, `inbox_dog_oauth_start`, `inbox_dog_exchange_code
 │   │   ├── schemas.ts
 │   │   └── errors.ts # Tagged errors
 │   └── wrangler.toml
+├── package/          # npm package (inbox.dog)
+│   └── src/index.ts  # TypeScript client library
 ├── mcp/              # MCP server for agent integration
 │   └── src/index.ts  # stdio MCP server
 ├── e2e/              # End-to-end tests

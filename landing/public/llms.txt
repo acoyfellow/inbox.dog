@@ -74,6 +74,23 @@ $0.10 per OAuth token exchange. 10 free credits on signup.
 Token refresh is free.
 Self-host option available (MIT license).
 
+## npm Package
+
+Install: npm install inbox.dog
+
+```typescript
+import { InboxDog } from "inbox.dog";
+const dog = new InboxDog();
+const key = await dog.createKey("my-app");
+const url = dog.getAuthUrl({ clientId: key.client_id, redirectUri: "http://localhost:3000/callback" });
+const tokens = await dog.exchangeCode(code, key.client_id, key.client_secret);
+// tokens.access_token works with gmail.googleapis.com
+```
+
+Methods: createKey, getKey, getAuthUrl, exchangeCode, refreshToken, checkout
+All errors throw InboxDogError with { code, status, message, action, docs }.
+Package source: https://github.com/acoyfellow/inbox.dog/tree/main/package
+
 ## MCP Server
 
 inbox.dog has an MCP (Model Context Protocol) server for direct agent integration.
@@ -108,6 +125,7 @@ Available tools:
 - Next.js Guide: https://inbox.dog/docs/guides/nextjs
 - SvelteKit Guide: https://inbox.dog/docs/guides/sveltekit
 - OpenAPI Spec: https://inbox.dog/openapi.json
+- npm: https://www.npmjs.com/package/inbox.dog
 - GitHub: https://github.com/acoyfellow/inbox.dog
 - MCP Server: https://github.com/acoyfellow/inbox.dog/tree/main/mcp
 - Pricing: https://inbox.dog/pricing
