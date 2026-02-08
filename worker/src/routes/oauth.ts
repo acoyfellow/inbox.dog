@@ -3,7 +3,7 @@ import { Effect, pipe, Layer, ManagedRuntime } from 'effect';
 import type { Env } from '../types';
 import { GoogleOAuthService, GoogleOAuthServiceLive } from '../services/google';
 import { KVService, KVServiceLive } from '../services/kv';
-import { generateId } from '../utils';
+import { generateId, timingSafeEqual } from '../utils';
 import {
   InvalidCredentialsError,
   InsufficientCreditsError,
@@ -152,8 +152,20 @@ oauthRoutes.get('/authorize', async (c) => {
     const kv = yield* KVService;
     const google = yield* GoogleOAuthService;
 
-    // Validate client exists
-    yield* kv.getApiKey(clientId);
+    // Validate client exists and check redirect_uri allowlist
+    const apiKey = yield* kv.getApiKey(clientId);
+    if (apiKey.redirectUris && apiKey.redirectUris.length > 0) {
+      const normalizedRedirect = new URL(redirectUri).origin + new URL(redirectUri).pathname;
+      const allowed = apiKey.redirectUris.some((uri) => {
+        const normalizedAllowed = new URL(uri).origin + new URL(uri).pathname;
+        return normalizedRedirect === normalizedAllowed;
+      });
+      if (!allowed) {
+        return yield* Effect.fail(
+          new ValidationError({ field: 'redirect_uri', message: `redirect_uri not in allowlist. Register URIs when creating your API key.` })
+        );
+      }
+    }
 
     // Store OAuth state
     const oauthStateId = generateId();
@@ -240,7 +252,8 @@ oauthRoutes.get('/callback', async (c) => {
   if (result.ok) {
     return c.redirect(result.value);
   }
-  console.error('OAuth callback error:', result.error);
+  const errTag = result.error instanceof Error ? result.error.constructor.name : 'UnknownError';
+  console.error('OAuth callback error:', errTag);
   const { status, body: errBody } = errorToResponse(result.error);
   return c.json(errBody, status as 400 | 401 | 500);
 });
@@ -273,7 +286,8 @@ oauthRoutes.post('/token', async (c) => {
     // Validate credentials and get API key
     const apiKey = yield* kv.getApiKey(client_id);
 
-    if (apiKey.clientSecret !== client_secret) {
+    const secretMatch = yield* Effect.promise(() => timingSafeEqual(apiKey.clientSecret, client_secret));
+    if (!secretMatch) {
       return yield* Effect.fail(new InvalidCredentialsError({ message: 'Invalid client_secret' }));
     }
 
@@ -305,6 +319,7 @@ oauthRoutes.post('/token', async (c) => {
 
   const result = await runWithServices(program, c.env);
   if (result.ok) {
+    c.header('Cache-Control', 'no-store');
     return c.json(result.value);
   }
   const { status, body: errBody } = errorToResponse(result.error);
@@ -312,7 +327,7 @@ oauthRoutes.post('/token', async (c) => {
 });
 
 async function handleRefreshToken(
-  c: { env: Env; json: (data: unknown, status?: number) => Response },
+  c: { env: Env; json: (data: unknown, status?: number) => Response; header: (name: string, value: string) => void },
   body: { refresh_token?: string; client_id?: string; client_secret?: string }
 ) {
   const { refresh_token, client_id, client_secret } = body;
@@ -328,7 +343,8 @@ async function handleRefreshToken(
     // Validate credentials
     const apiKey = yield* kv.getApiKey(client_id);
 
-    if (apiKey.clientSecret !== client_secret) {
+    const refreshSecretMatch = yield* Effect.promise(() => timingSafeEqual(apiKey.clientSecret, client_secret));
+    if (!refreshSecretMatch) {
       return yield* Effect.fail(new InvalidCredentialsError({ message: 'Invalid credentials' }));
     }
 
@@ -348,6 +364,7 @@ async function handleRefreshToken(
 
   const result = await runWithServices(program, c.env);
   if (result.ok) {
+    c.header('Cache-Control', 'no-store');
     return c.json(result.value);
   }
   const { status, body: errorBody } = errorToResponse(result.error);

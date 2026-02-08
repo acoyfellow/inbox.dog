@@ -1,14 +1,27 @@
 import { Hono } from 'hono';
 import type { Env, ApiKey } from '../types';
-import { generateId, generateSecret } from '../utils';
+import { generateId, generateSecret, timingSafeEqual } from '../utils';
 
 export const apiRoutes = new Hono<{ Bindings: Env }>();
 
 // Create API key (for dashboard/admin use)
-// POST /api/keys { name }
+// POST /api/keys { name, redirect_uris }
 apiRoutes.post('/keys', async (c) => {
-  const body = await c.req.json<{ name?: string }>();
+  const body = await c.req.json<{ name?: string; redirect_uris?: string[] }>();
   const name = body.name ?? 'default';
+  const redirectUris = body.redirect_uris ?? [];
+
+  // Validate redirect URIs: must be valid URLs with https (or http for localhost)
+  for (const uri of redirectUris) {
+    try {
+      const parsed = new URL(uri);
+      if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && parsed.hostname === 'localhost')) {
+        return c.json({ error: { code: 'VALIDATION_ERROR', message: `Invalid redirect_uri: ${uri}. Must use HTTPS (or HTTP for localhost).`, action: 'Provide valid HTTPS redirect URIs', docs: 'https://inbox.dog/docs/api' } }, 400);
+      }
+    } catch {
+      return c.json({ error: { code: 'VALIDATION_ERROR', message: `Invalid redirect_uri: ${uri}. Must be a valid URL.`, action: 'Provide valid redirect URIs', docs: 'https://inbox.dog/docs/api' } }, 400);
+    }
+  }
 
   const clientId = `id_${generateId()}`;
   const clientSecret = `sk_${generateSecret()}`;
@@ -20,15 +33,18 @@ apiRoutes.post('/keys', async (c) => {
     name,
     createdAt: Date.now(),
     credits: 10, // Start with 10 free credits
+    redirectUris,
   };
 
   await c.env.KV.put(`apikey:${clientId}`, JSON.stringify(apiKey));
 
+  c.header('Cache-Control', 'no-store');
   return c.json({
     client_id: clientId,
     client_secret: clientSecret,
     name,
     credits: apiKey.credits,
+    redirect_uris: redirectUris,
   });
 });
 
@@ -48,7 +64,7 @@ apiRoutes.get('/keys/:clientId', async (c) => {
   }
 
   const apiKey = JSON.parse(apiKeyJson) as ApiKey;
-  if (apiKey.clientSecret !== clientSecret) {
+  if (!await timingSafeEqual(apiKey.clientSecret, clientSecret)) {
     return c.json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', action: 'Check your client_secret', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 401);
   }
 
@@ -58,6 +74,31 @@ apiRoutes.get('/keys/:clientId', async (c) => {
     credits: apiKey.credits,
     created_at: apiKey.createdAt,
   });
+});
+
+// Delete API key and all associated data
+// DELETE /api/keys/:clientId
+apiRoutes.delete('/keys/:clientId', async (c) => {
+  const clientId = c.req.param('clientId');
+  const clientSecret = c.req.header('X-Client-Secret');
+
+  if (!clientSecret) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing X-Client-Secret header', action: 'Include your client_secret in the X-Client-Secret request header', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 401);
+  }
+
+  const apiKeyJson = await c.env.KV.get(`apikey:${clientId}`);
+  if (!apiKeyJson) {
+    return c.json({ error: { code: 'NOT_FOUND', message: 'API key not found', action: 'Check your client_id', docs: 'https://inbox.dog/docs/api' } }, 404);
+  }
+
+  const apiKey = JSON.parse(apiKeyJson) as ApiKey;
+  if (!await timingSafeEqual(apiKey.clientSecret, clientSecret)) {
+    return c.json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', action: 'Check your client_secret', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 401);
+  }
+
+  await c.env.KV.delete(`apikey:${clientId}`);
+
+  return c.json({ deleted: true, client_id: clientId });
 });
 
 // Create Stripe checkout session
@@ -82,7 +123,7 @@ apiRoutes.post('/checkout', async (c) => {
   }
 
   const apiKey = JSON.parse(apiKeyJson) as ApiKey;
-  if (apiKey.clientSecret !== client_secret) {
+  if (!await timingSafeEqual(apiKey.clientSecret, client_secret)) {
     return c.json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', action: 'Check your client_secret', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 401);
   }
 
@@ -111,8 +152,7 @@ apiRoutes.post('/checkout', async (c) => {
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    console.error('Stripe error:', error);
+    console.error('Stripe checkout error: HTTP', response.status);
     return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to create checkout session', action: 'Retry the request. If the problem persists, check https://inbox.dog/health', docs: 'https://inbox.dog/docs/errors' } }, 500);
   }
 

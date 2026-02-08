@@ -1,0 +1,237 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Passing Google's CASA Tier 2 Audit for Gmail OAuth" description="What we learned passing a CASA Tier 2 security audit for Gmail restricted scopes. The real checklist, actual costs, and every finding from the OWASP ZAP scan.">
+  <div class="max-w-3xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/blog" class="hover:text-primary-600">&larr; Blog</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900 leading-tight">Passing Google's CASA Tier 2 Audit for Gmail OAuth</h1>
+    <p class="text-primary-500 text-sm mb-8">The real checklist, actual costs, and every finding from the OWASP ZAP scan.</p>
+
+    <article class="prose-custom">
+      <h2>What is CASA Tier 2?</h2>
+      <p>If your app uses Gmail's restricted OAuth scopes (<code>gmail.readonly</code>, <code>gmail.send</code>, <code>gmail.modify</code>), Google requires a <a href="https://appdefensealliance.dev/casa">Cloud Application Security Assessment (CASA)</a> before your app can go to production. Without it, your OAuth consent screen stays in "Testing" mode — capped at 100 users, with a scary warning screen.</p>
+
+      <p>CASA has multiple tiers. Tier 2 is the one that applies to most apps using restricted scopes. It requires:</p>
+      <ol>
+        <li>An OWASP ZAP DAST scan of your entire application</li>
+        <li>Assessment by an authorized lab (from the App Defense Alliance list)</li>
+        <li>Remediation of all findings</li>
+        <li>A Letter of Validation (LOV) submitted to Google</li>
+        <li>Annual recertification</li>
+      </ol>
+
+      <p>This post covers what we actually encountered when inbox.dog went through the process.</p>
+
+      <h2>Choosing an assessor</h2>
+      <p>Google maintains a list of authorized CASA assessors. We used <a href="https://tacsecurity.com">TAC Security</a> and their ESOF AppSec ADA platform. Cost was around $550. Some assessors charge more.</p>
+      <p>The process:</p>
+      <ol>
+        <li>Submit your app URL and OAuth scopes to the assessor</li>
+        <li>They run an automated OWASP ZAP scan against all your endpoints</li>
+        <li>You get a report with findings categorized by severity</li>
+        <li>Fix the findings, request a rescan</li>
+        <li>Once clean, they issue a Letter of Validation</li>
+        <li>Submit the LOV to Google via the API verification form</li>
+      </ol>
+      <p>Turnaround was about a week from initial scan to LOV. The scan itself runs in a day.</p>
+
+      <h2>What the scan actually found</h2>
+      <p>Our first scan scored 9.7 out of 10. Ten findings total: 1 Low severity, 9 Informational. All were headers and configuration — no critical vulnerabilities.</p>
+
+      <p>Here's the exact list:</p>
+
+      <div class="overflow-x-auto mb-6">
+        <table class="w-full text-sm border-collapse">
+          <thead>
+            <tr class="border-b-2 border-primary-200">
+              <th class="text-left py-2 pr-4 text-primary-600">Finding</th>
+              <th class="text-left py-2 pr-4 text-primary-600">Severity</th>
+              <th class="text-left py-2 text-primary-600">Fix</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">Proxy Disclosure (CWE-204)</td>
+              <td class="py-2 pr-4 text-yellow-700">Low</td>
+              <td class="py-2">Block TRACE/TRACK methods</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">X-Content-Type-Options Missing</td>
+              <td class="py-2 pr-4 text-blue-600">Info</td>
+              <td class="py-2">Add <code>nosniff</code> header</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">Content-Type Header Missing</td>
+              <td class="py-2 pr-4 text-blue-600">Info</td>
+              <td class="py-2">Ensure all responses have Content-Type</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">Application Error Disclosure</td>
+              <td class="py-2 pr-4 text-blue-600">Info</td>
+              <td class="py-2">Sanitize error responses</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">Strict-Transport-Security Not Set</td>
+              <td class="py-2 pr-4 text-blue-600">Info</td>
+              <td class="py-2">Add HSTS header</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">Suspicious Comments (TODO/DEBUG)</td>
+              <td class="py-2 pr-4 text-blue-600">Info</td>
+              <td class="py-2">Remove dev comments from production</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">Cache-Control Directives</td>
+              <td class="py-2 pr-4 text-blue-600">Info</td>
+              <td class="py-2"><code>Cache-Control: no-store</code> on tokens</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">Storable but Non-Cacheable Content</td>
+              <td class="py-2 pr-4 text-blue-600">Info</td>
+              <td class="py-2">Explicit cache directives on API responses</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">User Agent Fuzzer</td>
+              <td class="py-2 pr-4 text-blue-600">Info</td>
+              <td class="py-2">Consistent error handling across UAs</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">User Controllable HTML Attribute</td>
+              <td class="py-2 pr-4 text-blue-600">Info</td>
+              <td class="py-2">Escape user input in HTML attributes</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>If you're building on Cloudflare Workers with Hono (like we are), most of these are a single middleware:</p>
+
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-typescript">{`// Security headers middleware
+app.use('*', async (c, next) => {
+  await next();
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  c.header('X-Frame-Options', 'DENY');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
+});
+
+// Block TRACE/TRACK
+app.use('*', async (c, next) => {
+  if (c.req.method === 'TRACE' || c.req.method === 'TRACK') {
+    c.status(405);
+    return c.text('Method Not Allowed');
+  }
+  return next();
+});`}</code></pre>
+      </div>
+
+      <p>For the landing page (static assets on Cloudflare Pages), add a <code>_headers</code> file in your public directory:</p>
+
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; img-src 'self' data:; frame-ancestors 'none'`}</code></pre>
+      </div>
+
+      <h2>Beyond the scan: what ZAP doesn't catch</h2>
+      <p>The ZAP scan is a DAST tool — it probes your app from the outside. It's good at finding missing headers and obvious misconfigurations. It doesn't read your source code.</p>
+
+      <p>After passing the scan, we did a deeper code review against OWASP ASVS v4.0 and found issues the scan would never catch:</p>
+
+      <ul>
+        <li><strong>Timing-safe comparisons:</strong> All our secret comparisons used <code>!==</code>. An attacker could measure response times to brute-force secrets byte by byte. We wrote a <code>timingSafeEqual()</code> utility using <code>crypto.subtle</code> HMAC comparison.</li>
+        <li><strong>Open redirect via redirect_uri:</strong> We weren't validating the <code>redirect_uri</code> parameter against a per-client allowlist. An attacker could steal auth codes by specifying their own callback URL. We added a <code>redirectUris</code> field to API keys, validated on every <code>/oauth/authorize</code> call.</li>
+        <li><strong>Webhook replay:</strong> Our Stripe webhook handler didn't validate the timestamp or check for duplicate events. A replayed webhook could double-credit an account. We added timestamp validation (reject events &gt;5 minutes old) and idempotency via session.id deduplication in KV.</li>
+        <li><strong>No rate limiting:</strong> Zero rate limiting on key creation or token exchange. We added KV-based rate limiting (5/min for key creation, 20/min for token exchange).</li>
+        <li><strong>No data deletion:</strong> Google requires a way for users to delete their data. We had no <code>DELETE</code> endpoint for API keys.</li>
+      </ul>
+
+      <p>We documented all of this in a <a href="https://github.com/acoyfellow/inbox.dog/blob/main/CASA-CHECKLIST.md">CASA-CHECKLIST.md</a> in our repo — 10 scan findings (Layer 1) and 28 code-level findings (Layer 2), with status tracking for each.</p>
+
+      <h2>The actual cost and timeline</h2>
+      <div class="overflow-x-auto mb-6">
+        <table class="w-full text-sm border-collapse">
+          <thead>
+            <tr class="border-b-2 border-primary-200">
+              <th class="text-left py-2 pr-4 text-primary-600">Item</th>
+              <th class="text-left py-2 text-primary-600">Cost</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">TAC Security assessment</td>
+              <td class="py-2">~$550</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">Google Cloud project setup</td>
+              <td class="py-2">$0</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">OAuth consent screen review</td>
+              <td class="py-2">$0 (but weeks of back-and-forth)</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4">Annual recertification</td>
+              <td class="py-2">~$550/year</td>
+            </tr>
+            <tr class="border-b-2 border-primary-200">
+              <td class="py-2 pr-4 font-semibold">Total (first year)</td>
+              <td class="py-2 font-semibold">~$550 + your time</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p>Timeline: about 2-3 weeks from "I need Gmail access" to a production-approved OAuth consent screen, assuming you already have a working app. Most of that time is waiting on Google's review, not the CASA assessment itself.</p>
+
+      <h2>Should you self-host or use a service?</h2>
+      <p>inbox.dog is <a href="https://github.com/acoyfellow/inbox.dog">open source</a> — you can self-host the entire OAuth proxy. But the CASA audit is per-application. If you self-host, you need your own audit.</p>
+
+      <p>The math is simple: at $0.10 per OAuth flow on the hosted version, $550 buys you 5,500 flows. If you need fewer than that, the hosted version is cheaper. If you need more, self-host and pay for the audit yourself.</p>
+
+      <p>Either way, you skip the Google Cloud Console setup, OAuth consent screen review, and months of back-and-forth with Google's trust and safety team.</p>
+
+      <h2>Checklist for your own CASA audit</h2>
+      <p>If you're going through this yourself, here's the minimum to pass the ZAP scan:</p>
+
+      <ol>
+        <li>Set <code>X-Content-Type-Options: nosniff</code> on all responses</li>
+        <li>Set <code>Strict-Transport-Security: max-age=31536000; includeSubDomains</code></li>
+        <li>Set <code>X-Frame-Options: DENY</code></li>
+        <li>Set <code>Content-Security-Policy</code> (at minimum <code>frame-ancestors 'none'</code>)</li>
+        <li>Set <code>Referrer-Policy: strict-origin-when-cross-origin</code></li>
+        <li>Block TRACE and TRACK HTTP methods</li>
+        <li>Return <code>Cache-Control: no-store</code> on any response containing tokens or secrets</li>
+        <li>Sanitize error responses — no stack traces, no internal details</li>
+        <li>Remove TODO/FIXME/DEBUG comments from production-served HTML and JS</li>
+        <li>Escape any user-controlled values rendered in HTML</li>
+      </ol>
+
+      <p>And what the scan won't catch but you should fix anyway:</p>
+      <ul>
+        <li>Use timing-safe comparison for all secret/HMAC checks</li>
+        <li>Validate <code>redirect_uri</code> against a per-client allowlist</li>
+        <li>Add idempotency to payment webhooks</li>
+        <li>Validate webhook timestamps</li>
+        <li>Rate limit key creation and token exchange</li>
+        <li>Provide a data deletion endpoint</li>
+      </ul>
+
+      <p>Our full checklist with status tracking is at <a href="https://github.com/acoyfellow/inbox.dog/blob/main/CASA-CHECKLIST.md">CASA-CHECKLIST.md</a>.</p>
+
+      <h2>References</h2>
+      <ul>
+        <li><a href="https://appdefensealliance.dev/casa">CASA overview (App Defense Alliance)</a></li>
+        <li><a href="https://support.google.com/cloud/answer/9110914">Google's OAuth app verification requirements</a></li>
+        <li><a href="https://owasp.org/www-project-application-security-verification-standard/">OWASP ASVS v4.0</a></li>
+        <li><a href="https://www.zaproxy.org/">OWASP ZAP</a></li>
+      </ul>
+    </article>
+  </div>
+</Layout>

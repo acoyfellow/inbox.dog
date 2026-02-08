@@ -27,11 +27,6 @@ if [ "$SETUP_STRIPE" = "y" ]; then
   echo "$STRIPE_WEBHOOK_SECRET" | wrangler secret put STRIPE_WEBHOOK_SECRET --env production
 fi
 
-# Generate JWT secret
-JWT_SECRET=$(openssl rand -hex 32)
-echo "$JWT_SECRET" | wrangler secret put JWT_SECRET --env production
-echo "Generated and set JWT_SECRET."
-
 echo ""
 echo "Done! Secrets configured for production environment."
 echo "Run 'cd worker && wrangler deploy --env production' to deploy with secrets."

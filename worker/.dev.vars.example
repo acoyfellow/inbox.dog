@@ -6,6 +6,3 @@ GOOGLE_CLIENT_SECRET=GOCSPX-your-secret
 # Get from Stripe Dashboard
 STRIPE_SECRET_KEY=sk_test_...
 STRIPE_WEBHOOK_SECRET=whsec_...
-
-# Generate random secret: openssl rand -hex 32
-JWT_SECRET=your-jwt-secret-here
