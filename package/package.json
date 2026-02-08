@@ -1,6 +1,6 @@
 {
   "name": "inbox.dog",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Gmail OAuth tokens in 3 API calls. No Google Cloud console required.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -23,6 +23,7 @@
   ],
   "scripts": {
     "build": "tsup",
+    "test": "echo 'No tests yet'",
     "prepublishOnly": "npm run build"
   },
   "keywords": [
