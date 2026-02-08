@@ -1,0 +1,17 @@
+{
+  "schema_version": "v1",
+  "name_for_human": "inbox.dog",
+  "name_for_model": "inbox_dog",
+  "description_for_human": "OAuth for email, simplified. Get Gmail access tokens for your users in three API calls.",
+  "description_for_model": "inbox.dog handles the complete Google OAuth 2.0 flow for Gmail API access. Developers redirect their users to inbox.dog, users authenticate with Google, and the developer receives access_token and refresh_token that work directly with the Gmail API (gmail.googleapis.com). Three steps: 1) POST /api/keys to create credentials, 2) GET /oauth/authorize to start the flow, 3) POST /oauth/token to exchange the code for tokens. Supports scopes: email (read-only, default), email:read, email:send, email:full. Pricing: $0.10 per token exchange, 10 free credits on signup. Token refresh is free. Open source under MIT license.",
+  "auth": {
+    "type": "none"
+  },
+  "api": {
+    "type": "openapi",
+    "url": "https://inbox.dog/openapi.json"
+  },
+  "logo_url": "https://inbox.dog/logo.svg",
+  "contact_email": "",
+  "legal_info_url": "https://github.com/acoyfellow/inbox.dog/blob/main/LICENSE"
+}
