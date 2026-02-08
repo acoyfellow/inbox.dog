@@ -72,8 +72,34 @@ $0.10 per OAuth token exchange. 10 free credits on signup.
 Token refresh is free.
 Self-host option available (MIT license).
 
+## MCP Server
+
+inbox.dog has an MCP (Model Context Protocol) server for direct agent integration.
+
+Install: npx @inboxdog/mcp-server
+
+Configure in Claude Desktop or any MCP client:
+```json
+{
+  "mcpServers": {
+    "inbox-dog": {
+      "command": "npx",
+      "args": ["-y", "@inboxdog/mcp-server"]
+    }
+  }
+}
+```
+
+Available tools:
+- inbox_dog_create_key: Create API key (no auth required)
+- inbox_dog_oauth_start: Generate Gmail OAuth authorization URL
+- inbox_dog_exchange_code: Exchange auth code for access + refresh tokens
+- inbox_dog_refresh_token: Refresh an expired access token
+- inbox_dog_check_credits: Check remaining credits
+
 ## Links
 
 - Docs: https://inbox.dog/docs
 - GitHub: https://github.com/acoyfellow/inbox.dog
+- MCP Server: https://github.com/acoyfellow/inbox.dog/tree/main/mcp
 - Pricing: https://inbox.dog/pricing

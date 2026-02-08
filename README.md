@@ -46,12 +46,29 @@ Built with:
 - **[Astro](https://astro.build)** - Static landing page
 - **Cloudflare Workers** - Edge deployment
 
+## MCP Server (Agent Integration)
+
+inbox.dog includes an MCP server so AI agents can handle Gmail OAuth directly:
+
+```json
+{
+  "mcpServers": {
+    "inbox-dog": {
+      "command": "npx",
+      "args": ["-y", "@inboxdog/mcp-server"]
+    }
+  }
+}
+```
+
+Tools: `inbox_dog_create_key`, `inbox_dog_oauth_start`, `inbox_dog_exchange_code`, `inbox_dog_refresh_token`, `inbox_dog_check_credits`
+
 ## Project Structure
 
 ```
 ├── landing/          # Astro landing page + docs
 │   ├── src/pages/    # index, docs, pricing, demo
-│   └── public/       # fonts, logo
+│   └── public/       # fonts, logo, llms.txt
 ├── worker/           # Cloudflare Worker (Effect-TS)
 │   ├── src/
 │   │   ├── routes/   # oauth, api, webhooks
@@ -59,6 +76,8 @@ Built with:
 │   │   ├── schemas.ts
 │   │   └── errors.ts # Tagged errors
 │   └── wrangler.toml
+├── mcp/              # MCP server for agent integration
+│   └── src/index.ts  # stdio MCP server
 ├── e2e/              # End-to-end tests
 └── .husky/           # Git hooks
 ```
