@@ -7,7 +7,7 @@ import assert from 'node:assert';
 import crypto from 'node:crypto';
 
 const BASE_URL = process.env.TEST_URL || 'https://inbox.dog';
-const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_MibD1H0hAq7hYzqYLWkMoQQkgFnDsTOk';
+const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET || 'whsec_test_placeholder';
 
 function generateStripeSignature(payload, secret) {
   const timestamp = Math.floor(Date.now() / 1000);
