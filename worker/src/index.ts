@@ -8,12 +8,31 @@ import type { Env } from './types';
 
 const app = new Hono<{ Bindings: Env }>();
 
+// Security headers on all responses (CASA Z-2, Z-3, Z-5)
+app.use('*', async (c, next) => {
+  await next();
+  c.header('X-Content-Type-Options', 'nosniff');
+  c.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  c.header('X-Frame-Options', 'DENY');
+  c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+  c.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
+});
+
+// Block TRACE/TRACK methods (CASA Z-1 Proxy Disclosure)
+app.use('*', async (c, next) => {
+  if (c.req.method === 'TRACE' || c.req.method === 'TRACK') {
+    c.status(405);
+    return c.text('Method Not Allowed');
+  }
+  return next();
+});
+
 // CORS for API routes
 app.use('/api/*', cors());
 app.use('/oauth/*', cors());
 
 // Health check
-app.get('/health', (c) => c.json({ status: 'ok', service: 'inbox.dog-oauth' }));
+app.get('/health', (c) => c.json({ status: 'ok' }));
 
 // Mount routes
 app.route('/oauth', oauthRoutes);
@@ -36,7 +55,7 @@ app.notFound((c) => {
 
 // Error handler
 app.onError((err, c) => {
-  console.error('Unhandled error:', err);
+  console.error('Unhandled error:', err instanceof Error ? err.message : 'Unknown error');
   return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Internal server error', action: 'Retry the request. If the problem persists, check https://inbox.dog/health', docs: 'https://inbox.dog/docs/errors' } }, 500);
 });
 

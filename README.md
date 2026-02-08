@@ -9,17 +9,21 @@
 
 A hosted OAuth service that handles the complexity of Google OAuth for email access. Your users authenticate once, and you get tokens to read/send emails via Gmail API.
 
-**3 lines of code:**
+**3 API calls:**
 
-```javascript
-// 1. Redirect user
-window.location.href = 'https://inbox.dog/oauth/authorize?client_id=YOUR_KEY&redirect_uri=YOUR_CALLBACK';
+```typescript
+import InboxDog from 'inbox.dog';
+const dog = new InboxDog();
 
-// 2. Exchange code for token
-const { access_token } = await fetch('https://inbox.dog/oauth/token', { ... }).then(r => r.json());
+// 1. Send user to authenticate
+const url = dog.getAuthUrl({ clientId: 'YOUR_KEY', redirectUri: 'http://localhost:3000/callback' });
+
+// 2. Exchange code for tokens (in your callback)
+const { access_token, email } = await dog.exchangeCode(code, 'YOUR_KEY', 'YOUR_SECRET');
 
 // 3. Use with Gmail API
-const emails = await fetch('https://gmail.googleapis.com/...', { headers: { Authorization: `Bearer ${access_token}` } });
+const emails = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages',
+  { headers: { Authorization: `Bearer ${access_token}` } });
 ```
 
 ## Features
@@ -101,6 +105,22 @@ Tools: `inbox_dog_create_key`, `inbox_dog_oauth_start`, `inbox_dog_exchange_code
 ├── e2e/              # End-to-end tests
 └── .husky/           # Git hooks
 ```
+
+## Hosted vs Self-Hosted
+
+inbox.dog is open source — you can self-host it. But there's a reason the hosted version exists.
+
+Gmail uses **restricted OAuth scopes**, which means Google requires a [CASA Tier 2 security audit](https://appdefensealliance.dev/casa) before your app can go to production. That audit includes:
+
+- OWASP ZAP vulnerability scan across all endpoints
+- Security headers, caching directives, error disclosure review
+- Self-attestation questionnaire (50+ items)
+- Verification by an authorized lab (we used [TAC Security](https://tacsecurity.com), ~$550)
+- Annual recertification
+
+If you're building a product that needs Gmail access for fewer than ~5,500 users, the hosted version at $0.10/flow is cheaper than paying for the audit yourself. Above that, self-hosting makes more financial sense — and you'll have the full source code to work with.
+
+Either way, you skip the Google Cloud Console setup, OAuth consent screen review, and months of back-and-forth with Google's trust & safety team.
 
 ## Self-Hosting
 

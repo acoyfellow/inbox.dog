@@ -86,10 +86,8 @@ export const GET: RequestHandler = async ({ url }) => {
   // For this example, we'll just redirect with the email
   const { email, access_token, refresh_token } = data;
 
-  // TODO: Save tokens to your database or session store
-  console.log('User authenticated:', email);
-  console.log('Access token:', access_token);
-  console.log('Refresh token:', refresh_token);
+  // Save tokens to your database or session store
+  // Then use access_token with the Gmail API
 
   throw redirect(302, '/');
 };`}</code></pre>

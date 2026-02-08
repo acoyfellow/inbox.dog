@@ -31,7 +31,7 @@ const { title, description = 'OAuth for email, simplified' } = Astro.props;
     <meta name="twitter:title" content={`${title} | inbox.dog`} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content="https://inbox.dog/meta.jpg" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github-dark.min.css" integrity="sha384-wH75j6z1lH97ZOpMOInqhgKzFkAInZPPSPlZpYKYTOqsaizPvhQZmAtLcPKXpLyH" crossorigin="anonymous">
   </head>
   <body class="bg-transparent text-primary-900 min-h-screen font-sans">
     <nav class="fixed top-0 left-0 right-0 z-50 bg-[#fafaf9]/80 backdrop-blur-md border-b border-primary-100">
@@ -105,7 +105,7 @@ const { title, description = 'OAuth for email, simplified' } = Astro.props;
         </div>
       </div>
     </footer>
-    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha384-F/bZzf7p3Joyp5psL90p/p89AZJsndkSoGwRpXcZhleCWhd8SnRuoYo4d0yirjJp" crossorigin="anonymous"></script>
     <script is:inline>
       document.addEventListener('DOMContentLoaded', function() {
         if (typeof hljs !== 'undefined') {

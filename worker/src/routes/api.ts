@@ -24,6 +24,7 @@ apiRoutes.post('/keys', async (c) => {
 
   await c.env.KV.put(`apikey:${clientId}`, JSON.stringify(apiKey));
 
+  c.header('Cache-Control', 'no-store');
   return c.json({
     client_id: clientId,
     client_secret: clientSecret,
@@ -111,8 +112,7 @@ apiRoutes.post('/checkout', async (c) => {
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    console.error('Stripe error:', error);
+    console.error('Stripe checkout error: HTTP', response.status);
     return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to create checkout session', action: 'Retry the request. If the problem persists, check https://inbox.dog/health', docs: 'https://inbox.dog/docs/errors' } }, 500);
   }
 

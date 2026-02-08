@@ -240,7 +240,8 @@ oauthRoutes.get('/callback', async (c) => {
   if (result.ok) {
     return c.redirect(result.value);
   }
-  console.error('OAuth callback error:', result.error);
+  const errTag = result.error instanceof Error ? result.error.constructor.name : 'UnknownError';
+  console.error('OAuth callback error:', errTag);
   const { status, body: errBody } = errorToResponse(result.error);
   return c.json(errBody, status as 400 | 401 | 500);
 });
@@ -305,6 +306,7 @@ oauthRoutes.post('/token', async (c) => {
 
   const result = await runWithServices(program, c.env);
   if (result.ok) {
+    c.header('Cache-Control', 'no-store');
     return c.json(result.value);
   }
   const { status, body: errBody } = errorToResponse(result.error);
@@ -312,7 +314,7 @@ oauthRoutes.post('/token', async (c) => {
 });
 
 async function handleRefreshToken(
-  c: { env: Env; json: (data: unknown, status?: number) => Response },
+  c: { env: Env; json: (data: unknown, status?: number) => Response; header: (name: string, value: string) => void },
   body: { refresh_token?: string; client_id?: string; client_secret?: string }
 ) {
   const { refresh_token, client_id, client_secret } = body;
@@ -348,6 +350,7 @@ async function handleRefreshToken(
 
   const result = await runWithServices(program, c.env);
   if (result.ok) {
+    c.header('Cache-Control', 'no-store');
     return c.json(result.value);
   }
   const { status, body: errorBody } = errorToResponse(result.error);
