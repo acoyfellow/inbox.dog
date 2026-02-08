@@ -9,6 +9,7 @@ export const ApiKeySchema = Schema.Struct({
   createdAt: Schema.Number,
   credits: Schema.Number,
   stripeCustomerId: Schema.optional(Schema.String),
+  redirectUris: Schema.optional(Schema.Array(Schema.String)),
 });
 
 export type ApiKey = Schema.Schema.Type<typeof ApiKeySchema>;
@@ -51,6 +52,7 @@ export const GoogleUserInfoSchema = Schema.Struct({
 // Request schemas
 export const CreateKeyRequestSchema = Schema.Struct({
   name: Schema.optional(Schema.String),
+  redirect_uris: Schema.optional(Schema.Array(Schema.String)),
 });
 
 export const TokenExchangeRequestSchema = Schema.Struct({

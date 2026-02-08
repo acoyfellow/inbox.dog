@@ -7,6 +7,7 @@ import { ApiKeySchema, OAuthStateSchema, type ApiKey, type OAuthState } from '..
 export interface KVService {
   readonly getApiKey: (clientId: string) => Effect.Effect<ApiKey, NotFoundError>;
   readonly putApiKey: (clientId: string, apiKey: ApiKey) => Effect.Effect<void, never>;
+  readonly deleteApiKey: (clientId: string) => Effect.Effect<void, never>;
   readonly getOAuthState: (stateId: string) => Effect.Effect<OAuthState, NotFoundError>;
   readonly putOAuthState: (stateId: string, state: OAuthState, ttlSeconds: number) => Effect.Effect<void, never>;
   readonly deleteOAuthState: (stateId: string) => Effect.Effect<void, never>;
@@ -47,6 +48,10 @@ export const makeKVService = (kv: KVNamespace): KVService => ({
 
   putApiKey(clientId, apiKey) {
     return Effect.promise(() => kv.put(`apikey:${clientId}`, JSON.stringify(apiKey)));
+  },
+
+  deleteApiKey(clientId) {
+    return Effect.promise(() => kv.delete(`apikey:${clientId}`));
   },
 
   getOAuthState(stateId) {

@@ -27,9 +27,43 @@ app.use('*', async (c, next) => {
   return next();
 });
 
-// CORS for API routes
-app.use('/api/*', cors());
-app.use('/oauth/*', cors());
+// CORS for API routes — explicit methods and headers
+app.use('/api/*', cors({
+  origin: '*',
+  allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'X-Client-Secret'],
+  maxAge: 86400,
+}));
+app.use('/oauth/*', cors({
+  origin: '*',
+  allowMethods: ['GET', 'POST', 'OPTIONS'],
+  allowHeaders: ['Content-Type'],
+  maxAge: 86400,
+}));
+
+// Rate limiting for sensitive endpoints (KV-based sliding window)
+app.use('/api/keys', async (c, next) => {
+  if (c.req.method !== 'POST') return next();
+  const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
+  const key = `ratelimit:create_key:${ip}`;
+  const current = parseInt(await c.env.KV.get(key) ?? '0', 10);
+  if (current >= 5) {
+    return c.json({ error: { code: 'RATE_LIMITED', message: 'Too many key creation requests. Max 5 per minute.', action: 'Wait before retrying', docs: 'https://inbox.dog/docs/errors' } }, 429);
+  }
+  await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
+  return next();
+});
+app.use('/oauth/token', async (c, next) => {
+  if (c.req.method !== 'POST') return next();
+  const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
+  const key = `ratelimit:token:${ip}`;
+  const current = parseInt(await c.env.KV.get(key) ?? '0', 10);
+  if (current >= 20) {
+    return c.json({ error: { code: 'RATE_LIMITED', message: 'Too many token requests. Max 20 per minute.', action: 'Wait before retrying', docs: 'https://inbox.dog/docs/errors' } }, 429);
+  }
+  await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
+  return next();
+});
 
 // Health check
 app.get('/health', (c) => c.json({ status: 'ok' }));

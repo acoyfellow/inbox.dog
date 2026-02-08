@@ -148,7 +148,6 @@ wrangler kv:namespace create KV
 # Set secrets
 wrangler secret put GOOGLE_CLIENT_ID
 wrangler secret put GOOGLE_CLIENT_SECRET
-wrangler secret put JWT_SECRET  # openssl rand -hex 32
 
 # Optional: Stripe for billing
 wrangler secret put STRIPE_SECRET_KEY

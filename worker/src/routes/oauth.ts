@@ -3,7 +3,7 @@ import { Effect, pipe, Layer, ManagedRuntime } from 'effect';
 import type { Env } from '../types';
 import { GoogleOAuthService, GoogleOAuthServiceLive } from '../services/google';
 import { KVService, KVServiceLive } from '../services/kv';
-import { generateId } from '../utils';
+import { generateId, timingSafeEqual } from '../utils';
 import {
   InvalidCredentialsError,
   InsufficientCreditsError,
@@ -152,8 +152,20 @@ oauthRoutes.get('/authorize', async (c) => {
     const kv = yield* KVService;
     const google = yield* GoogleOAuthService;
 
-    // Validate client exists
-    yield* kv.getApiKey(clientId);
+    // Validate client exists and check redirect_uri allowlist
+    const apiKey = yield* kv.getApiKey(clientId);
+    if (apiKey.redirectUris && apiKey.redirectUris.length > 0) {
+      const normalizedRedirect = new URL(redirectUri).origin + new URL(redirectUri).pathname;
+      const allowed = apiKey.redirectUris.some((uri) => {
+        const normalizedAllowed = new URL(uri).origin + new URL(uri).pathname;
+        return normalizedRedirect === normalizedAllowed;
+      });
+      if (!allowed) {
+        return yield* Effect.fail(
+          new ValidationError({ field: 'redirect_uri', message: `redirect_uri not in allowlist. Register URIs when creating your API key.` })
+        );
+      }
+    }
 
     // Store OAuth state
     const oauthStateId = generateId();
@@ -274,7 +286,8 @@ oauthRoutes.post('/token', async (c) => {
     // Validate credentials and get API key
     const apiKey = yield* kv.getApiKey(client_id);
 
-    if (apiKey.clientSecret !== client_secret) {
+    const secretMatch = yield* Effect.promise(() => timingSafeEqual(apiKey.clientSecret, client_secret));
+    if (!secretMatch) {
       return yield* Effect.fail(new InvalidCredentialsError({ message: 'Invalid client_secret' }));
     }
 
@@ -330,7 +343,8 @@ async function handleRefreshToken(
     // Validate credentials
     const apiKey = yield* kv.getApiKey(client_id);
 
-    if (apiKey.clientSecret !== client_secret) {
+    const refreshSecretMatch = yield* Effect.promise(() => timingSafeEqual(apiKey.clientSecret, client_secret));
+    if (!refreshSecretMatch) {
       return yield* Effect.fail(new InvalidCredentialsError({ message: 'Invalid credentials' }));
     }
 

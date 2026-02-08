@@ -13,7 +13,6 @@ export interface Env {
   GOOGLE_CLIENT_SECRET: string;
   STRIPE_SECRET_KEY: string;
   STRIPE_WEBHOOK_SECRET: string;
-  JWT_SECRET: string;
 }
 
 export interface OAuthState {
@@ -40,4 +39,5 @@ export interface ApiKey {
   createdAt: number;
   credits: number;
   stripeCustomerId?: string;
+  redirectUris?: string[];
 }
