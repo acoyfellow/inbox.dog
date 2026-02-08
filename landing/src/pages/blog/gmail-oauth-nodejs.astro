@@ -1,0 +1,232 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Gmail OAuth in Node.js — The Easy Way" description="Get Gmail access tokens in Node.js with 3 API calls. No Google Cloud console, no OAuth complexity. Working code in under 5 minutes.">
+  <div class="max-w-3xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/blog" class="hover:text-primary-600">&larr; Blog</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900 leading-tight">Gmail OAuth in Node.js — The Easy Way</h1>
+    <p class="text-primary-500 text-sm mb-8">Get Gmail access tokens with 3 API calls. No Google Cloud console required.</p>
+
+    <article class="prose-custom">
+      <!-- The Problem -->
+      <h2>The problem with Gmail OAuth</h2>
+      <p>If you've ever tried to add Gmail access to a Node.js app, you know the pain:</p>
+      <ol>
+        <li>Create a Google Cloud project</li>
+        <li>Enable the Gmail API</li>
+        <li>Configure the OAuth consent screen (publisher name, scopes, test users...)</li>
+        <li>Create OAuth 2.0 credentials</li>
+        <li>Handle the authorization code flow</li>
+        <li>Exchange codes for tokens</li>
+        <li>Store and refresh tokens</li>
+        <li>Submit for Google's app verification (if you want more than 100 users)</li>
+      </ol>
+      <p>That's 8 steps before you've read a single email. Most of it is boilerplate that has nothing to do with your actual product.</p>
+
+      <!-- The Solution -->
+      <h2>The shortcut: inbox.dog</h2>
+      <p><a href="https://inbox.dog">inbox.dog</a> is an OAuth proxy. It handles steps 1-6 for you. You get a <code>client_id</code>, redirect your user, and receive Gmail tokens. The tokens work directly with <code>gmail.googleapis.com</code> — inbox.dog is not in the data path.</p>
+      <p>Here's the complete flow in Node.js:</p>
+
+      <!-- Step 1 -->
+      <h2>Step 1: Get your API key</h2>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`curl -X POST https://inbox.dog/api/keys \\
+  -H "Content-Type: application/json" \\
+  -d '{"name": "my-app"}'`}</code></pre>
+      </div>
+      <p>Response:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "client_id": "id_abc123",
+  "client_secret": "sk_xyz789",
+  "name": "my-app",
+  "credits": 10
+}`}</code></pre>
+      </div>
+      <p>You get 10 free credits. Each OAuth flow costs 1 credit ($0.10).</p>
+
+      <!-- Step 2 -->
+      <h2>Step 2: Create a Node.js server</h2>
+      <p>Install the dependencies:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`npm install express inbox.dog`}</code></pre>
+      </div>
+      <p>Create <code>server.js</code>:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-javascript">{`import express from "express";
+import { InboxDog } from "inbox.dog";
+
+const app = express();
+const dog = new InboxDog();
+
+const CLIENT_ID = "id_abc123";       // from step 1
+const CLIENT_SECRET = "sk_xyz789";   // from step 1
+
+// Redirect user to Gmail consent
+app.get("/login", (req, res) => {
+  const url = dog.getAuthUrl({
+    clientId: CLIENT_ID,
+    redirectUri: "http://localhost:3000/callback",
+    scope: "email",           // read-only access
+  });
+  res.redirect(url);
+});
+
+// Handle the callback
+app.get("/callback", async (req, res) => {
+  const { code } = req.query;
+
+  const tokens = await dog.exchangeCode(code, CLIENT_ID, CLIENT_SECRET);
+
+  // tokens.access_token → use with Gmail API
+  // tokens.refresh_token → store securely, use to get new access tokens
+  // tokens.email → the user's email address
+
+  res.json({
+    email: tokens.email,
+    message: "Gmail connected!",
+  });
+});
+
+app.listen(3000, () => console.log("http://localhost:3000/login"));`}</code></pre>
+      </div>
+
+      <!-- Step 3 -->
+      <h2>Step 3: Use the Gmail API</h2>
+      <p>The <code>access_token</code> works directly with Google's Gmail API. No inbox.dog in the middle.</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-javascript">{`// List recent emails
+const response = await fetch(
+  "https://gmail.googleapis.com/gmail/v1/users/me/messages?maxResults=10",
+  { headers: { Authorization: \`Bearer \${tokens.access_token}\` } }
+);
+const { messages } = await response.json();
+
+// Read a specific email
+const email = await fetch(
+  \`https://gmail.googleapis.com/gmail/v1/users/me/messages/\${messages[0].id}\`,
+  { headers: { Authorization: \`Bearer \${tokens.access_token}\` } }
+).then(r => r.json());
+
+console.log(email.snippet); // Preview of the email`}</code></pre>
+      </div>
+
+      <!-- Token Refresh -->
+      <h2>Refreshing expired tokens</h2>
+      <p>Access tokens expire after 1 hour (set by Google). Use the refresh token to get a new one — this is free, no credit cost:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-javascript">{`const fresh = await dog.refreshToken(
+  storedRefreshToken,
+  CLIENT_ID,
+  CLIENT_SECRET
+);
+
+// fresh.access_token → new token, valid for 1 hour`}</code></pre>
+      </div>
+
+      <!-- Error Handling -->
+      <h2>Error handling</h2>
+      <p>All errors throw <code>InboxDogError</code> with machine-readable codes:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-javascript">{`import { InboxDog, InboxDogError } from "inbox.dog";
+
+try {
+  const tokens = await dog.exchangeCode(code, CLIENT_ID, CLIENT_SECRET);
+} catch (e) {
+  if (e instanceof InboxDogError) {
+    console.error(e.code);    // "INSUFFICIENT_CREDITS"
+    console.error(e.message); // "No credits remaining. Current balance: 0"
+    console.error(e.action);  // "Purchase credits via POST /api/checkout"
+  }
+}`}</code></pre>
+      </div>
+      <p>Error codes: <code>INVALID_CREDENTIALS</code> (401), <code>INSUFFICIENT_CREDITS</code> (402), <code>VALIDATION_ERROR</code> (400), <code>AUTH_CODE_NOT_FOUND</code> (400), <code>TOKEN_EXCHANGE_FAILED</code> (500). See <a href="/docs/errors">full error reference</a>.</p>
+
+      <!-- Scopes -->
+      <h2>Available scopes</h2>
+      <table class="w-full text-sm my-4">
+        <thead class="bg-primary-100">
+          <tr>
+            <th class="text-left p-2 text-primary-900">Scope</th>
+            <th class="text-left p-2 text-primary-900">Permission</th>
+          </tr>
+        </thead>
+        <tbody class="text-primary-600">
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono text-xs">email</td><td class="p-2">Read-only access (default)</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono text-xs">email:read</td><td class="p-2">Read-only access</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono text-xs">email:send</td><td class="p-2">Send emails only</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono text-xs">email:full</td><td class="p-2">Full access (read, send, modify)</td></tr>
+        </tbody>
+      </table>
+
+      <!-- npm package -->
+      <h2>Using the npm package</h2>
+      <p>The <code>inbox.dog</code> <a href="https://www.npmjs.com/package/inbox.dog">npm package</a> is a zero-dependency TypeScript client. It works in Node.js, Deno, Bun, and Cloudflare Workers.</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`npm install inbox.dog`}</code></pre>
+      </div>
+      <p>If you prefer raw HTTP, every method maps to a single <code>fetch</code> call. See the <a href="/docs/api">API reference</a>.</p>
+
+      <!-- Comparison -->
+      <h2>inbox.dog vs. doing it yourself</h2>
+      <table class="w-full text-sm my-4">
+        <thead class="bg-primary-100">
+          <tr>
+            <th class="text-left p-2 text-primary-900"></th>
+            <th class="text-left p-2 text-primary-900">DIY Google OAuth</th>
+            <th class="text-left p-2 text-primary-900">inbox.dog</th>
+          </tr>
+        </thead>
+        <tbody class="text-primary-600">
+          <tr class="border-b border-primary-200"><td class="p-2 font-semibold">Setup time</td><td class="p-2">1-3 hours</td><td class="p-2">2 minutes</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-semibold">Google Cloud console</td><td class="p-2">Required</td><td class="p-2">Not needed</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-semibold">App verification</td><td class="p-2">Required for &gt;100 users</td><td class="p-2">Handled by inbox.dog</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-semibold">Token management</td><td class="p-2">You build it</td><td class="p-2">You store tokens, we handle the flow</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-semibold">Cost</td><td class="p-2">Free (your time)</td><td class="p-2">$0.10/OAuth flow, refresh free</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-semibold">Self-host option</td><td class="p-2">N/A</td><td class="p-2">MIT license, full source available</td></tr>
+        </tbody>
+      </table>
+
+      <!-- CTA -->
+      <h2>Get started</h2>
+      <ul>
+        <li><a href="/docs/tutorial">Follow the full tutorial</a> (5 minutes)</li>
+        <li><a href="/docs/api">API reference</a></li>
+        <li><a href="/docs/guides/nextjs">Next.js guide</a> / <a href="/docs/guides/sveltekit">SvelteKit guide</a></li>
+        <li><a href="https://github.com/acoyfellow/inbox.dog">View source on GitHub</a> (MIT)</li>
+      </ul>
+    </article>
+  </div>
+</Layout>
+
+<style>
+  .prose-custom h2 {
+    @apply text-2xl font-bold mt-10 mb-4 text-primary-900;
+  }
+  .prose-custom p {
+    @apply text-primary-600 mb-4 leading-relaxed;
+  }
+  .prose-custom ol, .prose-custom ul {
+    @apply text-primary-600 mb-4 pl-6 space-y-1;
+  }
+  .prose-custom ol {
+    @apply list-decimal;
+  }
+  .prose-custom ul {
+    @apply list-disc;
+  }
+  .prose-custom li {
+    @apply leading-relaxed;
+  }
+  .prose-custom code {
+    @apply bg-primary-100 px-1 rounded font-mono text-sm;
+  }
+  .prose-custom pre code {
+    @apply bg-transparent px-0;
+  }
+  .prose-custom a {
+    @apply text-primary-900 underline underline-offset-2;
+  }
+</style>

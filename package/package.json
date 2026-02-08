@@ -1,0 +1,49 @@
+{
+  "name": "inbox.dog",
+  "version": "0.1.0",
+  "description": "Gmail OAuth tokens in 3 API calls. No Google Cloud console required.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "gmail",
+    "oauth",
+    "email",
+    "google",
+    "oauth2",
+    "api",
+    "tokens"
+  ],
+  "author": "acoyfellow",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/acoyfellow/inbox.dog",
+    "directory": "package"
+  },
+  "homepage": "https://inbox.dog",
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.5.0"
+  }
+}
