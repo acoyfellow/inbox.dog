@@ -1,0 +1,25 @@
+name: Deploy landing site
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "landing/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install and build
+        working-directory: landing
+        run: npm ci && npm run build
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          workingDirectory: landing
+          command: pages deploy dist --project-name=inbox-dog
