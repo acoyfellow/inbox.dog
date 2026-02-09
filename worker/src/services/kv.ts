@@ -2,6 +2,7 @@ import { Effect, Context, Layer, pipe } from 'effect';
 import { Schema } from '@effect/schema';
 import { NotFoundError } from '../errors';
 import { ApiKeySchema, OAuthStateSchema, type ApiKey, type OAuthState } from '../schemas';
+import { encrypt, decrypt } from '../crypto';
 
 // Service interface
 export interface KVService {
@@ -28,7 +29,8 @@ export interface KVService {
 export const KVService = Context.GenericTag<KVService>('KVService');
 
 // Create service from KV namespace
-export const makeKVService = (kv: KVNamespace): KVService => ({
+// encryptionSecret is used to encrypt/decrypt tokens stored in auth codes
+export const makeKVService = (kv: KVNamespace, encryptionSecret?: string): KVService => ({
   getApiKey(clientId) {
     return pipe(
       Effect.tryPromise({
@@ -82,22 +84,39 @@ export const makeKVService = (kv: KVNamespace): KVService => ({
   },
 
   putAuthCode(code, data, ttlSeconds) {
-    return Effect.promise(() => kv.put(`auth_code:${code}`, JSON.stringify(data), { expirationTtl: ttlSeconds }));
+    return encryptionSecret
+      ? Effect.tryPromise({
+          try: async () => {
+            const encrypted = await encrypt(JSON.stringify(data), encryptionSecret);
+            await kv.put(`auth_code:${code}`, encrypted, { expirationTtl: ttlSeconds });
+          },
+          catch: () => { throw new Error('Failed to encrypt auth code data'); },
+        })
+      : Effect.promise(() => kv.put(`auth_code:${code}`, JSON.stringify(data), { expirationTtl: ttlSeconds }));
   },
 
   getAuthCode(code) {
     return pipe(
       Effect.tryPromise({
-        try: () => kv.get(`auth_code:${code}`, 'json'),
+        try: () => kv.get(`auth_code:${code}`, 'text'),
         catch: () => new NotFoundError({ resource: 'AuthCode', id: code }),
       }),
-      Effect.flatMap((data) =>
-        data === null
-          ? Effect.fail(new NotFoundError({ resource: 'AuthCode', id: code }))
-          : Effect.succeed(
-              data as { accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string }
-            )
-      )
+      Effect.flatMap((raw) => {
+        if (raw === null) {
+          return Effect.fail(new NotFoundError({ resource: 'AuthCode', id: code }));
+        }
+        if (encryptionSecret) {
+          return Effect.tryPromise({
+            try: async () => JSON.parse(await decrypt(raw, encryptionSecret)) as {
+              accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string;
+            },
+            catch: () => new NotFoundError({ resource: 'AuthCode', id: code }),
+          });
+        }
+        return Effect.succeed(
+          JSON.parse(raw) as { accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string }
+        );
+      })
     );
   },
 
@@ -106,4 +125,5 @@ export const makeKVService = (kv: KVNamespace): KVService => ({
   },
 });
 
-export const KVServiceLive = (kv: KVNamespace) => Layer.succeed(KVService, makeKVService(kv));
+export const KVServiceLive = (kv: KVNamespace, encryptionSecret?: string) =>
+  Layer.succeed(KVService, makeKVService(kv, encryptionSecret));

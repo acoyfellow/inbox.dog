@@ -22,7 +22,7 @@ const runWithServices = async <A, E>(
   effect: Effect.Effect<A, E, GoogleOAuthService | KVService>,
   env: Env
 ): Promise<{ ok: true; value: A } | { ok: false; error: E }> => {
-  const layer = Layer.mergeAll(GoogleOAuthServiceLive, KVServiceLive(env.KV));
+  const layer = Layer.mergeAll(GoogleOAuthServiceLive, KVServiceLive(env.KV, env.ENCRYPTION_SECRET));
   const runtime = ManagedRuntime.make(layer);
   const result = await runtime.runPromise(
     Effect.either(effect)

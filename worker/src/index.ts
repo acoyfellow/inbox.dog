@@ -16,6 +16,7 @@ app.use('*', async (c, next) => {
   c.header('X-Frame-Options', 'DENY');
   c.header('Referrer-Policy', 'strict-origin-when-cross-origin');
   c.header('Content-Security-Policy', "default-src 'none'; frame-ancestors 'none'");
+  c.header('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
 });
 
 // Block TRACE/TRACK methods (CASA Z-1 Proxy Disclosure)

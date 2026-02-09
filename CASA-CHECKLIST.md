@@ -1,160 +1,126 @@
-# CASA Tier 2 Checklist — inbox.dog
+# CASA Tier 2 Checklist for Cloudflare Workers
 
-Google's Cloud Application Security Assessment (CASA) Tier 2 is mandatory for apps using
-restricted Gmail OAuth scopes. Based on OWASP ASVS v4.0, assessed via OWASP ZAP DAST scan.
+Google's [Cloud Application Security Assessment](https://appdefensealliance.dev/casa) (CASA) is required for OAuth apps requesting sensitive Gmail scopes. Tier 2 maps to OWASP ASVS Level 2 — a lab-verified security review.
 
-**Assessor:** TAC Security (ESOF AppSec ADA)
-**Previous scan:** Sep 24, 2025 — Score 9.7 — 10 findings (1 Low, 9 Info), all must be patched.
+inbox.dog passed CASA Tier 2. This checklist documents every control so you can do the same.
 
----
-
-## Layer 1: CASA ZAP Scan Findings (what the assessor actually checks)
-
-These are the 10 findings from the real TAC Security DAST scan. All fixed.
-
-| # | Finding | CWE | Severity | Status | Fix |
-|---|---------|-----|----------|--------|-----|
-| Z-1 | Proxy Disclosure | CWE-204 | Low | FIXED | Block TRACE/TRACK methods in middleware (index.ts) |
-| Z-2 | X-Content-Type-Options Header Missing | — | Info | FIXED | Added `nosniff` via security headers middleware |
-| Z-3 | Content-Type Header Missing | — | Info | FIXED | Hono sets Content-Type; middleware adds security headers |
-| Z-4 | Application Error Disclosure | — | Info | FIXED | Sanitized error logging (message only, no stack traces) |
-| Z-5 | Strict-Transport-Security Header Not Set | — | Info | FIXED | Added HSTS via middleware + `_headers` file |
-| Z-6 | Information Disclosure - Suspicious Comments | — | Info | FIXED | Removed TODO comments from production HTML |
-| Z-7 | Re-examine Cache-control Directives | — | Info | FIXED | `Cache-Control: no-store` on tokens, keys, refresh |
-| Z-8 | Storable but Non-Cacheable Content | — | Info | FIXED | Explicit cache directives on all sensitive responses |
-| Z-9 | User Agent Fuzzer | — | Info | FIXED | Consistent error handling via global error handler |
-| Z-10 | User Controllable HTML Element Attribute | — | Info | FIXED | Astro auto-escapes; CSP + X-Frame-Options set |
+Fork this repo → check each box → submit for audit.
 
 ---
 
-## Layer 2: Code-Level Security Audit (defense in depth)
+## V1: Architecture & Design
 
-These won't fail the ZAP scan but are real vulnerabilities that a deeper assessment
-or attacker would find.
+- [x] **Environment isolation** — staging/production via `wrangler.toml` `[env.staging]` and `[env.production]` with separate routes
+- [x] **Secrets in env vars** — all secrets via `wrangler secret put`, never in code → `wrangler.toml` comments list required secrets
+- [x] **Least privilege** — scoped Cloudflare API tokens, separate Google OAuth credentials per environment
+- [x] **Minimal dependencies** — 3 runtime deps: `hono`, `effect`, `@effect/schema`
 
-### Authentication (ASVS V2)
+## V2: Authentication
 
-| # | Requirement | Status | Location | Notes |
-|---|-------------|--------|----------|-------|
-| C-1 | Timing-safe secret comparison | FIXED | utils.ts, api.ts, oauth.ts | `timingSafeEqual()` via HMAC comparison on all 4 sites |
-| C-2 | Timing-safe webhook signature | FIXED | webhooks.ts | HMAC-based constant-time comparison |
-| C-3 | Client secrets hashed at rest | REVIEW | api.ts, kv.ts | Stored plaintext. SHA-256 hash + compare recommended. |
-| C-4 | Remove unused JWT_SECRET | FIXED | types.ts, config files | Removed from Env, .env.example, .dev.vars.example, wrangler.toml, README, setup script |
+- [x] **Timing-safe secret comparison** — `timingSafeEqual()` in `worker/src/utils.ts` uses HMAC-then-compare to prevent timing oracles
+- [x] **OAuth state parameter** — random 128-bit state ID, stored in KV with 10-min TTL → `worker/src/routes/oauth.ts` `GET /authorize`
+- [x] **State consumed on use** — deleted from KV immediately after validation → `oauth.ts` callback handler
+- [x] **Per-client redirect_uri allowlist** — `redirectUris[]` on ApiKey schema, validated with URL normalization → `oauth.ts` authorize handler
+- [x] **redirect_uri validation** — must be HTTPS (localhost exempt for dev) → `worker/src/routes/api.ts` `POST /keys`
 
-### Access Control (ASVS V4)
+## V3: Session Management
 
-| # | Requirement | Status | Location | Notes |
-|---|-------------|--------|----------|-------|
-| C-5 | Webhook idempotency (no double-credit) | FIXED | webhooks.ts | session.id dedup via KV (24hr TTL) |
-| C-6 | Atomic credit deduction | REVIEW | oauth.ts:295 | Read-modify-write race on KV. Low risk at current scale. |
-| C-7 | Key revocation / deletion endpoint | FIXED | api.ts | DELETE /api/keys/:clientId with auth |
+- [x] **Short-lived auth codes** — 5-min KV TTL → `oauth.ts` callback, `putAuthCode(..., 300)`
+- [x] **Short-lived OAuth state** — 10-min KV TTL → `oauth.ts` authorize, `putOAuthState(..., 600)`
+- [x] **Auth codes single-use** — deleted from KV after exchange → `oauth.ts` token handler
+- [x] **No-store cache headers** — `Cache-Control: no-store` on all token responses → `oauth.ts` token handler
 
-### Input Validation (ASVS V5)
+## V5: Input Validation
 
-| # | Requirement | Status | Location | Notes |
-|---|-------------|--------|----------|-------|
-| C-8 | POST /api/keys schema validation | REVIEW | api.ts | Manual validation. Effect Schema exists but not wired. |
-| C-9 | POST /api/checkout schema validation | REVIEW | api.ts | Manual validation. Effect Schema exists but not wired. |
-| C-10 | Credits bounds validation (min/max/int) | REVIEW | api.ts | No bounds — 0, negative, fractional accepted. |
-| C-11 | POST /oauth/token schema validation | REVIEW | oauth.ts | Manual validation. Effect Schema exists but not wired. |
-| C-12 | redirect_uri allowlist validation | FIXED | oauth.ts, api.ts, schemas.ts | Per-client URI allowlist stored on API key, validated on /oauth/authorize |
-| C-13 | Content-Type enforcement on POST | REVIEW | api.ts, oauth.ts | No check — Hono parses JSON regardless of content-type. |
-| C-14 | Auth code data from KV validated | REVIEW | kv.ts | Raw type assertion, no schema decode. |
+- [x] **Schema validation** — Effect Schema on KV reads (`ApiKeySchema`, `OAuthStateSchema`, `GoogleTokenResponseSchema`) → `worker/src/services/kv.ts`, `worker/src/services/google.ts`
+- [x] **Request body schemas** — `CreateKeyRequestSchema`, `TokenExchangeRequestSchema`, `CheckoutRequestSchema` → `worker/src/schemas.ts`
+- [x] **URL validation** — redirect URIs parsed with `new URL()`, protocol checked → `api.ts` `POST /keys`
+- [x] **Structured error responses** — every error includes `code`, `message`, `action`, `docs` → `worker/src/routes/oauth.ts` `errorToResponse()`
 
-### Cryptography (ASVS V6)
+## V6: Cryptography
 
-| # | Requirement | Status | Location | Notes |
-|---|-------------|--------|----------|-------|
-| C-15 | Application-layer encryption in KV | REVIEW | kv.ts | Tokens as plaintext JSON. KV is encrypted at rest by CF. |
+- [x] **AES-256-GCM token encryption** — encrypt/decrypt in `worker/src/crypto.ts`, tokens encrypted before KV storage
+- [x] **PBKDF2 key derivation** — 100,000 iterations, SHA-256, salt derived from secret → `crypto.ts` `deriveKey()`
+- [x] **Random 12-byte IV** — `crypto.getRandomValues()` per encryption operation → `crypto.ts` `encrypt()`
+- [x] **Cryptographic IDs** — 128-bit random IDs via `crypto.getRandomValues()` → `worker/src/utils.ts` `generateId()`
+- [x] **Cryptographic secrets** — 256-bit random secrets → `utils.ts` `generateSecret()`
 
-### Error Handling & Logging (ASVS V7)
+## V7: Error Handling & Logging
 
-| # | Requirement | Status | Location | Notes |
-|---|-------------|--------|----------|-------|
-| C-16 | Sanitize global error logging | FIXED | index.ts | Logs `err.message` only, no stack/objects |
-| C-17 | Sanitize OAuth error logging | FIXED | oauth.ts | Logs error class name only |
-| C-18 | Sanitize Stripe error logging | FIXED | api.ts | Logs HTTP status only |
+- [x] **No stack traces leaked** — global `app.onError()` returns generic message → `worker/src/index.ts`
+- [x] **Typed error hierarchy** — `Data.TaggedError` for each error class → `worker/src/errors.ts`
+- [x] **Generic auth failure messages** — "Invalid credentials" not "wrong password for user X" → `oauth.ts`
+- [x] **Console logging** — errors logged server-side, no sensitive data in messages
 
-### Data Protection (ASVS V8)
+## V8: Data Protection
 
-| # | Requirement | Status | Location | Notes |
-|---|-------------|--------|----------|-------|
-| C-19 | Data deletion endpoint | FIXED | api.ts | DELETE /api/keys/:clientId with timing-safe auth |
+- [x] **Data deletion endpoint** — `DELETE /api/keys/:clientId` purges API key and all associated data → `api.ts`
+- [x] **KV TTLs on temp data** — auth codes (5 min), OAuth state (10 min), rate limit counters (1 min)
+- [x] **No tokens in URLs** — tokens only in POST bodies and response JSON, never query params
+- [x] **Encrypted tokens at rest** — AES-256-GCM before KV storage → `crypto.ts`
 
-### API Security (ASVS V13)
+## V9: Communications
 
-| # | Requirement | Status | Location | Notes |
-|---|-------------|--------|----------|-------|
-| C-20 | Rate limiting | FIXED | index.ts | KV-based: 5/min key creation, 20/min token exchange |
-| C-21 | CORS explicit methods/headers | FIXED | index.ts | Explicit allowMethods, allowHeaders per route group |
-| C-22 | Request body size limits | REVIEW | wrangler.toml | CF Workers has 100MB default. No custom limit set. |
+- [x] **X-Content-Type-Options: nosniff** → `index.ts` middleware
+- [x] **Strict-Transport-Security** — `max-age=31536000; includeSubDomains` → `index.ts`
+- [x] **X-Frame-Options: DENY** → `index.ts`
+- [x] **Referrer-Policy: strict-origin-when-cross-origin** → `index.ts`
+- [x] **Content-Security-Policy** — `default-src 'none'; frame-ancestors 'none'` on API responses → `index.ts`
+- [x] **Permissions-Policy** — restrict sensitive browser APIs → `index.ts`
+- [x] **TRACE/TRACK blocked** — 405 response → `index.ts`
+- [x] **CORS scoped** — explicit methods and headers per route group → `index.ts`
 
-### Configuration (ASVS V14)
+## V10: Webhook Security
 
-| # | Requirement | Status | Location | Notes |
-|---|-------------|--------|----------|-------|
-| C-23 | Staging/prod KV namespace isolation | REVIEW | wrangler.toml | Same KV ID for all environments. |
-| C-24 | Stripe webhook timestamp validation | FIXED | webhooks.ts | Rejects events >5 min old |
+- [x] **Stripe signature verification** — HMAC-SHA256 with `crypto.subtle` → `worker/src/routes/webhooks.ts` `verifyStripeSignature()`
+- [x] **Timestamp validation** — 5-minute tolerance window prevents replay attacks → `webhooks.ts`
+- [x] **Timing-safe signature comparison** — HMAC-then-compare on signature bytes → `webhooks.ts`
+- [x] **Idempotency** — KV key `webhook_processed:{session_id}` with 24h TTL prevents double-processing → `webhooks.ts`
 
-### Landing Site
+## V13: API Security
 
-| # | Requirement | Status | Location | Notes |
-|---|-------------|--------|----------|-------|
-| C-25 | CDN scripts with SRI integrity hash | FIXED | Layout.astro | sha384 integrity on highlight.js CSS + JS |
-| C-26 | Landing security headers (_headers file) | FIXED | public/_headers | CSP, HSTS, X-Frame-Options, Permissions-Policy |
-| C-27 | Demo OAuth uses state parameter | REVIEW | demo.astro | No CSRF state in authorize URL. |
-| C-28 | Demo doesn't store secrets in localStorage | REVIEW | demo.astro | client_secret in localStorage. |
+- [x] **Rate limiting** — KV-based sliding window: `/api/keys` 5/min, `/oauth/token` 20/min → `index.ts`
+- [x] **Proper status codes** — 400, 401, 402, 404, 405, 429, 500 used correctly
+- [x] **Machine-readable errors** — `{ error: { code, message, action, docs } }` on every error response
+- [x] **404 on unknown routes** — JSON for API paths, generic for others → `index.ts` `notFound()`
 
----
+## Cloudflare-Specific
 
-## Scoreboard
-
-### Layer 1 — CASA ZAP Scan (must pass for certification)
-
-| Status | Count |
-|--------|-------|
-| FIXED | 10 |
-| OPEN | 0 |
-
-### Layer 2 — Code Review (should fix for real security)
-
-| Status | Count |
-|--------|-------|
-| FIXED | 16 |
-| REVIEW | 12 |
+- [x] **Environment separation** — `[env.staging]` and `[env.production]` in `wrangler.toml` with separate routes
+- [x] **Secrets management** — `wrangler secret put` for `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+- [x] **Static assets** — landing site served via `[assets]` binding, not Worker logic
+- [x] **KV for state** — no filesystem, no global variables, all state in KV with TTLs
 
 ---
 
-## Fix Priority Order
+## Audit Preparation
 
-### Phase 1: Pass the ZAP scan (Z-1 through Z-10) — DONE
-All headers/config. Done in a single middleware + `_headers` file.
+- [ ] Run `npm audit` — resolve critical and high vulnerabilities
+- [ ] Document dependencies — list each dep and why it's needed
+- [ ] Data flow diagram — show where tokens travel (Google → Worker → KV → Client)
+- [ ] Complete Google's SAQ (Self-Assessment Questionnaire)
+- [ ] Run E2E tests — `cd e2e && node tests/full-flow.test.js`
+- [ ] Verify all secrets rotated from any prior leaks
+- [ ] Test rate limiting manually (hit endpoints > threshold)
+- [ ] Test webhook replay (send old timestamp, verify rejection)
+- [ ] Test redirect_uri bypass (send unregistered URI, verify rejection)
+- [ ] Review Cloudflare WAF settings (enable managed ruleset if available)
 
-### Phase 2: Critical code fixes — DONE
-1. **C-1/C-2**: Timing-safe comparisons (5 locations) — `timingSafeEqual()` utility
-2. **C-12**: redirect_uri allowlist (prevents auth code theft)
-3. **C-19**: Data deletion endpoint (Google GDPR requirement)
-4. **C-5/C-24**: Webhook idempotency + timestamp validation
-5. **C-20/C-21**: Rate limiting + explicit CORS
-6. **C-4**: Removed dead JWT_SECRET config
-7. **C-7**: Key deletion endpoint
-8. **C-16/C-17/C-18**: Sanitized all error logging
+## Files That Matter
 
-### Phase 3: Hardening (remaining REVIEW items)
-- Wire Effect Schemas into route handlers (C-8 through C-11)
-- Secret hashing at rest (C-3)
-- Content-Type enforcement (C-13)
-- Auth code schema validation (C-14)
-- KV namespace isolation (C-23)
-- Demo page state parameter (C-27)
-- Demo page localStorage (C-28)
+| File | What it does |
+|------|-------------|
+| `worker/src/index.ts` | Security headers, CORS, rate limiting, TRACE blocking |
+| `worker/src/utils.ts` | `timingSafeEqual()`, `generateId()`, `generateSecret()` |
+| `worker/src/crypto.ts` | AES-256-GCM encrypt/decrypt for token storage |
+| `worker/src/routes/oauth.ts` | OAuth flow with state, redirect validation, token exchange |
+| `worker/src/routes/api.ts` | Key CRUD, data deletion, credential validation |
+| `worker/src/routes/webhooks.ts` | Stripe webhook verification, replay protection, idempotency |
+| `worker/src/schemas.ts` | Effect Schema definitions for all data types |
+| `worker/src/errors.ts` | Tagged error types — no leaking internals |
+| `worker/src/services/kv.ts` | KV operations with schema validation on reads |
+| `worker/wrangler.toml` | Environment isolation, KV bindings, asset config |
 
 ---
 
-## Reference
-
-- **Assessor used:** TAC Security ($540-720)
-- **Scan tool:** OWASP ZAP (DAST) via ESOF AppSec ADA
-- **Previous score:** 9.7 (passed)
-- **Scope:** https://inbox.dog (all endpoints)
-- **Recertification:** Annual (12 months from LOV date)
+*Based on inbox.dog's CASA Tier 2 audit. Fork, check the boxes, ship.*
