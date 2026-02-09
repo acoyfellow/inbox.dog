@@ -1,10 +1,11 @@
-name: Deploy landing site
+name: Deploy worker + landing
 
 on:
   push:
     branches: [main]
     paths:
       - "landing/**"
+      - "worker/**"
 
 jobs:
   deploy:
@@ -14,13 +15,16 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: Install and build
+      - name: Install and build landing
         working-directory: landing
         run: npm ci && npm run build
-      - name: Deploy to Cloudflare Pages
+      - name: Install worker deps
+        working-directory: worker
+        run: npm ci
+      - name: Deploy worker to production
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          workingDirectory: landing
+          workingDirectory: worker
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          command: pages deploy dist --project-name=inbox-dog
+          command: deploy --env production
