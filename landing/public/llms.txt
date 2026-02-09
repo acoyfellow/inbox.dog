@@ -91,31 +91,6 @@ Methods: createKey, getKey, getAuthUrl, exchangeCode, refreshToken, checkout
 All errors throw InboxDogError with { code, status, message, action, docs }.
 Package source: https://github.com/acoyfellow/inbox.dog/tree/main/package
 
-## MCP Server
-
-inbox.dog has an MCP (Model Context Protocol) server for direct agent integration.
-
-Install: npx @inboxdog/mcp-server
-
-Configure in Claude Desktop or any MCP client:
-```json
-{
-  "mcpServers": {
-    "inbox-dog": {
-      "command": "npx",
-      "args": ["-y", "@inboxdog/mcp-server"]
-    }
-  }
-}
-```
-
-Available tools:
-- inbox_dog_create_key: Create API key (no auth required)
-- inbox_dog_oauth_start: Generate Gmail OAuth authorization URL
-- inbox_dog_exchange_code: Exchange auth code for access + refresh tokens
-- inbox_dog_refresh_token: Refresh an expired access token
-- inbox_dog_check_credits: Check remaining credits
-
 ## Links
 
 - Docs: https://inbox.dog/docs
@@ -127,5 +102,4 @@ Available tools:
 - OpenAPI Spec: https://inbox.dog/openapi.json
 - npm: https://www.npmjs.com/package/inbox.dog
 - GitHub: https://github.com/acoyfellow/inbox.dog
-- MCP Server: https://github.com/acoyfellow/inbox.dog/tree/main/mcp
 - Pricing: https://inbox.dog/pricing

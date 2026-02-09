@@ -68,23 +68,6 @@ const tokens = await dog.exchangeCode(code, key.client_id, key.client_secret);
 
 See [`package/README.md`](package/README.md) for full API docs.
 
-## MCP Server (Agent Integration)
-
-inbox.dog includes an MCP server so AI agents can handle Gmail OAuth directly:
-
-```json
-{
-  "mcpServers": {
-    "inbox-dog": {
-      "command": "npx",
-      "args": ["-y", "@inboxdog/mcp-server"]
-    }
-  }
-}
-```
-
-Tools: `inbox_dog_create_key`, `inbox_dog_oauth_start`, `inbox_dog_exchange_code`, `inbox_dog_refresh_token`, `inbox_dog_check_credits`
-
 ## Project Structure
 
 ```
@@ -100,8 +83,6 @@ Tools: `inbox_dog_create_key`, `inbox_dog_oauth_start`, `inbox_dog_exchange_code
 │   └── wrangler.toml
 ├── package/          # npm package (inbox.dog)
 │   └── src/index.ts  # TypeScript client library
-├── mcp/              # MCP server for agent integration
-│   └── src/index.ts  # stdio MCP server
 ├── e2e/              # End-to-end tests
 └── .husky/           # Git hooks
 ```
