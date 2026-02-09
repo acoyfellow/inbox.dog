@@ -1,0 +1,198 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="MCP Server — inbox.dog">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">MCP Server Integration</h1>
+    <p class="text-primary-600 mb-12">Give any AI agent Gmail access via the Model Context Protocol. One config block, five tools, zero code.</p>
+
+    <!-- What is MCP -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">What is MCP?</h2>
+      <p class="text-primary-600 mb-4">The <a href="https://modelcontextprotocol.io" class="text-primary-900 underline">Model Context Protocol</a> (MCP) lets AI agents use tools through a standard interface. inbox.dog's MCP server exposes Gmail OAuth as tools that any MCP-compatible client can call — Claude Desktop, Cursor, Windsurf, <a href="https://contextarea.com" class="text-primary-900 underline">ContextArea</a>, or your own agent.</p>
+    </section>
+
+    <!-- Quick Start -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Quick Start</h2>
+      <p class="text-primary-600 mb-4">Add to your MCP client config (e.g. <code class="bg-primary-100 px-1 rounded font-mono">claude_desktop_config.json</code>):</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`{
+  "mcpServers": {
+    "inbox-dog": {
+      "command": "npx",
+      "args": ["-y", "inbox-dog-mcp"],
+      "env": {
+        "INBOX_DOG_BASE_URL": "https://inbox.dog"
+      }
+    }
+  }
+}`}</code></pre>
+      </div>
+      <p class="text-primary-600">That's it. Your agent now has five Gmail OAuth tools.</p>
+    </section>
+
+    <!-- Available Tools -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Available Tools</h2>
+      <div class="space-y-6">
+        <div class="bg-white rounded-xl border border-primary-100 p-6">
+          <h3 class="font-mono text-lg font-semibold text-primary-900 mb-2">inbox_dog_create_key</h3>
+          <p class="text-primary-600 mb-2">Create a new API key. Returns <code class="bg-primary-100 px-1 rounded font-mono">client_id</code> and <code class="bg-primary-100 px-1 rounded font-mono">client_secret</code> with 10 free credits.</p>
+          <p class="text-sm text-primary-400">No authentication required.</p>
+        </div>
+
+        <div class="bg-white rounded-xl border border-primary-100 p-6">
+          <h3 class="font-mono text-lg font-semibold text-primary-900 mb-2">inbox_dog_oauth_start</h3>
+          <p class="text-primary-600 mb-2">Generate a Gmail OAuth authorization URL. The user visits this URL, authenticates with Google, and gets redirected with a <code class="bg-primary-100 px-1 rounded font-mono">?code=</code> parameter.</p>
+          <div class="bg-primary-50 rounded-lg p-3 text-sm mt-3">
+            <p class="text-primary-600"><strong>Parameters:</strong> <code class="font-mono">client_id</code>, <code class="font-mono">redirect_uri</code>, <code class="font-mono">scope</code> (optional), <code class="font-mono">state</code> (optional)</p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-primary-100 p-6">
+          <h3 class="font-mono text-lg font-semibold text-primary-900 mb-2">inbox_dog_exchange_code</h3>
+          <p class="text-primary-600 mb-2">Exchange an authorization code for Gmail access and refresh tokens. Costs 1 credit. The returned <code class="bg-primary-100 px-1 rounded font-mono">access_token</code> works directly with the Gmail API.</p>
+          <div class="bg-primary-50 rounded-lg p-3 text-sm mt-3">
+            <p class="text-primary-600"><strong>Parameters:</strong> <code class="font-mono">code</code>, <code class="font-mono">client_id</code>, <code class="font-mono">client_secret</code></p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-primary-100 p-6">
+          <h3 class="font-mono text-lg font-semibold text-primary-900 mb-2">inbox_dog_refresh_token</h3>
+          <p class="text-primary-600 mb-2">Refresh an expired access token. Access tokens expire after 1 hour. Free — no credit cost.</p>
+          <div class="bg-primary-50 rounded-lg p-3 text-sm mt-3">
+            <p class="text-primary-600"><strong>Parameters:</strong> <code class="font-mono">refresh_token</code>, <code class="font-mono">client_id</code>, <code class="font-mono">client_secret</code></p>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-primary-100 p-6">
+          <h3 class="font-mono text-lg font-semibold text-primary-900 mb-2">inbox_dog_check_credits</h3>
+          <p class="text-primary-600 mb-2">Check remaining credits and API key info.</p>
+          <div class="bg-primary-50 rounded-lg p-3 text-sm mt-3">
+            <p class="text-primary-600"><strong>Parameters:</strong> <code class="font-mono">client_id</code>, <code class="font-mono">client_secret</code></p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Scopes -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Gmail Scopes</h2>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="border-b border-primary-200">
+              <th class="py-2 pr-4 text-primary-900 font-semibold">Scope</th>
+              <th class="py-2 text-primary-900 font-semibold">Access</th>
+            </tr>
+          </thead>
+          <tbody class="text-primary-600">
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4 font-mono text-sm">email</td>
+              <td class="py-2">Read-only (default)</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4 font-mono text-sm">email:read</td>
+              <td class="py-2">Read-only (explicit)</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4 font-mono text-sm">email:send</td>
+              <td class="py-2">Send only</td>
+            </tr>
+            <tr class="border-b border-primary-100">
+              <td class="py-2 pr-4 font-mono text-sm">email:full</td>
+              <td class="py-2">Full read/write/modify</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Example flow -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Example Agent Flow</h2>
+      <p class="text-primary-600 mb-4">Here's what a typical agent conversation looks like:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`Agent: I'll set up Gmail access for you.
+
+→ calls inbox_dog_create_key { name: "my-agent" }
+← { client_id: "id_abc...", client_secret: "sk_xyz...", credits: 10 }
+
+→ calls inbox_dog_oauth_start {
+    client_id: "id_abc...",
+    redirect_uri: "https://myapp.com/callback",
+    scope: "email:read"
+  }
+← { auth_url: "https://inbox.dog/oauth/authorize?..." }
+
+Agent: Please visit this link to connect your Gmail:
+https://inbox.dog/oauth/authorize?...
+
+[User visits URL, authenticates with Google, gets redirected]
+[User provides the ?code= from the redirect]
+
+→ calls inbox_dog_exchange_code {
+    code: "a1b2c3...",
+    client_id: "id_abc...",
+    client_secret: "sk_xyz..."
+  }
+← { access_token: "ya29...", refresh_token: "1//...", email: "user@gmail.com" }
+
+Agent: Connected! I can now read your Gmail using the access token.`}</code></pre>
+      </div>
+    </section>
+
+    <!-- Self-hosting -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Self-Hosting</h2>
+      <p class="text-primary-600 mb-4">Point the MCP server at your own inbox.dog instance:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`{
+  "mcpServers": {
+    "inbox-dog": {
+      "command": "npx",
+      "args": ["-y", "inbox-dog-mcp"],
+      "env": {
+        "INBOX_DOG_BASE_URL": "https://your-worker.your-subdomain.workers.dev"
+      }
+    }
+  }
+}`}</code></pre>
+      </div>
+      <p class="text-primary-600">The entire stack is open source. <a href="https://github.com/acoyfellow/inbox.dog" class="text-primary-900 underline">Fork and deploy your own</a>.</p>
+    </section>
+
+    <!-- Client compatibility -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Compatible Clients</h2>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">Claude Desktop</h3>
+          <p class="text-primary-500 text-sm">Add to <code class="font-mono text-xs">~/Library/Application Support/Claude/claude_desktop_config.json</code></p>
+        </div>
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">Cursor</h3>
+          <p class="text-primary-500 text-sm">Add to <code class="font-mono text-xs">.cursor/mcp.json</code> in your project</p>
+        </div>
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">Windsurf</h3>
+          <p class="text-primary-500 text-sm">Add to <code class="font-mono text-xs">~/.codeium/windsurf/mcp_config.json</code></p>
+        </div>
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">Any MCP Client</h3>
+          <p class="text-primary-500 text-sm">Works with any client that supports the <a href="https://modelcontextprotocol.io" class="text-primary-900 underline">MCP standard</a></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Source -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Source</h2>
+      <p class="text-primary-600">The MCP server is 270 lines of TypeScript. <a href="https://github.com/acoyfellow/inbox.dog/tree/main/mcp" class="text-primary-900 underline">View on GitHub</a>.</p>
+    </section>
+
+  </div>
+</Layout>
