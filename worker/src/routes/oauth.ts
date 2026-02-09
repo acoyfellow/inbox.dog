@@ -302,15 +302,31 @@ oauthRoutes.get('/callback', async (c) => {
 });
 
 // POST /oauth/token
+// Accepts both application/json and application/x-www-form-urlencoded (OAuth 2.1 spec)
 oauthRoutes.post('/token', async (c) => {
-  const body = await c.req.json<{
+  let body: {
     code?: string;
     client_id?: string;
     client_secret?: string;
     grant_type?: string;
     refresh_token?: string;
     code_verifier?: string;
-  }>();
+  };
+
+  const contentType = c.req.header('content-type') ?? '';
+  if (contentType.includes('application/x-www-form-urlencoded')) {
+    const formData = await c.req.parseBody();
+    body = {
+      code: formData['code'] as string | undefined,
+      client_id: formData['client_id'] as string | undefined,
+      client_secret: formData['client_secret'] as string | undefined,
+      grant_type: formData['grant_type'] as string | undefined,
+      refresh_token: formData['refresh_token'] as string | undefined,
+      code_verifier: formData['code_verifier'] as string | undefined,
+    };
+  } else {
+    body = await c.req.json();
+  }
 
   const grantType = body.grant_type ?? 'authorization_code';
 
