@@ -14,13 +14,13 @@ export interface KVService {
   readonly deleteOAuthState: (stateId: string) => Effect.Effect<void, never>;
   readonly putAuthCode: (
     code: string,
-    data: { accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string },
+    data: { accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string; codeChallenge?: string; codeChallengeMethod?: string },
     ttlSeconds: number
   ) => Effect.Effect<void, never>;
   readonly getAuthCode: (
     code: string
   ) => Effect.Effect<
-    { accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string },
+    { accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string; codeChallenge?: string; codeChallengeMethod?: string },
     NotFoundError
   >;
   readonly deleteAuthCode: (code: string) => Effect.Effect<void, never>;
@@ -108,13 +108,13 @@ export const makeKVService = (kv: KVNamespace, encryptionSecret?: string): KVSer
         if (encryptionSecret) {
           return Effect.tryPromise({
             try: async () => JSON.parse(await decrypt(raw, encryptionSecret)) as {
-              accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string;
+              accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string; codeChallenge?: string; codeChallengeMethod?: string;
             },
             catch: () => new NotFoundError({ resource: 'AuthCode', id: code }),
           });
         }
         return Effect.succeed(
-          JSON.parse(raw) as { accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string }
+          JSON.parse(raw) as { accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string; codeChallenge?: string; codeChallengeMethod?: string }
         );
       })
     );

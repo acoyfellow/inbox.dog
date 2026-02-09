@@ -14,8 +14,47 @@ import {
   type AppError,
 } from '../errors';
 import type { OAuthState, ApiKey } from '../schemas';
+import { generateSecret } from '../utils';
 
 export const oauthRoutes = new Hono<{ Bindings: Env }>();
+
+// ── Dynamic Client Registration (RFC 7591) ──────────────────────────────────
+// MCP clients call this to register themselves and get client credentials.
+oauthRoutes.post('/register', async (c) => {
+  const body = await c.req.json<{
+    client_name?: string;
+    redirect_uris?: string[];
+  }>().catch(() => ({} as { client_name?: string; redirect_uris?: string[] }));
+
+  const name = body.client_name ?? 'mcp-client';
+  const redirectUris = body.redirect_uris ?? [];
+
+  const clientId = `id_${generateId()}`;
+  const clientSecret = `sk_${generateSecret()}`;
+
+  const apiKey: ApiKey = {
+    id: generateId(),
+    clientId,
+    clientSecret,
+    name,
+    createdAt: Date.now(),
+    credits: 10,
+    redirectUris,
+  };
+
+  await c.env.KV.put(`apikey:${clientId}`, JSON.stringify(apiKey));
+
+  c.header('Cache-Control', 'no-store');
+  return c.json({
+    client_id: clientId,
+    client_secret: clientSecret,
+    client_name: name,
+    redirect_uris: redirectUris,
+    grant_types: ['authorization_code', 'refresh_token'],
+    response_types: ['code'],
+    token_endpoint_auth_method: 'client_secret_post',
+  }, 201);
+});
 
 // Helper to run Effect with services and handle errors
 const runWithServices = async <A, E>(
@@ -143,6 +182,8 @@ oauthRoutes.get('/authorize', async (c) => {
   const redirectUri = c.req.query('redirect_uri');
   const state = c.req.query('state') ?? '';
   const scope = c.req.query('scope') ?? 'email';
+  const codeChallenge = c.req.query('code_challenge');
+  const codeChallengeMethod = c.req.query('code_challenge_method');
 
   if (!clientId || !redirectUri) {
     return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing client_id or redirect_uri', action: 'Provide both client_id and redirect_uri query parameters', docs: 'https://inbox.dog/docs/api' } }, 400);
@@ -175,6 +216,7 @@ oauthRoutes.get('/authorize', async (c) => {
       scope,
       state,
       createdAt: Date.now(),
+      ...(codeChallenge ? { codeChallenge, codeChallengeMethod: codeChallengeMethod ?? 'S256' } : {}),
     };
     yield* kv.putOAuthState(oauthStateId, oauthState, 600);
 
@@ -225,7 +267,7 @@ oauthRoutes.get('/callback', async (c) => {
       redirectUri: `${new URL(c.req.url).origin}/oauth/callback`,
     });
 
-    // Store auth code
+    // Store auth code (include PKCE challenge if present)
     const authCode = generateId();
     yield* kv.putAuthCode(
       authCode,
@@ -235,6 +277,7 @@ oauthRoutes.get('/callback', async (c) => {
         expiresIn: tokens.expiresIn,
         email: tokens.email,
         clientId: oauthState.clientId,
+        ...(oauthState.codeChallenge ? { codeChallenge: oauthState.codeChallenge, codeChallengeMethod: oauthState.codeChallengeMethod } : {}),
       },
       300
     );
@@ -266,6 +309,7 @@ oauthRoutes.post('/token', async (c) => {
     client_secret?: string;
     grant_type?: string;
     refresh_token?: string;
+    code_verifier?: string;
   }>();
 
   const grantType = body.grant_type ?? 'authorization_code';
@@ -274,10 +318,15 @@ oauthRoutes.post('/token', async (c) => {
     return handleRefreshToken(c, body);
   }
 
-  const { code, client_id, client_secret } = body;
+  const { code, client_id, client_secret, code_verifier } = body;
 
-  if (!code || !client_id || !client_secret) {
-    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing required fields: code, client_id, and client_secret are required', action: 'Provide code (from OAuth callback), client_id, and client_secret in the request body', docs: 'https://inbox.dog/docs/api' } }, 400);
+  if (!code || !client_id) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing required fields: code and client_id are required', action: 'Provide code (from OAuth callback) and client_id in the request body', docs: 'https://inbox.dog/docs/api' } }, 400);
+  }
+
+  // Either client_secret or code_verifier (PKCE) must be present
+  if (!client_secret && !code_verifier) {
+    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Either client_secret or code_verifier (PKCE) is required', action: 'Provide client_secret for confidential clients or code_verifier for public clients (PKCE)', docs: 'https://inbox.dog/docs/api' } }, 400);
   }
 
   const program = Effect.gen(function* () {
@@ -286,9 +335,12 @@ oauthRoutes.post('/token', async (c) => {
     // Validate credentials and get API key
     const apiKey = yield* kv.getApiKey(client_id);
 
-    const secretMatch = yield* Effect.promise(() => timingSafeEqual(apiKey.clientSecret, client_secret));
-    if (!secretMatch) {
-      return yield* Effect.fail(new InvalidCredentialsError({ message: 'Invalid client_secret' }));
+    // Authenticate: client_secret OR PKCE code_verifier
+    if (client_secret) {
+      const secretMatch = yield* Effect.promise(() => timingSafeEqual(apiKey.clientSecret, client_secret));
+      if (!secretMatch) {
+        return yield* Effect.fail(new InvalidCredentialsError({ message: 'Invalid client_secret' }));
+      }
     }
 
     if (apiKey.credits <= 0) {
@@ -302,12 +354,61 @@ oauthRoutes.post('/token', async (c) => {
       return yield* Effect.fail(new InvalidCredentialsError({ message: 'Code was not issued to this client' }));
     }
 
+    // PKCE verification
+    if (authData.codeChallenge) {
+      if (!code_verifier) {
+        return yield* Effect.fail(new ValidationError({ field: 'code_verifier', message: 'PKCE code_verifier required for this authorization' }));
+      }
+      const verified = yield* Effect.promise(async () => {
+        const encoder = new TextEncoder();
+        const digest = await crypto.subtle.digest('SHA-256', encoder.encode(code_verifier));
+        const arr = new Uint8Array(digest);
+        let str = '';
+        for (const byte of arr) str += String.fromCharCode(byte);
+        const computed = btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        return computed === authData.codeChallenge;
+      });
+      if (!verified) {
+        return yield* Effect.fail(new InvalidCredentialsError({ message: 'PKCE code_verifier does not match code_challenge' }));
+      }
+    } else if (!client_secret) {
+      // No PKCE and no client_secret — reject
+      return yield* Effect.fail(new InvalidCredentialsError({ message: 'client_secret required (no PKCE challenge was set)' }));
+    }
+
     yield* kv.deleteAuthCode(code);
 
     // Deduct credit
     const updatedApiKey: ApiKey = { ...apiKey, credits: apiKey.credits - 1 };
     yield* kv.putApiKey(client_id, updatedApiKey);
 
+    // If PKCE was used (MCP flow), create a session token that wraps Gmail tokens.
+    // This way MCP clients get a bearer token they use with /mcp, and we manage
+    // the Gmail token lifecycle (refresh, etc.) server-side.
+    if (code_verifier) {
+      const sessionToken = `mcp_${generateId()}`;
+      yield* Effect.promise(() =>
+        c.env.KV.put(
+          `mcp_session:${sessionToken}`,
+          JSON.stringify({
+            accessToken: authData.accessToken,
+            refreshToken: authData.refreshToken,
+            expiresAt: Date.now() + authData.expiresIn * 1000,
+            email: authData.email,
+            clientId: client_id,
+          }),
+          { expirationTtl: 90 * 24 * 60 * 60 }, // 90 days
+        ),
+      );
+      return {
+        access_token: sessionToken,
+        token_type: 'Bearer',
+        expires_in: 90 * 24 * 60 * 60, // session token lasts 90 days
+        scope: 'gmail:read gmail:send',
+      };
+    }
+
+    // Non-PKCE (legacy REST API flow) — return raw Gmail tokens
     return {
       access_token: authData.accessToken,
       refresh_token: authData.refreshToken,

@@ -4,6 +4,8 @@ import { Effect, pipe } from 'effect';
 import { oauthRoutes } from './routes/oauth';
 import { apiRoutes } from './routes/api';
 import { webhookRoutes } from './routes/webhooks';
+import { mcpRoutes } from './routes/mcp';
+import { wellKnownRoutes } from './routes/well-known';
 import type { Env } from './types';
 
 const app = new Hono<{ Bindings: Env }>();
@@ -41,6 +43,26 @@ app.use('/oauth/*', cors({
   allowHeaders: ['Content-Type'],
   maxAge: 86400,
 }));
+app.use('/mcp', cors({
+  origin: '*',
+  allowMethods: ['POST', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  exposeHeaders: ['WWW-Authenticate'],
+  maxAge: 86400,
+}));
+app.use('/mcp/*', cors({
+  origin: '*',
+  allowMethods: ['POST', 'OPTIONS'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Accept'],
+  exposeHeaders: ['WWW-Authenticate'],
+  maxAge: 86400,
+}));
+app.use('/.well-known/*', cors({
+  origin: '*',
+  allowMethods: ['GET', 'OPTIONS'],
+  allowHeaders: ['Content-Type'],
+  maxAge: 86400,
+}));
 
 // Rate limiting for sensitive endpoints (KV-based sliding window)
 app.use('/api/keys', async (c, next) => {
@@ -70,9 +92,11 @@ app.use('/oauth/token', async (c, next) => {
 app.get('/health', (c) => c.json({ status: 'ok' }));
 
 // Mount routes
+app.route('/.well-known', wellKnownRoutes);
 app.route('/oauth', oauthRoutes);
 app.route('/api', apiRoutes);
 app.route('/webhooks', webhookRoutes);
+app.route('/mcp', mcpRoutes);
 
 // For any route not handled above, fall through to assets
 // The assets binding handles static files automatically
@@ -80,7 +104,7 @@ app.route('/webhooks', webhookRoutes);
 app.notFound((c) => {
   // Return JSON 404 for API-like routes
   const path = new URL(c.req.url).pathname;
-  if (path.startsWith('/api/') || path.startsWith('/oauth/') || path.startsWith('/webhooks/')) {
+  if (path.startsWith('/api/') || path.startsWith('/oauth/') || path.startsWith('/webhooks/') || path.startsWith('/mcp') || path.startsWith('/.well-known/')) {
     return c.json({ error: { code: 'NOT_FOUND', message: `Endpoint not found: ${path}`, action: 'Check the endpoint URL', docs: 'https://inbox.dog/docs/api' } }, 404);
   }
   // For other routes, let the assets binding handle it

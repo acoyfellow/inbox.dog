@@ -21,6 +21,8 @@ export const OAuthStateSchema = Schema.Struct({
   scope: Schema.String,
   state: Schema.String,
   createdAt: Schema.Number,
+  codeChallenge: Schema.optional(Schema.String),
+  codeChallengeMethod: Schema.optional(Schema.String),
 });
 
 export type OAuthState = Schema.Schema.Type<typeof OAuthStateSchema>;
