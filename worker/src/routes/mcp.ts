@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
-import type { Env } from '../types';
+import type { Env, ApiKey } from '../types';
+import { generateId, generateSecret, timingSafeEqual } from '../utils';
 
 export const mcpRoutes = new Hono<{ Bindings: Env }>();
 
@@ -19,7 +20,7 @@ interface JsonRpcResponse {
   error?: { code: number; message: string; data?: unknown };
 }
 
-// ── Tool definitions (JSON Schema, not Zod) ─────────────────────────────────
+// ── Tool definitions (JSON Schema) ──────────────────────────────────────────
 
 interface ToolDefinition {
   name: string;
@@ -149,41 +150,56 @@ function jsonrpcError(
   return { jsonrpc: '2.0', id, error: { code, message, ...(data !== undefined ? { data } : {}) } };
 }
 
-function toolContent(text: string, isError?: boolean) {
+interface ToolResult {
+  content: { type: 'text'; text: string }[];
+  isError?: boolean;
+}
+
+function toolContent(text: string, isError?: boolean): ToolResult {
   return {
     content: [{ type: 'text' as const, text }],
     ...(isError ? { isError: true } : {}),
   };
 }
 
-async function internalFetch(
-  origin: string,
-  path: string,
-  init: RequestInit = {},
-): Promise<{ ok: boolean; status: number; data: unknown }> {
-  const resp = await fetch(`${origin}${path}`, {
-    ...init,
-    headers: { 'Content-Type': 'application/json', ...(init.headers as Record<string, string> | undefined) },
-  });
-  const data: unknown = await resp.json();
-  return { ok: resp.ok, status: resp.status, data };
-}
-
-// ── Tool executor ───────────────────────────────────────────────────────────
+// ── Tool executor (direct KV access, no self-fetch) ─────────────────────────
 
 async function executeTool(
   name: string,
   args: Record<string, unknown>,
   origin: string,
-): Promise<{ content: { type: 'text'; text: string }[]; isError?: boolean }> {
+  env: Env,
+): Promise<ToolResult> {
   switch (name) {
     case 'inbox_dog_create_key': {
-      const res = await internalFetch(origin, '/api/keys', {
-        method: 'POST',
-        body: JSON.stringify({ name: (args['name'] as string | undefined) ?? 'default' }),
-      });
-      if (!res.ok) return toolContent(`Failed to create API key: ${JSON.stringify(res.data)}`, true);
-      return toolContent(JSON.stringify(res.data, null, 2));
+      const keyName = (args['name'] as string | undefined) ?? 'default';
+      const clientId = `id_${generateId()}`;
+      const clientSecret = `sk_${generateSecret()}`;
+
+      const apiKey: ApiKey = {
+        id: generateId(),
+        clientId,
+        clientSecret,
+        name: keyName,
+        createdAt: Date.now(),
+        credits: 10,
+        redirectUris: [],
+      };
+
+      await env.KV.put(`apikey:${clientId}`, JSON.stringify(apiKey));
+
+      return toolContent(
+        JSON.stringify(
+          {
+            client_id: clientId,
+            client_secret: clientSecret,
+            name: keyName,
+            credits: apiKey.credits,
+          },
+          null,
+          2,
+        ),
+      );
     }
 
     case 'inbox_dog_oauth_start': {
@@ -211,21 +227,26 @@ async function executeTool(
     }
 
     case 'inbox_dog_exchange_code': {
-      const res = await internalFetch(origin, '/oauth/token', {
+      // This needs the full OAuth flow with Google — use internal fetch
+      const res = await fetch(`${origin}/oauth/token`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           code: args['code'],
           client_id: args['client_id'],
           client_secret: args['client_secret'],
         }),
       });
-      if (!res.ok) return toolContent(`Token exchange failed: ${JSON.stringify(res.data)}`, true);
-      return toolContent(JSON.stringify(res.data, null, 2));
+      const data: unknown = await res.json();
+      if (!res.ok) return toolContent(`Token exchange failed: ${JSON.stringify(data)}`, true);
+      return toolContent(JSON.stringify(data, null, 2));
     }
 
     case 'inbox_dog_refresh_token': {
-      const res = await internalFetch(origin, '/oauth/token', {
+      // This needs the full OAuth flow with Google — use internal fetch
+      const res = await fetch(`${origin}/oauth/token`, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           grant_type: 'refresh_token',
           refresh_token: args['refresh_token'],
@@ -233,19 +254,43 @@ async function executeTool(
           client_secret: args['client_secret'],
         }),
       });
-      if (!res.ok) return toolContent(`Token refresh failed: ${JSON.stringify(res.data)}`, true);
-      return toolContent(JSON.stringify(res.data, null, 2));
+      const data: unknown = await res.json();
+      if (!res.ok) return toolContent(`Token refresh failed: ${JSON.stringify(data)}`, true);
+      return toolContent(JSON.stringify(data, null, 2));
     }
 
     case 'inbox_dog_check_credits': {
       const clientId = args['client_id'] as string;
       const clientSecret = args['client_secret'] as string;
-      const res = await internalFetch(origin, `/api/keys/${encodeURIComponent(clientId)}`, {
-        method: 'GET',
-        headers: { 'X-Client-Secret': clientSecret },
-      });
-      if (!res.ok) return toolContent(`Failed to check credits: ${JSON.stringify(res.data)}`, true);
-      return toolContent(JSON.stringify(res.data, null, 2));
+
+      const apiKeyJson = await env.KV.get(`apikey:${clientId}`);
+      if (!apiKeyJson) {
+        return toolContent(
+          JSON.stringify({ error: 'API key not found' }),
+          true,
+        );
+      }
+
+      const apiKey = JSON.parse(apiKeyJson) as ApiKey;
+      if (!(await timingSafeEqual(apiKey.clientSecret, clientSecret))) {
+        return toolContent(
+          JSON.stringify({ error: 'Invalid credentials' }),
+          true,
+        );
+      }
+
+      return toolContent(
+        JSON.stringify(
+          {
+            client_id: apiKey.clientId,
+            name: apiKey.name,
+            credits: apiKey.credits,
+            created_at: apiKey.createdAt,
+          },
+          null,
+          2,
+        ),
+      );
     }
 
     default:
@@ -279,7 +324,6 @@ mcpRoutes.post('/', async (c) => {
   const isNotification = id === undefined || id === null;
 
   switch (method) {
-    // ── initialize ────────────────────────────────────────────────────────
     case 'initialize': {
       if (isNotification) return c.body(null, 204);
       return c.json(
@@ -292,18 +336,15 @@ mcpRoutes.post('/', async (c) => {
       );
     }
 
-    // ── notifications/initialized ────────────────────────────────────────
     case 'notifications/initialized': {
       return c.body(null, 204);
     }
 
-    // ── tools/list ───────────────────────────────────────────────────────
     case 'tools/list': {
       if (isNotification) return c.body(null, 204);
       return c.json(jsonrpcResult(id ?? null, { tools: TOOLS }), 200);
     }
 
-    // ── tools/call ───────────────────────────────────────────────────────
     case 'tools/call': {
       if (isNotification) return c.body(null, 204);
       const toolParams = (params ?? {}) as Record<string, unknown>;
@@ -324,11 +365,10 @@ mcpRoutes.post('/', async (c) => {
         );
       }
 
-      const result = await executeTool(toolName, toolArgs, origin);
+      const result = await executeTool(toolName, toolArgs, origin, c.env);
       return c.json(jsonrpcResult(id ?? null, result), 200);
     }
 
-    // ── unknown method ───────────────────────────────────────────────────
     default: {
       if (isNotification) return c.body(null, 204);
       return c.json(jsonrpcError(id ?? null, -32601, 'Method not found'), 200);
