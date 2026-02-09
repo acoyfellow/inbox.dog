@@ -70,10 +70,10 @@ POST https://inbox.dog/oauth/register</code></pre>
     <section class="mb-12">
       <h2 class="text-2xl font-bold mb-4 text-primary-900">Quick Test</h2>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
-        <pre class="text-primary-100 font-mono"><code># List available tools (no auth required)
-curl -X POST https://inbox.dog/mcp \
-  -H "Content-Type: application/json" \
-  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'</code></pre>
+        <pre class="text-primary-100 font-mono"><code set:html={`# List available tools (no auth required)
+curl -X POST https://inbox.dog/mcp \\
+  -H &quot;Content-Type: application/json&quot; \\
+  -d '{&quot;jsonrpc&quot;:&quot;2.0&quot;,&quot;id&quot;:1,&quot;method&quot;:&quot;tools/list&quot;}'`} /></pre>
       </div>
     </section>
 
