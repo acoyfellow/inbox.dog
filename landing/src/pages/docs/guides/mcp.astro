@@ -1,0 +1,93 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="MCP Integration — inbox.dog">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">MCP Integration</h1>
+    <p class="text-primary-600 mb-12">inbox.dog implements the <a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization" class="text-primary-900 underline">MCP Authorization spec</a>. Any MCP client can connect, authenticate via OAuth, and use Gmail tools — no SDK needed.</p>
+
+    <!-- How it works -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">How it works</h2>
+      <p class="text-primary-600 mb-4">MCP clients discover auth endpoints automatically via standard OAuth metadata:</p>
+      <ol class="list-decimal list-inside text-primary-600 space-y-2 mb-4">
+        <li>Client connects to <code class="bg-primary-100 px-1 rounded font-mono">https://inbox.dog/mcp</code></li>
+        <li>Server returns 401 with <code class="bg-primary-100 px-1 rounded font-mono">WWW-Authenticate</code> header pointing to resource metadata</li>
+        <li>Client discovers OAuth endpoints via <code class="bg-primary-100 px-1 rounded font-mono">/.well-known/oauth-authorization-server</code></li>
+        <li>Client registers dynamically, runs PKCE OAuth flow, user authenticates with Google</li>
+        <li>Client gets bearer token — Gmail tools just work</li>
+      </ol>
+    </section>
+
+    <!-- Discovery endpoints -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Discovery Endpoints</h2>
+      <div class="space-y-4">
+        <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
+          <pre class="text-primary-100 font-mono"><code># Protected Resource Metadata (RFC 9728)
+GET https://inbox.dog/.well-known/oauth-protected-resource
+
+# Authorization Server Metadata (RFC 8414)
+GET https://inbox.dog/.well-known/oauth-authorization-server
+
+# Dynamic Client Registration (RFC 7591)
+POST https://inbox.dog/oauth/register</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- Available Tools -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Available Tools</h2>
+      <p class="text-primary-600 mb-4">Once authenticated, these Gmail tools are available:</p>
+      <div class="space-y-4">
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <h3 class="font-mono font-semibold text-primary-900">read_emails</h3>
+          <p class="text-primary-600 text-sm">List recent emails with optional search query and label filters.</p>
+        </div>
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <h3 class="font-mono font-semibold text-primary-900">read_email</h3>
+          <p class="text-primary-600 text-sm">Read full content of a specific email by message ID.</p>
+        </div>
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <h3 class="font-mono font-semibold text-primary-900">send_email</h3>
+          <p class="text-primary-600 text-sm">Send an email (to, subject, body, optional cc/bcc).</p>
+        </div>
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <h3 class="font-mono font-semibold text-primary-900">search_emails</h3>
+          <p class="text-primary-600 text-sm">Search emails using Gmail search syntax.</p>
+        </div>
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <h3 class="font-mono font-semibold text-primary-900">get_profile</h3>
+          <p class="text-primary-600 text-sm">Get authenticated user's email address, message count, threads.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick test -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Quick Test</h2>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
+        <pre class="text-primary-100 font-mono"><code># List available tools (no auth required)
+curl -X POST https://inbox.dog/mcp \
+  -H "Content-Type: application/json" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'</code></pre>
+      </div>
+    </section>
+
+    <!-- Specs -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Standards</h2>
+      <ul class="list-disc list-inside text-primary-600 space-y-1">
+        <li><a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization" class="text-primary-900 underline">MCP Authorization Spec</a></li>
+        <li><a href="https://datatracker.ietf.org/doc/html/rfc9728" class="text-primary-900 underline">RFC 9728</a> — OAuth 2.0 Protected Resource Metadata</li>
+        <li><a href="https://datatracker.ietf.org/doc/html/rfc8414" class="text-primary-900 underline">RFC 8414</a> — OAuth 2.0 Authorization Server Metadata</li>
+        <li><a href="https://datatracker.ietf.org/doc/html/rfc7591" class="text-primary-900 underline">RFC 7591</a> — OAuth 2.0 Dynamic Client Registration</li>
+        <li>PKCE (S256) required for public clients</li>
+      </ul>
+    </section>
+
+  </div>
+</Layout>
