@@ -26,6 +26,7 @@
     "test": "vitest run",
     "prepublishOnly": "npm run build"
   },
+  "mcpName": "dog.inbox/mcp",
   "keywords": [
     "gmail",
     "oauth",
@@ -33,7 +34,9 @@
     "google",
     "oauth2",
     "api",
-    "tokens"
+    "tokens",
+    "mcp",
+    "model-context-protocol"
   ],
   "author": "acoyfellow",
   "license": "MIT",

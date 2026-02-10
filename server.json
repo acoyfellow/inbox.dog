@@ -1,0 +1,16 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-07-09/server.schema.json",
+  "name": "dog.inbox/mcp",
+  "description": "Gmail MCP server with built-in OAuth. Read, search, and send emails through any MCP client. No Google Cloud setup required.",
+  "version": "0.2.0",
+  "repository": {
+    "url": "https://github.com/acoyfellow/inbox.dog"
+  },
+  "packages": [
+    {
+      "registry_type": "npm",
+      "identifier": "inbox.dog",
+      "version": "0.1.0"
+    }
+  ]
+}
