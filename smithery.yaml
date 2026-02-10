@@ -1,0 +1,14 @@
+# inbox.dog MCP Server - Smithery configuration
+# This server is already deployed at https://inbox.dog/mcp
+# It uses OAuth (PKCE) for authentication, not API keys in config
+
+startCommand:
+  type: http
+  configSchema:
+    type: object
+    properties: {}
+    description: >
+      inbox.dog uses OAuth for authentication. No configuration needed.
+      The MCP client will be prompted to authenticate via the OAuth flow
+      when connecting to https://inbox.dog/mcp.
+  url: "https://inbox.dog/mcp"
