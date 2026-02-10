@@ -4,6 +4,7 @@ import type { Env } from '../types';
 import { GoogleOAuthService, GoogleOAuthServiceLive } from '../services/google';
 import { KVService, KVServiceLive } from '../services/kv';
 import { generateId, timingSafeEqual } from '../utils';
+import { encrypt } from '../crypto';
 import {
   InvalidCredentialsError,
   InsufficientCreditsError,
@@ -403,18 +404,22 @@ oauthRoutes.post('/token', async (c) => {
     // the Gmail token lifecycle (refresh, etc.) server-side.
     if (code_verifier) {
       const sessionToken = `mcp_${generateId()}`;
+      const sessionData = JSON.stringify({
+        accessToken: authData.accessToken,
+        refreshToken: authData.refreshToken,
+        expiresAt: Date.now() + authData.expiresIn * 1000,
+        email: authData.email,
+        clientId: client_id,
+      });
+      const encrypted = yield* Effect.promise(() =>
+        c.env.ENCRYPTION_SECRET
+          ? encrypt(sessionData, c.env.ENCRYPTION_SECRET)
+          : Promise.resolve(sessionData),
+      );
       yield* Effect.promise(() =>
-        c.env.KV.put(
-          `mcp_session:${sessionToken}`,
-          JSON.stringify({
-            accessToken: authData.accessToken,
-            refreshToken: authData.refreshToken,
-            expiresAt: Date.now() + authData.expiresIn * 1000,
-            email: authData.email,
-            clientId: client_id,
-          }),
-          { expirationTtl: 90 * 24 * 60 * 60 }, // 90 days
-        ),
+        c.env.KV.put(`mcp_session:${sessionToken}`, encrypted, {
+          expirationTtl: 90 * 24 * 60 * 60, // 90 days
+        }),
       );
       return {
         access_token: sessionToken,
@@ -490,10 +495,40 @@ async function handleRefreshToken(
 
 function mapScope(scope: string): string {
   const scopes: Record<string, string> = {
+    // Legacy scope names
     email: 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email',
     'email:read': 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email',
     'email:send': 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email',
     'email:full': 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/userinfo.email',
+    // MCP OAuth spec scope names (match well-known metadata)
+    'gmail:read': 'https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/userinfo.email',
+    'gmail:send': 'https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/userinfo.email',
+    'gmail:full': 'https://www.googleapis.com/auth/gmail.modify https://www.googleapis.com/auth/userinfo.email',
   };
   return scopes[scope] ?? scopes['email']!;
 }
+
+// POST /oauth/revoke (RFC 7009)
+// Accepts both JSON and form-urlencoded
+oauthRoutes.post('/revoke', async (c) => {
+  let token: string | undefined;
+
+  const contentType = c.req.header('content-type') ?? '';
+  if (contentType.includes('application/x-www-form-urlencoded')) {
+    const formData = await c.req.parseBody();
+    token = formData['token'] as string | undefined;
+  } else {
+    const body = await c.req.json<{ token?: string }>().catch(() => ({} as { token?: string }));
+    token = body.token;
+  }
+
+  if (!token) {
+    return c.json({ error: 'invalid_request', error_description: 'Missing token parameter' }, 400);
+  }
+
+  // Delete the MCP session
+  await c.env.KV.delete(`mcp_session:${token}`);
+
+  // RFC 7009: always return 200, even if token didn't exist
+  return c.json({ revoked: true });
+});

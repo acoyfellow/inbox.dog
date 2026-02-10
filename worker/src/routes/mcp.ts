@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import type { Env } from '../types';
+import { encrypt, decrypt } from '../crypto';
 
 export const mcpRoutes = new Hono<{ Bindings: Env }>();
 
@@ -330,8 +331,17 @@ async function resolveAccessToken(
   env: Env,
 ): Promise<string | null> {
   // Bearer token is a session ID that maps to stored Gmail tokens
-  const sessionJson = await env.KV.get(`mcp_session:${bearerToken}`);
-  if (!sessionJson) return null;
+  const raw = await env.KV.get(`mcp_session:${bearerToken}`);
+  if (!raw) return null;
+
+  let sessionJson: string;
+  try {
+    // Try decrypting (new sessions are encrypted)
+    sessionJson = env.ENCRYPTION_SECRET ? await decrypt(raw, env.ENCRYPTION_SECRET) : raw;
+  } catch {
+    // Fallback: might be an unencrypted legacy session
+    sessionJson = raw;
+  }
 
   const session = JSON.parse(sessionJson) as {
     accessToken: string;
@@ -367,7 +377,9 @@ async function resolveAccessToken(
     accessToken: refreshData.access_token,
     expiresAt: Date.now() + refreshData.expires_in * 1000,
   };
-  await env.KV.put(`mcp_session:${bearerToken}`, JSON.stringify(updated), {
+  const updatedStr = JSON.stringify(updated);
+  const encrypted = env.ENCRYPTION_SECRET ? await encrypt(updatedStr, env.ENCRYPTION_SECRET) : updatedStr;
+  await env.KV.put(`mcp_session:${bearerToken}`, encrypted, {
     expirationTtl: 90 * 24 * 60 * 60, // 90 days
   });
 

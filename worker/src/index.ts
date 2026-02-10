@@ -65,6 +65,17 @@ app.use('/.well-known/*', cors({
 }));
 
 // Rate limiting for sensitive endpoints (KV-based sliding window)
+app.use('/oauth/register', async (c, next) => {
+  if (c.req.method !== 'POST') return next();
+  const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
+  const key = `ratelimit:register:${ip}`;
+  const current = parseInt(await c.env.KV.get(key) ?? '0', 10);
+  if (current >= 10) {
+    return c.json({ error: 'rate_limited', error_description: 'Too many registration requests. Max 10 per minute.' }, 429);
+  }
+  await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
+  return next();
+});
 app.use('/api/keys', async (c, next) => {
   if (c.req.method !== 'POST') return next();
   const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
