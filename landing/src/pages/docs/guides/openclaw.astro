@@ -1,0 +1,253 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="Open Claw Integration — inbox.dog" description="Give your Open Claw agent Gmail access with inbox.dog.">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">inbox.dog for Open Claw</h1>
+    <p class="text-primary-600 mb-12">Give your <a href="https://github.com/openclaw/openclaw" class="text-primary-900 underline">Open Claw</a> agent full Gmail access — read, send, and search email — using inbox.dog as the OAuth bridge.</p>
+
+    <!-- What you get -->
+    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-3">What this gives your agent</h2>
+      <ul class="list-disc list-inside text-primary-600 text-sm space-y-1">
+        <li><strong>read_emails</strong> — list recent emails with search and label filters</li>
+        <li><strong>read_email</strong> — read full email content by message ID</li>
+        <li><strong>send_email</strong> — compose and send email (to, subject, body, cc, bcc)</li>
+        <li><strong>search_emails</strong> — query using Gmail search syntax</li>
+        <li><strong>get_profile</strong> — retrieve the authenticated user's email and account info</li>
+      </ul>
+    </section>
+
+    <!-- Prerequisites -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Prerequisites</h2>
+      <ul class="list-disc list-inside text-primary-600 space-y-1">
+        <li><a href="https://github.com/openclaw/openclaw" class="text-primary-900 underline">Open Claw</a> installed and running (<code class="bg-primary-100 px-1 rounded font-mono">openclaw onboard</code> completed)</li>
+        <li>An inbox.dog API key — <a href="/docs/tutorial" class="text-primary-900 underline">create one in 30 seconds</a></li>
+      </ul>
+    </section>
+
+    <!-- Option A: MCP -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Option A: Connect via MCP</h2>
+      <p class="text-primary-600 mb-4">The fastest path. inbox.dog implements the <a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization" class="text-primary-900 underline">MCP Authorization spec</a>, so Open Claw can connect directly — no skill file needed.</p>
+
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">1. Add the MCP server to your config</h3>
+      <p class="text-primary-600 mb-3">Open <code class="bg-primary-100 px-1 rounded font-mono">~/.openclaw/openclaw.json</code> and add inbox.dog to the <code class="bg-primary-100 px-1 rounded font-mono">mcpServers</code> block:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "mcpServers": {
+    "inbox-dog": {
+      "url": "https://inbox.dog/mcp"
+    }
+  }
+}`}</code></pre>
+      </div>
+
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">2. Restart the gateway</h3>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`openclaw gateway restart`}</code></pre>
+      </div>
+
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">3. Authenticate</h3>
+      <p class="text-primary-600 mb-3">The first time your agent uses an email tool, Open Claw will walk you through the OAuth flow in your browser. After you grant Gmail access, the bearer token is cached automatically.</p>
+
+      <div class="p-4 bg-primary-50 border border-primary-200 rounded-xl mt-4">
+        <p class="text-sm text-primary-600"><strong>How it works under the hood:</strong> Open Claw connects to <code class="bg-primary-100 px-1 rounded font-mono">https://inbox.dog/mcp</code>, discovers OAuth endpoints via <code class="bg-primary-100 px-1 rounded font-mono">/.well-known/oauth-authorization-server</code>, registers dynamically (RFC 7591), runs a PKCE flow, and stores the bearer token. See <a href="/docs/guides/mcp" class="text-primary-900 underline">MCP Integration</a> for the full spec.</p>
+      </div>
+    </section>
+
+    <!-- Option B: Workspace Skill -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Option B: Install as a Workspace Skill</h2>
+      <p class="text-primary-600 mb-4">If you prefer a self-contained skill with explicit instructions your agent can reference, install inbox.dog as a workspace skill.</p>
+
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">1. Create the skill directory</h3>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`mkdir -p ~/.openclaw/workspace/skills/inbox-dog`}</code></pre>
+      </div>
+
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">2. Create the SKILL.md</h3>
+      <p class="text-primary-600 mb-3">Create <code class="bg-primary-100 px-1 rounded font-mono">~/.openclaw/workspace/skills/inbox-dog/SKILL.md</code> with this content:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`---
+name: inbox-dog
+description: Gmail integration via inbox.dog. Use when users ask to read, send, search, or manage email. Provides OAuth-authenticated access to Gmail API through inbox.dog MCP endpoint.
+tools: Bash
+metadata:
+  openclaw:
+    emoji: "📬"
+    requires:
+      env: ["INBOXDOG_CLIENT_ID", "INBOXDOG_CLIENT_SECRET"]
+---
+
+# inbox-dog
+
+Gmail tools powered by the inbox.dog OAuth proxy.
+
+## MCP Endpoint
+
+Connect to the inbox.dog MCP server for Gmail tools:
+
+\`\`\`
+https://inbox.dog/mcp
+\`\`\`
+
+## Available Tools
+
+Once connected, these tools are available:
+
+- **read_emails** — List recent emails. Accepts optional query and label filters.
+- **read_email** — Read full email content by message ID.
+- **send_email** — Send email with to, subject, body, and optional cc/bcc.
+- **search_emails** — Search using Gmail query syntax (e.g. "from:alice subject:invoice").
+- **get_profile** — Get authenticated user's email address and account info.
+
+## Authentication
+
+inbox.dog handles OAuth automatically via the MCP Authorization spec:
+
+1. Connect to \`https://inbox.dog/mcp\`
+2. Server returns 401 with WWW-Authenticate header
+3. Discover OAuth endpoints via \`/.well-known/oauth-authorization-server\`
+4. Register dynamically, run PKCE flow, user authenticates with Google
+5. Bearer token is returned — Gmail tools work immediately
+
+## API Fallback
+
+If MCP is unavailable, use the REST API directly:
+
+\`\`\`bash
+# Create an API key
+curl -s -X POST https://inbox.dog/api/keys \\
+  -H "Content-Type: application/json" \\
+  -d '{"name": "openclaw"}' | jq
+
+# Get OAuth URL
+curl -s "https://inbox.dog/oauth/authorize?client_id=$INBOXDOG_CLIENT_ID&redirect_uri=http://localhost:3000/callback&scope=email"
+
+# Exchange code for tokens
+curl -s -X POST https://inbox.dog/oauth/token \\
+  -H "Content-Type: application/json" \\
+  -d "{\"code\": \"AUTH_CODE\", \"client_id\": \"$INBOXDOG_CLIENT_ID\", \"client_secret\": \"$INBOXDOG_CLIENT_SECRET\"}"
+\`\`\`
+
+The returned access_token works directly with gmail.googleapis.com.
+
+## Links
+
+- Docs: https://inbox.dog/docs
+- API Reference: https://inbox.dog/docs/api
+- MCP Spec: https://inbox.dog/docs/guides/mcp`}</code></pre>
+      </div>
+
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">3. Add your credentials</h3>
+      <p class="text-primary-600 mb-3">Add your inbox.dog API key to <code class="bg-primary-100 px-1 rounded font-mono">~/.openclaw/openclaw.json</code>:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "skills": {
+    "entries": {
+      "inbox-dog": {
+        "enabled": true,
+        "env": {
+          "INBOXDOG_CLIENT_ID": "id_your_client_id_here",
+          "INBOXDOG_CLIENT_SECRET": "sk_your_client_secret_here"
+        }
+      }
+    }
+  }
+}`}</code></pre>
+      </div>
+      <p class="text-primary-600 text-sm">Don't have an API key yet? <a href="/docs/tutorial" class="text-primary-900 underline">Create one here</a> — it takes one curl command.</p>
+
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">4. Restart and verify</h3>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`openclaw gateway restart`}</code></pre>
+      </div>
+      <p class="text-primary-600">Ask your agent: <em>"Read my latest emails"</em> — it should pick up the inbox.dog skill automatically.</p>
+    </section>
+
+    <!-- Verify it works -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Verify the Installation</h2>
+      <p class="text-primary-600 mb-4">Test that your agent can access Gmail by sending it any of these prompts:</p>
+      <div class="space-y-3">
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <p class="text-primary-600 text-sm italic">"What's my email address?"</p>
+          <p class="text-primary-400 text-xs mt-1">Uses <code class="bg-primary-100 px-1 rounded font-mono">get_profile</code></p>
+        </div>
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <p class="text-primary-600 text-sm italic">"Show me my 5 most recent emails"</p>
+          <p class="text-primary-400 text-xs mt-1">Uses <code class="bg-primary-100 px-1 rounded font-mono">read_emails</code></p>
+        </div>
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <p class="text-primary-600 text-sm italic">"Search my inbox for emails from alice@example.com"</p>
+          <p class="text-primary-400 text-xs mt-1">Uses <code class="bg-primary-100 px-1 rounded font-mono">search_emails</code></p>
+        </div>
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <p class="text-primary-600 text-sm italic">"Send an email to bob@example.com saying I'll be 10 minutes late"</p>
+          <p class="text-primary-400 text-xs mt-1">Uses <code class="bg-primary-100 px-1 rounded font-mono">send_email</code></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Which option -->
+    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-3">Which option should I pick?</h2>
+      <div class="space-y-3 text-sm text-primary-600">
+        <p><strong>Option A (MCP)</strong> is simpler — one JSON block, no skill file. Open Claw handles discovery and auth automatically. Start here.</p>
+        <p><strong>Option B (Workspace Skill)</strong> gives your agent richer context about what inbox.dog can do, plus a REST API fallback. Choose this if you want more control or are running Open Claw in an environment without MCP support.</p>
+        <p>Both options use the same underlying inbox.dog service and Gmail tools.</p>
+      </div>
+    </section>
+
+    <!-- Troubleshooting -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Troubleshooting</h2>
+      <div class="space-y-4">
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">Agent doesn't pick up the skill</h3>
+          <p class="text-primary-600 text-sm">Make sure you restarted the gateway after adding the skill. Check that <code class="bg-primary-100 px-1 rounded font-mono">SKILL.md</code> is in the right path: <code class="bg-primary-100 px-1 rounded font-mono">~/.openclaw/workspace/skills/inbox-dog/SKILL.md</code></p>
+        </div>
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">OAuth flow fails or times out</h3>
+          <p class="text-primary-600 text-sm">Verify your API key is valid: <code class="bg-primary-100 px-1 rounded font-mono">curl -s https://inbox.dog/api/keys/YOUR_CLIENT_ID -H "X-Client-Secret: YOUR_CLIENT_SECRET"</code>. Check you have remaining credits. See <a href="/docs/errors" class="text-primary-900 underline">error codes</a> for details.</p>
+        </div>
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">Token expired</h3>
+          <p class="text-primary-600 text-sm">inbox.dog tokens last 1 hour. MCP mode handles refresh automatically. For the skill-based approach, see the <a href="/docs/guides/refresh" class="text-primary-900 underline">token refresh guide</a>.</p>
+        </div>
+        <div class="bg-white rounded-xl border border-primary-100 p-4">
+          <h3 class="font-semibold text-primary-900 mb-1">Gmail scope errors</h3>
+          <p class="text-primary-600 text-sm">inbox.dog is <a href="/blog/casa-tier-2-gmail-oauth" class="text-primary-900 underline">CASA Tier 2 certified</a> for restricted Gmail scopes. If you see scope errors, make sure you're granting all requested permissions during the Google consent screen.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Security -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Security Notes</h2>
+      <ul class="list-disc list-inside text-primary-600 space-y-2 text-sm">
+        <li>inbox.dog never stores your Gmail data — tokens are encrypted with AES-256-GCM and passed through to Google's API</li>
+        <li>All traffic uses HTTPS with HSTS and modern TLS</li>
+        <li>API credentials in <code class="bg-primary-100 px-1 rounded font-mono">openclaw.json</code> stay local on your machine</li>
+        <li>inbox.dog is <a href="/blog/casa-tier-2-gmail-oauth" class="text-primary-900 underline">CASA Tier 2 certified</a> — independently audited for Google's restricted scopes</li>
+        <li>You can <a href="https://github.com/acoyfellow/inbox.dog" class="text-primary-900 underline">self-host inbox.dog</a> for full control over the OAuth proxy</li>
+      </ul>
+    </section>
+
+    <!-- Next steps -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Next steps</h2>
+      <ul class="space-y-3">
+        <li><a href="/docs/guides/mcp" class="text-primary-900 underline hover:text-primary-600">MCP Integration deep-dive</a> — full spec details, discovery endpoints, and standards</li>
+        <li><a href="/docs/api" class="text-primary-900 underline hover:text-primary-600">API Reference</a> — every endpoint, request shape, and response</li>
+        <li><a href="/docs/guides/refresh" class="text-primary-900 underline hover:text-primary-600">Token Refresh guide</a> — handle expiry gracefully</li>
+        <li><a href="/docs/errors" class="text-primary-900 underline hover:text-primary-600">Error codes</a> — troubleshoot common failures</li>
+        <li><a href="https://docs.openclaw.ai/tools/skills" class="text-primary-900 underline hover:text-primary-600">Open Claw Skills docs</a> — customize your SKILL.md further</li>
+      </ul>
+    </section>
+  </div>
+</Layout>
