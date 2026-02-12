@@ -75,7 +75,15 @@ For send_email, ask for confirmation before sending unless the user explicitly s
         <pre class="text-primary-100 font-mono"><code class="language-bash">{`mkdir -p ~/.openclaw/workspace/skills/inbox-dog`}</code></pre>
       </div>
 
-      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">2) Configure credentials</h3>
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">2) Create an API key</h3>
+      <p class="text-primary-600 mb-3">Generate your <code class="bg-primary-100 px-1 rounded font-mono">INBOXDOG_CLIENT_ID</code> and <code class="bg-primary-100 px-1 rounded font-mono">INBOXDOG_CLIENT_SECRET</code>:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`curl -s -X POST https://inbox.dog/api/keys \\
+  -H "Content-Type: application/json" \\
+  -d '{"name": "openclaw"}' | jq`}</code></pre>
+      </div>
+
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">3) Configure credentials</h3>
       <p class="text-primary-600 mb-3">Add to <code class="bg-primary-100 px-1 rounded font-mono">~/.openclaw/openclaw.json</code>:</p>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
         <pre class="text-primary-100 font-mono"><code class="language-json">{`{
