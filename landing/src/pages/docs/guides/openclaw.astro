@@ -92,5 +92,14 @@ import Layout from '../../../layouts/Layout.astro';
         <li><a href="https://github.com/acoyfellow/inbox.dog" class="text-primary-900 underline">Self-host available</a></li>
       </ul>
     </section>
+
+    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-3">Auth behavior (important)</h2>
+      <ul class="list-disc list-inside text-primary-600 text-sm space-y-1">
+        <li>OAuth <code class="bg-primary-100 px-1 rounded font-mono">code</code> values are one-time use. Reusing a code will fail.</li>
+        <li>If you complete auth but still can’t read mail, run the verify prompt again: <code class="bg-primary-100 px-1 rounded font-mono">What's my email address?</code></li>
+        <li>If your OpenClaw runtime does not persist MCP auth state yet, use Path B (Workspace Skill) for compatibility.</li>
+      </ul>
+    </section>
   </div>
 </Layout>
