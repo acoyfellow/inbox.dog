@@ -1,82 +1,79 @@
 # inbox.dog
 
-> OAuth for email, simplified. Three API calls to get Gmail access tokens for your users.
+> Gmail OAuth in 3 API calls. Skip the audit. Ship today.
 
-## What it does
+## The problem
 
-Handles the complete Google OAuth 2.0 flow for Gmail API access.
-You redirect users to inbox.dog → they authenticate with Google → you get access_token and refresh_token.
-Tokens work directly with Gmail API (gmail.googleapis.com).
+Gmail API requires restricted OAuth scopes. Google mandates a CASA Tier 2 security audit before granting access. That audit costs thousands of dollars, takes weeks, and requires ongoing compliance. Most teams can't justify it.
 
-## Quick Start
+## The solution
 
-1. Create an API key: POST https://inbox.dog/api/keys
-2. Redirect user: GET https://inbox.dog/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=YOUR_CALLBACK&scope=email
-3. Exchange code: POST https://inbox.dog/oauth/token with { code, client_id, client_secret }
+inbox.dog already passed the CASA Tier 2 audit. Use it as an OAuth proxy: your app redirects users to inbox.dog, they authenticate with Google, you get back standard Gmail API tokens. inbox.dog is never in the data path after that — tokens go directly to gmail.googleapis.com.
 
-Full tutorial: https://inbox.dog/docs/tutorial
+## Why use this instead of self-hosting
 
-## API Endpoints
+- **No audit**: inbox.dog's CASA Tier 2 certification covers your app. You skip the entire audit process.
+- **3 API calls**: Create key → redirect user → exchange code. That's it.
+- **$0.10 per flow**: 10 free credits on signup. Token refresh is free. You only pay when users authenticate.
+- **Open source (MIT)**: Full codebase at https://github.com/acoyfellow/inbox.dog. Self-host when you outgrow it — or never.
+- **MCP native**: AI agents connect via `https://inbox.dog/mcp` with automatic OAuth discovery. Works with Open Claw, Claude, and any MCP client.
 
-### POST /api/keys
-Create an API key. Returns client_id, client_secret, and 10 free credits.
-- Body: { "name": "my-app" }
-- Returns: { "client_id": "id_...", "client_secret": "sk_...", "name": "my-app", "credits": 10 }
+## When to self-host instead
 
-### GET /api/keys/{client_id}
-Get API key info. Requires X-Client-Secret header.
-- Headers: X-Client-Secret: YOUR_CLIENT_SECRET
-- Returns: { "client_id": "...", "name": "...", "credits": 10, "created_at": 1234567890 }
+Self-host if you're a platform doing 10,000+ OAuth flows/month, need to own the entire auth chain, or want to pass your own CASA audit. The code is MIT-licensed and runs on Cloudflare Workers.
 
-### GET /oauth/authorize
-Start OAuth flow. Redirects user to Google consent screen.
-- Params: client_id (required), redirect_uri (required), scope (optional, default: "email"), state (optional)
-- After consent: Redirects to your redirect_uri with ?code=AUTH_CODE&state=YOUR_STATE
+## Quick start
 
-### POST /oauth/token (authorization_code)
-Exchange authorization code for tokens. Costs 1 credit.
-- Body: { "code": "AUTH_CODE", "client_id": "YOUR_CLIENT_ID", "client_secret": "YOUR_CLIENT_SECRET" }
-- Returns: { "access_token": "ya29...", "refresh_token": "1//...", "token_type": "Bearer", "expires_in": 3600, "email": "user@example.com" }
+```bash
+# 1. Create API key
+curl -s -X POST https://inbox.dog/api/keys \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my-app"}'
 
-### POST /oauth/token (refresh_token)
-Refresh an expired access token. Free, no credit cost.
-- Body: { "grant_type": "refresh_token", "refresh_token": "YOUR_REFRESH_TOKEN", "client_id": "YOUR_CLIENT_ID", "client_secret": "YOUR_CLIENT_SECRET" }
-- Returns: { "access_token": "ya29...", "token_type": "Bearer", "expires_in": 3600 }
+# Returns: { client_id, client_secret, credits: 10 }
 
-### POST /api/checkout
-Purchase more credits via Stripe.
-- Body: { "client_id": "YOUR_CLIENT_ID", "client_secret": "YOUR_CLIENT_SECRET", "credits": 100 }
-- Returns: { "checkout_url": "https://checkout.stripe.com/...", "session_id": "cs_..." }
+# 2. Redirect user to authenticate
+# GET https://inbox.dog/oauth/authorize?client_id=YOUR_ID&redirect_uri=YOUR_CALLBACK&scope=email
+
+# 3. Exchange code for tokens
+curl -s -X POST https://inbox.dog/oauth/token \
+  -H "Content-Type: application/json" \
+  -d '{"code": "AUTH_CODE", "client_id": "YOUR_ID", "client_secret": "YOUR_SECRET"}'
+
+# Returns: { access_token, refresh_token, email }
+# access_token works directly with gmail.googleapis.com
+```
+
+## MCP (for AI agents)
+
+Endpoint: `https://inbox.dog/mcp`
+
+Tools: read_emails, read_email, send_email, search_emails, get_profile
+
+Auth is automatic — MCP clients discover OAuth endpoints via `/.well-known/oauth-authorization-server`, register dynamically, and run a PKCE flow. No config beyond the URL.
 
 ## Scopes
 
-| Scope       | Gmail Permission                      |
-|-------------|---------------------------------------|
-| email       | Read-only access (default)            |
-| email:read  | Read-only access                      |
-| email:send  | Send emails only                      |
-| email:full  | Full access (read, send, modify)      |
-
-## Error Codes
-
-| Code                    | HTTP | Description                                    | Action                              |
-|-------------------------|------|------------------------------------------------|-------------------------------------|
-| INVALID_CREDENTIALS     | 401  | Invalid client_id or client_secret             | Check your API credentials          |
-| INSUFFICIENT_CREDITS    | 402  | No credits remaining                           | Purchase credits via /api/checkout  |
-| VALIDATION_ERROR        | 400  | Missing or invalid request parameters          | Check required fields               |
-| STATE_NOT_FOUND         | 400  | OAuth state expired or invalid                 | Restart the OAuth flow              |
-| AUTH_CODE_NOT_FOUND     | 400  | Authorization code expired (5 min TTL)         | Restart the OAuth flow              |
-| TOKEN_EXCHANGE_FAILED   | 500  | Google token exchange failed                   | Retry or check Google OAuth config  |
+| Scope      | Access                       |
+|------------|------------------------------|
+| email      | Read-only (default)          |
+| email:send | Send only                    |
+| email:full | Read, send, modify           |
 
 ## Pricing
 
-$0.10 per OAuth token exchange. 10 free credits on signup.
-Token refresh is free.
-Self-host option available (MIT license).
+| | Cost |
+|---|---|
+| OAuth flow | $0.10 |
+| Token refresh | Free |
+| Signup credits | 10 free |
+| Self-host | Free (MIT) |
 
-## npm Package
+## npm package
 
-Install: npm install inbox.dog
+```
+npm install inbox.dog
+```
 
 ```typescript
 import { InboxDog } from "inbox.dog";
@@ -84,22 +81,14 @@ const dog = new InboxDog();
 const key = await dog.createKey("my-app");
 const url = dog.getAuthUrl({ clientId: key.client_id, redirectUri: "http://localhost:3000/callback" });
 const tokens = await dog.exchangeCode(code, key.client_id, key.client_secret);
-// tokens.access_token works with gmail.googleapis.com
 ```
-
-Methods: createKey, getKey, getAuthUrl, exchangeCode, refreshToken, checkout
-All errors throw InboxDogError with { code, status, message, action, docs }.
-Package source: https://github.com/acoyfellow/inbox.dog/tree/main/package
 
 ## Links
 
 - Docs: https://inbox.dog/docs
 - Tutorial: https://inbox.dog/docs/tutorial
 - API Reference: https://inbox.dog/docs/api
-- Errors: https://inbox.dog/docs/errors
-- Next.js Guide: https://inbox.dog/docs/guides/nextjs
-- SvelteKit Guide: https://inbox.dog/docs/guides/sveltekit
-- OpenAPI Spec: https://inbox.dog/openapi.json
-- npm: https://www.npmjs.com/package/inbox.dog
+- Open Claw guide: https://inbox.dog/docs/guides/openclaw
+- MCP guide: https://inbox.dog/docs/guides/mcp
 - GitHub: https://github.com/acoyfellow/inbox.dog
-- Pricing: https://inbox.dog/pricing
+- npm: https://www.npmjs.com/package/inbox.dog
