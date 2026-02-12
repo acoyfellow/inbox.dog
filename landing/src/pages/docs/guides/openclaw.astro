@@ -6,15 +6,15 @@ import Layout from '../../../layouts/Layout.astro';
   <div class="max-w-4xl mx-auto px-4 py-12">
     <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
     <h1 class="text-4xl font-bold mb-4 text-primary-900">inbox.dog for Open Claw</h1>
-    <p class="text-primary-600 mb-8">Connect Gmail tools to your <a href="https://github.com/openclaw/openclaw" class="text-primary-900 underline">Open Claw</a> agent via MCP. Fast setup, OAuth-native auth, no custom glue code.</p>
+    <p class="text-primary-600 mb-8"><strong>Give your <a href="https://github.com/openclaw/openclaw" class="text-primary-900 underline">Open Claw</a> agent production-ready Gmail access in 60 seconds.</strong> Read, search, and send emails via MCP. OAuth-native (no passwords), CASA Tier 2 certified, zero custom code.</p>
 
     <section class="mb-10 p-6 bg-primary-50 border border-primary-200 rounded-xl">
-      <h2 class="text-lg font-semibold text-primary-900 mb-3">TL;DR</h2>
+      <h2 class="text-lg font-semibold text-primary-900 mb-3">TL;DR — What you get</h2>
       <ul class="list-disc list-inside text-primary-600 text-sm space-y-1">
-        <li>Add one MCP endpoint: <code class="bg-primary-100 px-1 rounded font-mono">https://inbox.dog/mcp</code></li>
-        <li>Restart gateway once</li>
-        <li>Run one email prompt to trigger OAuth</li>
-        <li>Tools become available: <code class="bg-primary-100 px-1 rounded font-mono">read_emails</code>, <code class="bg-primary-100 px-1 rounded font-mono">read_email</code>, <code class="bg-primary-100 px-1 rounded font-mono">search_emails</code>, <code class="bg-primary-100 px-1 rounded font-mono">send_email</code>, <code class="bg-primary-100 px-1 rounded font-mono">get_profile</code></li>
+        <li><strong>5 Gmail tools:</strong> <code class="bg-primary-100 px-1 rounded font-mono">read_emails</code>, <code class="bg-primary-100 px-1 rounded font-mono">read_email</code>, <code class="bg-primary-100 px-1 rounded font-mono">search_emails</code>, <code class="bg-primary-100 px-1 rounded font-mono">send_email</code>, <code class="bg-primary-100 px-1 rounded font-mono">get_profile</code></li>
+        <li><strong>Setup time:</strong> Add one MCP endpoint (<code class="bg-primary-100 px-1 rounded font-mono">https://inbox.dog/mcp</code>), restart gateway, test with one prompt</li>
+        <li><strong>Auth:</strong> OAuth via MCP (no password storage), CASA Tier 2 certified for security compliance</li>
+        <li><strong>Cost:</strong> $0.10 per OAuth flow, 10 free credits, self-host option available</li>
       </ul>
     </section>
 
@@ -47,28 +47,37 @@ import Layout from '../../../layouts/Layout.astro';
     </section>
 
     <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
-      <h2 class="text-lg font-semibold text-primary-900 mb-3">Copy/paste prompt for your agent</h2>
+      <h2 class="text-lg font-semibold text-primary-900 mb-3">Agent prompt (copy/paste)</h2>
+      <p class="text-primary-600 text-sm mb-3">Add this to your agent's system prompt or knowledge base for optimal tool usage:</p>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
-        <pre class="text-primary-100 font-mono"><code>{`Use inbox.dog MCP at https://inbox.dog/mcp for Gmail operations.
-Prefer these tools in order: get_profile -> read_emails/search_emails -> read_email -> send_email.
-For send_email, ask for confirmation before sending unless the user explicitly says to send now.`}</code></pre>
+        <pre class="text-primary-100 font-mono"><code>{`You have Gmail access via inbox.dog MCP (https://inbox.dog/mcp).
+
+Available tools: get_profile, read_emails, search_emails, read_email, send_email.
+
+Usage pattern:
+1. Use get_profile to confirm email address
+2. Use search_emails for specific queries, read_emails for recent messages
+3. Use read_email to get full message content (requires message ID)
+4. ALWAYS ask confirmation before send_email unless user says "send now"
+
+These tools use OAuth - the human will authenticate once on first use.`}</code></pre>
       </div>
     </section>
 
     <section class="mb-12">
-      <h2 class="text-2xl font-bold mb-4 text-primary-900">Trust & security at a glance</h2>
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Why agents trust inbox.dog</h2>
       <ul class="list-disc list-inside text-primary-600 space-y-2 text-sm">
-        <li>OAuth via MCP Authorization spec (PKCE + dynamic client registration)</li>
-        <li>HTTPS + HSTS; bearer tokens handled through OAuth flow</li>
-        <li>CASA Tier 2 certified for Gmail restricted scopes</li>
-        <li>Self-host option available for full control</li>
+        <li><strong>OAuth-first architecture:</strong> MCP Authorization spec with PKCE + dynamic client registration (no password storage or transmission)</li>
+        <li><strong>Security certified:</strong> CASA Tier 2 certified for Gmail restricted scopes (annual security assessment required)</li>
+        <li><strong>Production-ready:</strong> HTTPS + HSTS, structured error handling, rate limiting built-in</li>
+        <li><strong>Flexible deployment:</strong> Use hosted service or self-host for full control</li>
       </ul>
       <p class="text-primary-600 text-sm mt-3">More: <a href="/blog/casa-tier-2-gmail-oauth" class="text-primary-900 underline">CASA certification details</a> · <a href="https://github.com/acoyfellow/inbox.dog" class="text-primary-900 underline">Self-host on GitHub</a></p>
     </section>
 
     <section class="mb-12">
-      <h2 class="text-2xl font-bold mb-4 text-primary-900">Fallback: Workspace Skill (optional)</h2>
-      <p class="text-primary-600 mb-4">If you want explicit skill instructions in your workspace, install the skill version. Most users should stick with MCP above.</p>
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Alternative: Workspace Skill (optional)</h2>
+      <p class="text-primary-600 mb-4"><strong>Note:</strong> The MCP setup above is recommended for most users. Use this alternative only if you need explicit workspace skill configuration or custom environment variables.</p>
 
       <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">1) Create skill folder</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
