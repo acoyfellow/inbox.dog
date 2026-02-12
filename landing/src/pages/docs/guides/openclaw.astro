@@ -75,10 +75,19 @@ import Layout from '../../../layouts/Layout.astro';
 }`}</code></pre>
       </div>
 
-      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">4) Restart + verify</h3>
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">4) Restart gateway</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
         <pre class="text-primary-100 font-mono"><code class="language-bash">{`openclaw gateway restart`}</code></pre>
       </div>
+
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">5) Auth without localhost callback</h3>
+      <p class="text-primary-600 text-sm mb-3">Use a hosted redirect (no localhost 404). Open this URL in your browser:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`https://inbox.dog/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https%3A%2F%2Finbox.dog%2Fdocs%2Fguides%2Fopenclaw&scope=email`}</code></pre>
+      </div>
+      <p class="text-primary-600 text-sm mb-3">After consent, you'll land back on this docs page with <code class="bg-primary-100 px-1 rounded font-mono">?code=...</code> in the URL (not a 404). Paste that code to your OpenClaw agent if it asks.</p>
+
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">6) Verify</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
         <pre class="text-primary-100 font-mono"><code>{`What's my email address?`}</code></pre>
       </div>
@@ -98,7 +107,7 @@ import Layout from '../../../layouts/Layout.astro';
       <ul class="list-disc list-inside text-primary-600 text-sm space-y-1">
         <li>OAuth <code class="bg-primary-100 px-1 rounded font-mono">code</code> values are one-time use. Reusing a code will fail.</li>
         <li>If you complete auth but still can’t read mail, run the verify prompt again: <code class="bg-primary-100 px-1 rounded font-mono">What's my email address?</code></li>
-        <li>If your OpenClaw runtime does not persist MCP auth state yet, use Path B (Workspace Skill) for compatibility.</li>
+        <li>For Workspace Skill installs, prefer hosted redirect URIs (like this docs page), not localhost callbacks.</li>
       </ul>
     </section>
   </div>
