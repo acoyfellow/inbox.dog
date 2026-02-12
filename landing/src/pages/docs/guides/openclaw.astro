@@ -213,7 +213,7 @@ The returned access_token works directly with gmail.googleapis.com.
         </div>
         <div class="bg-white rounded-xl border border-primary-100 p-4">
           <h3 class="font-semibold text-primary-900 mb-1">OAuth flow fails or times out</h3>
-          <p class="text-primary-600 text-sm">Verify your API key is valid: <code class="bg-primary-100 px-1 rounded font-mono">curl -s https://inbox.dog/api/keys/YOUR_CLIENT_ID</code>. Check you have remaining credits. See <a href="/docs/errors" class="text-primary-900 underline">error codes</a> for details.</p>
+          <p class="text-primary-600 text-sm">Verify your API key is valid: <code class="bg-primary-100 px-1 rounded font-mono">curl -s https://inbox.dog/api/keys/YOUR_CLIENT_ID -H "X-Client-Secret: YOUR_CLIENT_SECRET"</code>. Check you have remaining credits. See <a href="/docs/errors" class="text-primary-900 underline">error codes</a> for details.</p>
         </div>
         <div class="bg-white rounded-xl border border-primary-100 p-4">
           <h3 class="font-semibold text-primary-900 mb-1">Token expired</h3>
