@@ -18,6 +18,17 @@
     { "binding": "KV", "id": "736caa214df54d34b05585940aff18c8" }
   ],
 
+  // Durable Object for analytics counters
+  "durable_objects": {
+    "bindings": [
+      { "name": "ANALYTICS", "class_name": "AnalyticsDO" }
+    ]
+  },
+
+  "migrations": [
+    { "tag": "v1", "new_classes": ["AnalyticsDO"] }
+  ],
+
   "env": {
     "staging": {
       "route": { "pattern": "test.inbox.dog/*", "zone_name": "inbox.dog" },
@@ -31,7 +42,12 @@
       // Then replace this ID with the staging namespace ID
       "kv_namespaces": [
         { "binding": "KV", "id": "STAGING_KV_NAMESPACE_ID" }
-      ]
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "ANALYTICS", "class_name": "AnalyticsDO" }
+        ]
+      }
     },
     "production": {
       "route": { "pattern": "inbox.dog/*", "zone_name": "inbox.dog" },
@@ -42,7 +58,12 @@
       },
       "kv_namespaces": [
         { "binding": "KV", "id": "736caa214df54d34b05585940aff18c8" }
-      ]
+      ],
+      "durable_objects": {
+        "bindings": [
+          { "name": "ANALYTICS", "class_name": "AnalyticsDO" }
+        ]
+      }
     }
   }
 
@@ -52,4 +73,5 @@
   // - STRIPE_SECRET_KEY
   // - STRIPE_WEBHOOK_SECRET
   // - ENCRYPTION_SECRET (for AES-256-GCM token encryption at rest)
+  // - ANALYTICS_SECRET (for GET /api/stats admin endpoint)
 }

@@ -5,6 +5,7 @@ import { KVService } from '../services/kv';
 import { ValidationError, StripeError } from '../errors';
 import { runEffectEither } from '../runtime';
 import { errorToResponse } from '../http';
+import { getAnalytics, trackEvent } from '../analytics';
 
 export const webhookRoutes = new Hono<{ Bindings: Env }>();
 
@@ -104,6 +105,7 @@ webhookRoutes.post('/stripe', async (c) => {
       if (apiKey) {
         const updated = { ...apiKey, credits: apiKey.credits + credits };
         yield* kv.putApiKey(clientId, updated);
+        trackEvent(getAnalytics(c.env), 'credits_purchased', clientId, { credits });
       }
     }
 

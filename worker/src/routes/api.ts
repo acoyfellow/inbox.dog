@@ -12,6 +12,7 @@ import { CheckoutRequestSchema } from '../schemas';
 import { runEffectEither } from '../runtime';
 import { errorToResponse } from '../http';
 import { createApiKey, CreateKeyBody } from '../keys';
+import { getAnalytics, trackEvent } from '../analytics';
 
 export const apiRoutes = new Hono<{ Bindings: Env }>();
 
@@ -48,6 +49,7 @@ apiRoutes.post('/keys', async (c) => {
 
   const result = await runEffectEither(program, c.env);
   if (result.ok) {
+    trackEvent(getAnalytics(c.env), 'key_created', result.value.client_id);
     c.header('Cache-Control', 'no-store');
     return c.json(result.value);
   }
@@ -150,6 +152,7 @@ apiRoutes.delete('/keys/:clientId', async (c) => {
 
   const result = await runEffectEither(program, c.env);
   if (result.ok) {
+    trackEvent(getAnalytics(c.env), 'key_deleted', clientId);
     return c.json(result.value);
   }
   const { status, body: errBody } = errorToResponse(result.error);
@@ -232,13 +235,37 @@ apiRoutes.post('/checkout', async (c) => {
     return {
       checkout_url: session.url,
       session_id: session.id,
+      _client_id: body.client_id,
+      _credits: credits,
     };
   });
 
   const result = await runEffectEither(program, c.env);
   if (result.ok) {
-    return c.json(result.value);
+    const { _client_id, _credits, ...payload } = result.value;
+    trackEvent(getAnalytics(c.env), 'checkout_started', _client_id, { credits: _credits });
+    return c.json(payload);
   }
   const { status, body: errBody } = errorToResponse(result.error);
   return c.json(errBody, status as any);
+});
+
+// GET /api/stats — admin analytics endpoint
+// Authenticate with: ?secret=<ANALYTICS_SECRET> or X-Analytics-Secret header
+apiRoutes.get('/stats', async (c) => {
+  const secret = c.req.query('secret') ?? c.req.header('X-Analytics-Secret');
+  if (!c.env.ANALYTICS_SECRET || !secret || !timingSafeEqual(secret, c.env.ANALYTICS_SECRET)) {
+    return c.json({ error: { code: 'UNAUTHORIZED', message: 'Invalid or missing analytics secret' } }, 401);
+  }
+
+  const days = c.req.query('days') ?? '7';
+  const clientId = c.req.query('client_id');
+
+  const stub = getAnalytics(c.env);
+  const params = new URLSearchParams({ days });
+  if (clientId) params.set('client_id', clientId);
+
+  const response = await stub.fetch(new Request(`https://analytics/stats?${params}`));
+  const data = await response.json();
+  return c.json(data);
 });

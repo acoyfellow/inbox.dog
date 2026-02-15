@@ -15,6 +15,7 @@ import type { OAuthState, ApiKey } from '../schemas';
 import { runEffectEither } from '../runtime';
 import { errorToResponse } from '../http';
 import { createApiKey, CreateKeyBody } from '../keys';
+import { getAnalytics, trackEvent } from '../analytics';
 
 export const oauthRoutes = new Hono<{ Bindings: Env }>();
 
@@ -48,6 +49,7 @@ oauthRoutes.post('/register', async (c) => {
 
   const result = await runEffectEither(program, c.env);
   if (result.ok) {
+    trackEvent(getAnalytics(c.env), 'key_created', result.value.client_id, { source: 'register' });
     c.header('Cache-Control', 'no-store');
     return c.json(result.value, 201);
   }
@@ -130,8 +132,10 @@ oauthRoutes.get('/authorize', async (c) => {
 
   const result = await runEffectEither(program, c.env);
   if (result.ok) {
+    trackEvent(getAnalytics(c.env), 'oauth_started', clientId, { scope });
     return c.redirect(result.value);
   }
+  trackEvent(getAnalytics(c.env), 'oauth_error', clientId);
   const { status, body: errBody } = errorToResponse(result.error);
   return c.json(errBody, status as any);
 });
@@ -218,8 +222,10 @@ oauthRoutes.get('/callback', async (c) => {
 
   const result = await runEffectEither(program, c.env);
   if (result.ok) {
+    trackEvent(getAnalytics(c.env), 'oauth_completed');
     return c.redirect(result.value);
   }
+  trackEvent(getAnalytics(c.env), 'oauth_error');
   const errTag =
     result.error instanceof Error ? result.error.constructor.name : 'UnknownError';
   console.error('OAuth callback error:', errTag);
@@ -422,9 +428,11 @@ oauthRoutes.post('/token', async (c) => {
 
   const result = await runEffectEither(program, c.env);
   if (result.ok) {
+    trackEvent(getAnalytics(c.env), 'token_exchanged', client_id);
     c.header('Cache-Control', 'no-store');
     return c.json(result.value);
   }
+  trackEvent(getAnalytics(c.env), 'error', client_id);
   const { status, body: errBody } = errorToResponse(result.error);
   return c.json(errBody, status as any);
 });
@@ -491,9 +499,11 @@ async function handleRefreshToken(
 
   const result = await runEffectEither(program, c.env);
   if (result.ok) {
+    trackEvent(getAnalytics(c.env), 'token_refreshed', client_id);
     c.header('Cache-Control', 'no-store');
     return c.json(result.value);
   }
+  trackEvent(getAnalytics(c.env), 'error', client_id);
   const { status, body: errorBody } = errorToResponse(result.error);
   return c.json(errorBody, status as any);
 }

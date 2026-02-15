@@ -6,6 +6,10 @@ import { webhookRoutes } from './routes/webhooks';
 import { mcpRoutes } from './routes/mcp';
 import { wellKnownRoutes } from './routes/well-known';
 import type { Env } from './types';
+import { getAnalytics, trackEvent } from './analytics';
+
+// Re-export Durable Object class for Cloudflare Workers runtime
+export { AnalyticsDO } from './analytics';
 
 const app = new Hono<{ Bindings: Env }>();
 
@@ -70,6 +74,7 @@ app.use('/oauth/register', async (c, next) => {
   const key = `ratelimit:register:${ip}`;
   const current = parseInt(await c.env.KV.get(key) ?? '0', 10);
   if (current >= 10) {
+    trackEvent(getAnalytics(c.env), 'rate_limited', undefined, { endpoint: 'register' });
     return c.json({ error: 'rate_limited', error_description: 'Too many registration requests. Max 10 per minute.' }, 429);
   }
   await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
@@ -81,6 +86,7 @@ app.use('/api/keys', async (c, next) => {
   const key = `ratelimit:create_key:${ip}`;
   const current = parseInt(await c.env.KV.get(key) ?? '0', 10);
   if (current >= 5) {
+    trackEvent(getAnalytics(c.env), 'rate_limited', undefined, { endpoint: 'create_key' });
     return c.json({ error: { code: 'RATE_LIMITED', message: 'Too many key creation requests. Max 5 per minute.', action: 'Wait before retrying', docs: 'https://inbox.dog/docs/errors' } }, 429);
   }
   await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
@@ -92,6 +98,7 @@ app.use('/oauth/token', async (c, next) => {
   const key = `ratelimit:token:${ip}`;
   const current = parseInt(await c.env.KV.get(key) ?? '0', 10);
   if (current >= 20) {
+    trackEvent(getAnalytics(c.env), 'rate_limited', undefined, { endpoint: 'token' });
     return c.json({ error: { code: 'RATE_LIMITED', message: 'Too many token requests. Max 20 per minute.', action: 'Wait before retrying', docs: 'https://inbox.dog/docs/errors' } }, 429);
   }
   await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
