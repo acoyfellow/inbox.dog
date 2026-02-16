@@ -1,6 +1,6 @@
 # inbox.dog
 
-Gmail OAuth tokens in 3 API calls. No Google Cloud console required.
+Gmail OAuth + typed client. No Google Cloud console required.
 
 ```
 npm install inbox.dog
@@ -21,7 +21,7 @@ const key = await dog.createKey("my-app");
 const url = dog.getAuthUrl({
   clientId: key.client_id,
   redirectUri: "http://localhost:3000/callback",
-  scope: "email",
+  scope: "email:full",
 });
 // → redirect user to `url`
 
@@ -29,20 +29,152 @@ const url = dog.getAuthUrl({
 const tokens = await dog.exchangeCode(code, key.client_id, key.client_secret);
 // → { access_token, refresh_token, email, expires_in }
 
-// Use tokens directly with Gmail API
-const res = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages", {
-  headers: { Authorization: `Bearer ${tokens.access_token}` },
+// 4. Use Gmail
+const gmail = dog.gmail(tokens);
+const unread = await gmail.list({ query: "is:unread", max: 5 });
+```
+
+## Gmail client
+
+The `Gmail` class wraps the Gmail REST API so you never deal with MIME encoding, base64, or nested payload parsing.
+
+### With inbox.dog OAuth
+
+```ts
+const dog = new InboxDog();
+const tokens = await dog.exchangeCode(code, clientId, clientSecret);
+const gmail = dog.gmail(tokens);
+```
+
+### Standalone (bring your own token)
+
+```ts
+import { Gmail } from "inbox.dog";
+
+const gmail = new Gmail({ access_token: "ya29...." });
+```
+
+### For agents
+
+```ts
+import { Gmail } from "inbox.dog";
+
+const gmail = new Gmail({
+  access_token: process.env.GMAIL_ACCESS_TOKEN!,
+  refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+  client_id: process.env.INBOX_DOG_CLIENT_ID,
+  client_secret: process.env.INBOX_DOG_CLIENT_SECRET,
+});
+
+// agent can now read, search, send, label, archive...
+```
+
+### Reading emails
+
+```ts
+// List recent emails
+const result = await gmail.list({ query: "is:unread", max: 10 });
+// → { messages: EmailSummary[], total: number, nextPageToken? }
+
+// Get full email content
+const email = await gmail.get("msg_id");
+// → { id, from, to, subject, date, body, labelIds, ... }
+
+// Search
+const invoices = await gmail.search("subject:invoice has:attachment");
+```
+
+### Sending emails
+
+```ts
+await gmail.send({
+  to: "alice@example.com",
+  subject: "hello",
+  body: "no MIME encoding needed",
+});
+
+// Multiple recipients
+await gmail.send({
+  to: ["alice@example.com", "bob@example.com"],
+  cc: "charlie@example.com",
+  subject: "group email",
+  body: "hello everyone",
+});
+
+// Reply to a thread
+await gmail.send({
+  to: "alice@example.com",
+  subject: "Re: Original subject",
+  body: "reply body",
+  replyTo: "<original-message-id@gmail.com>",
+  threadId: "thread_abc",
 });
 ```
 
-## API
+### Labels and organization
+
+```ts
+const labels = await gmail.labels();
+
+await gmail.addLabels("msg_id", ["Label_123"]);
+await gmail.removeLabels("msg_id", ["Label_123"]);
+
+// Convenience methods
+await gmail.archive("msg_id");
+await gmail.archive(["msg_1", "msg_2"]); // batch
+await gmail.markRead("msg_id");
+await gmail.markUnread("msg_id");
+await gmail.trash("msg_id");
+await gmail.untrash("msg_id");
+```
+
+### Drafts
+
+```ts
+const draft = await gmail.createDraft({
+  to: "bob@example.com",
+  subject: "saved for later",
+  body: "draft content",
+});
+
+const drafts = await gmail.listDrafts({ max: 5 });
+```
+
+### Attachments
+
+```ts
+const atts = await gmail.attachments("msg_id");
+// → [{ id, filename, mimeType, size }]
+
+const data = await gmail.attachment("msg_id", atts[0].id);
+// → { id, filename, mimeType, size, data: Uint8Array }
+```
+
+### Profile
+
+```ts
+const me = await gmail.profile();
+// → { emailAddress, messagesTotal, threadsTotal, historyId }
+```
+
+### Batch operations
+
+```ts
+await gmail.batchModify({
+  ids: ["msg_1", "msg_2", "msg_3"],
+  addLabelIds: ["Label_1"],
+  removeLabelIds: ["INBOX"],
+});
+```
+
+## OAuth API
 
 ### `new InboxDog(options?)`
 
-| Option    | Type       | Default               |
-|-----------|------------|-----------------------|
-| `baseUrl` | `string`   | `https://inbox.dog`   |
-| `fetch`   | `Function` | `globalThis.fetch`    |
+| Option    | Type       | Default             |
+|-----------|------------|---------------------|
+| `baseUrl` | `string`   | `https://inbox.dog` |
+| `fetch`   | `Function` | `globalThis.fetch`  |
 
 ### `createKey(name?): Promise<CreateKeyResponse>`
 
@@ -68,40 +200,34 @@ Scopes: `"email"` (default, read-only), `"email:read"`, `"email:send"`, `"email:
 ### `exchangeCode(code, clientId, clientSecret): Promise<TokenResponse>`
 
 Exchange auth code for tokens. Costs 1 credit.
-
 Returns `{ access_token, refresh_token, token_type, expires_in, email }`.
 
 ### `refreshToken(refreshToken, clientId, clientSecret): Promise<RefreshResponse>`
 
 Refresh an expired access token. Free.
-
 Returns `{ access_token, token_type, expires_in }`.
 
 ### `checkout(clientId, clientSecret, credits?): Promise<CheckoutResponse>`
 
-Create a Stripe checkout session. Returns `{ checkout_url, session_id }`.
+Create a Stripe checkout session.
+Returns `{ checkout_url, session_id }`.
+
+### `gmail(tokens, opts?): Gmail`
+
+Create a typed Gmail client from tokens. Accepts `TokenResponse` from `exchangeCode()` or raw `GmailTokens`.
 
 ## Errors
 
-All errors throw `InboxDogError` with these properties:
-
-| Property  | Type     | Description            |
-|-----------|----------|------------------------|
-| `code`    | `string` | Machine-readable code  |
-| `status`  | `number` | HTTP status code       |
-| `message` | `string` | Human-readable message |
-| `action`  | `string` | Suggested fix          |
-| `docs`    | `string` | Link to docs           |
-
-Error codes: `INVALID_CREDENTIALS` (401), `INSUFFICIENT_CREDITS` (402), `VALIDATION_ERROR` (400), `STATE_NOT_FOUND` (400), `AUTH_CODE_NOT_FOUND` (400), `TOKEN_EXCHANGE_FAILED` (500).
+All OAuth errors throw `InboxDogError`. All Gmail errors throw `GmailError`.
 
 ```ts
+import { InboxDogError, GmailError } from "inbox.dog";
+
 try {
-  await dog.exchangeCode(code, clientId, clientSecret);
+  await gmail.send({ to: "a@b.com", subject: "hi", body: "hello" });
 } catch (e) {
-  if (e instanceof InboxDogError && e.code === "INSUFFICIENT_CREDITS") {
-    const { checkout_url } = await dog.checkout(clientId, clientSecret);
-    // redirect user to checkout_url
+  if (e instanceof GmailError) {
+    console.log(e.status, e.message);
   }
 }
 ```
