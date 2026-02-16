@@ -1,52 +1,15 @@
-/** inbox.dog — Gmail OAuth tokens in 3 API calls */
+/** inbox.dog — Gmail OAuth tokens in 3 API calls + typed Gmail client */
+
+import { Gmail, type GmailOptions } from "./gmail";
+import type { TokenResponse, GmailTokens } from "./types";
 
 const DEFAULT_BASE_URL = "https://inbox.dog";
 
-// ── Types ──────────────────────────────────────────────
+// Re-export everything
+export { Gmail, GmailError, type GmailOptions } from "./gmail";
+export * from "./types";
 
-export type Scope = "email" | "email:read" | "email:send" | "email:full";
-
-export interface CreateKeyResponse {
-  client_id: string;
-  client_secret: string;
-  name: string;
-  credits: number;
-}
-
-export interface KeyInfo {
-  client_id: string;
-  name: string;
-  credits: number;
-  created_at: number;
-}
-
-export interface TokenResponse {
-  access_token: string;
-  refresh_token: string;
-  token_type: "Bearer";
-  expires_in: number;
-  email: string;
-}
-
-export interface RefreshResponse {
-  access_token: string;
-  token_type: "Bearer";
-  expires_in: number;
-}
-
-export interface CheckoutResponse {
-  checkout_url: string;
-  session_id: string;
-}
-
-export interface InboxDogErrorDetail {
-  code: string;
-  message: string;
-  action?: string;
-  docs?: string;
-}
-
-// ── Error ──────────────────────────────────────────────
+// ── Error ────────────────────────────────────────────────────────────────
 
 export class InboxDogError extends Error {
   public readonly code: string;
@@ -54,7 +17,10 @@ export class InboxDogError extends Error {
   public readonly action?: string;
   public readonly docs?: string;
 
-  constructor(status: number, detail: InboxDogErrorDetail) {
+  constructor(
+    status: number,
+    detail: { code: string; message: string; action?: string; docs?: string },
+  ) {
     super(detail.message);
     this.name = "InboxDogError";
     this.code = detail.code;
@@ -64,7 +30,7 @@ export class InboxDogError extends Error {
   }
 }
 
-// ── Client ─────────────────────────────────────────────
+// ── Client ───────────────────────────────────────────────────────────────
 
 export interface InboxDogOptions {
   /** Override the base URL (default: https://inbox.dog) */
@@ -82,30 +48,40 @@ export class InboxDog {
     this.fetchFn = opts.fetch ?? globalThis.fetch;
   }
 
-  // ── API Keys ───────────────────────────────────────
+  // ── API Keys ─────────────────────────────────────────────────────────
 
   /** Create a new API key. Returns client_id, client_secret, and 10 free credits. */
-  async createKey(name?: string): Promise<CreateKeyResponse> {
-    return this.post<CreateKeyResponse>("/api/keys", { name: name ?? "default" });
+  async createKey(
+    name?: string,
+  ): Promise<{
+    client_id: string;
+    client_secret: string;
+    name: string;
+    credits: number;
+  }> {
+    return this.post("/api/keys", { name: name ?? "default" });
   }
 
   /** Get API key info (credits remaining, creation date). */
-  async getKey(clientId: string, clientSecret: string): Promise<KeyInfo> {
-    return this.request<KeyInfo>(`/api/keys/${clientId}`, {
+  async getKey(
+    clientId: string,
+    clientSecret: string,
+  ): Promise<{ client_id: string; name: string; credits: number; created_at: number }> {
+    return this.request(`/api/keys/${clientId}`, {
       headers: { "X-Client-Secret": clientSecret },
     });
   }
 
-  // ── OAuth ──────────────────────────────────────────
+  // ── OAuth ────────────────────────────────────────────────────────────
 
   /**
    * Build the authorization URL to redirect users to.
-   * This is a pure URL builder — no network request.
+   * Pure URL builder — no network request.
    */
   getAuthUrl(opts: {
     clientId: string;
     redirectUri: string;
-    scope?: Scope;
+    scope?: "email" | "email:read" | "email:send" | "email:full";
     state?: string;
   }): string {
     const url = new URL(`${this.baseUrl}/oauth/authorize`);
@@ -122,7 +98,7 @@ export class InboxDog {
     clientId: string,
     clientSecret: string,
   ): Promise<TokenResponse> {
-    return this.post<TokenResponse>("/oauth/token", {
+    return this.post("/oauth/token", {
       code,
       client_id: clientId,
       client_secret: clientSecret,
@@ -134,8 +110,8 @@ export class InboxDog {
     refreshToken: string,
     clientId: string,
     clientSecret: string,
-  ): Promise<RefreshResponse> {
-    return this.post<RefreshResponse>("/oauth/token", {
+  ): Promise<{ access_token: string; token_type: "Bearer"; expires_in: number }> {
+    return this.post("/oauth/token", {
       grant_type: "refresh_token",
       refresh_token: refreshToken,
       client_id: clientId,
@@ -143,22 +119,58 @@ export class InboxDog {
     });
   }
 
-  // ── Billing ────────────────────────────────────────
+  // ── Billing ──────────────────────────────────────────────────────────
 
   /** Create a Stripe checkout session to purchase credits. */
   async checkout(
     clientId: string,
     clientSecret: string,
     credits?: number,
-  ): Promise<CheckoutResponse> {
-    return this.post<CheckoutResponse>("/api/checkout", {
+  ): Promise<{ checkout_url: string; session_id: string }> {
+    return this.post("/api/checkout", {
       client_id: clientId,
       client_secret: clientSecret,
       credits: credits ?? 100,
     });
   }
 
-  // ── Internal ───────────────────────────────────────
+  // ── Gmail Client ─────────────────────────────────────────────────────
+
+  /**
+   * Create a typed Gmail client from tokens.
+   *
+   * ```ts
+   * const tokens = await dog.exchangeCode(code, clientId, clientSecret)
+   * const gmail = dog.gmail(tokens)
+   * const unread = await gmail.list({ query: "is:unread" })
+   * ```
+   *
+   * Also accepts raw GmailTokens if you already have an access token:
+   *
+   * ```ts
+   * const gmail = dog.gmail({ access_token: "ya29...." })
+   * ```
+   */
+  gmail(
+    tokens: TokenResponse | GmailTokens,
+    opts?: Omit<GmailOptions, "fetch" | "baseUrl">,
+  ): Gmail {
+    const gmailTokens: GmailTokens =
+      "email" in tokens
+        ? {
+            access_token: tokens.access_token,
+            refresh_token: tokens.refresh_token,
+          }
+        : tokens;
+
+    return new Gmail(gmailTokens, {
+      ...opts,
+      fetch: this.fetchFn,
+      baseUrl: this.baseUrl,
+    });
+  }
+
+  // ── Internal ─────────────────────────────────────────────────────────
 
   private async request<T>(
     path: string,
@@ -172,14 +184,18 @@ export class InboxDog {
       },
     });
 
-    const body = await res.json() as T | { error: InboxDogErrorDetail };
+    const body = (await res.json()) as
+      | T
+      | { error: { code: string; message: string; action?: string; docs?: string } };
 
     if (!res.ok) {
-      const err = body as { error: InboxDogErrorDetail };
-      throw new InboxDogError(res.status, err.error ?? {
-        code: "UNKNOWN",
-        message: `HTTP ${res.status}`,
-      });
+      const err = body as {
+        error: { code: string; message: string; action?: string; docs?: string };
+      };
+      throw new InboxDogError(
+        res.status,
+        err.error ?? { code: "UNKNOWN", message: `HTTP ${res.status}` },
+      );
     }
 
     return body as T;
@@ -193,7 +209,7 @@ export class InboxDog {
   }
 }
 
-// ── Convenience export ─────────────────────────────────
+// ── Convenience export ───────────────────────────────────────────────────
 
 /** Create an InboxDog client with default options. */
 export function createClient(opts?: InboxDogOptions): InboxDog {

@@ -1,7 +1,7 @@
 {
   "name": "inbox.dog",
-  "version": "0.1.0",
-  "description": "Gmail OAuth tokens in 3 API calls. No Google Cloud console required.",
+  "version": "0.2.0",
+  "description": "Gmail OAuth + typed Gmail client. No Google Cloud console required.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -36,7 +36,9 @@
     "api",
     "tokens",
     "mcp",
-    "model-context-protocol"
+    "model-context-protocol",
+    "ai-agent",
+    "gmail-client"
   ],
   "author": "acoyfellow",
   "license": "MIT",
