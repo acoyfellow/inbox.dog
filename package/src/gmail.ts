@@ -435,16 +435,41 @@ export class Gmail {
   // ── Internal: body extraction (ported from MCP server) ────────────────
 
   private extractBody(part: GmailMessagePart): string {
-    if (part.mimeType === "text/plain" && part.body?.data) {
-      return this.decodeBase64Url(part.body.data);
+    // Try text/plain first
+    const plain = this.extractMime(part, "text/plain");
+    if (plain) return this.decodeBase64Url(plain);
+
+    // Fall back to text/html with tag stripping
+    const html = this.extractMime(part, "text/html");
+    if (html) return this.stripHtml(this.decodeBase64Url(html));
+
+    return "";
+  }
+
+  private extractMime(part: GmailMessagePart, mime: string): string | null {
+    if (part.mimeType === mime && part.body?.data) {
+      return part.body.data;
     }
     if (part.parts) {
       for (const sub of part.parts) {
-        const result = this.extractBody(sub);
+        const result = this.extractMime(sub, mime);
         if (result) return result;
       }
     }
-    return "";
+    return null;
+  }
+
+  private stripHtml(html: string): string {
+    return html
+      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   private extractAttachments(

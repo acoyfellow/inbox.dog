@@ -139,9 +139,11 @@ export class InboxDog {
   /**
    * Create a typed Gmail client from tokens.
    *
+   * Pass `clientId` and `clientSecret` to enable automatic token refresh:
+   *
    * ```ts
    * const tokens = await dog.exchangeCode(code, clientId, clientSecret)
-   * const gmail = dog.gmail(tokens)
+   * const gmail = dog.gmail(tokens, clientId, clientSecret)
    * const unread = await gmail.list({ query: "is:unread" })
    * ```
    *
@@ -153,15 +155,28 @@ export class InboxDog {
    */
   gmail(
     tokens: TokenResponse | GmailTokens,
-    opts?: Omit<GmailOptions, "fetch" | "baseUrl">,
+    clientIdOrOpts?: string | Omit<GmailOptions, "fetch" | "baseUrl">,
+    clientSecret?: string,
   ): Gmail {
+    // Parse overloaded args: gmail(tokens, clientId, clientSecret) or gmail(tokens, opts)
+    const opts = typeof clientIdOrOpts === "object" ? clientIdOrOpts : undefined;
+    const credClientId = typeof clientIdOrOpts === "string" ? clientIdOrOpts : undefined;
+    const credClientSecret = clientSecret;
+
     const gmailTokens: GmailTokens =
       "email" in tokens
         ? {
             access_token: tokens.access_token,
             refresh_token: tokens.refresh_token,
+            client_id: credClientId,
+            client_secret: credClientSecret,
           }
-        : tokens;
+        : {
+            ...tokens,
+            // Forward credentials if provided and not already on the tokens
+            client_id: tokens.client_id ?? credClientId,
+            client_secret: tokens.client_secret ?? credClientSecret,
+          };
 
     return new Gmail(gmailTokens, {
       ...opts,
