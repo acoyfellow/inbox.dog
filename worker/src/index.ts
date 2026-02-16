@@ -1,6 +1,5 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { Effect, pipe } from 'effect';
 import { oauthRoutes } from './routes/oauth';
 import { apiRoutes } from './routes/api';
 import { webhookRoutes } from './routes/webhooks';

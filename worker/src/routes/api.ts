@@ -1,165 +1,244 @@
 import { Hono } from 'hono';
-import type { Env, ApiKey } from '../types';
-import { generateId, generateSecret, timingSafeEqual } from '../utils';
+import { Effect, Schema } from 'effect';
+import type { Env } from '../types';
+import { KVService } from '../services/kv';
+import { timingSafeEqual } from '../utils';
+import {
+  InvalidCredentialsError,
+  ValidationError,
+  StripeError,
+} from '../errors';
+import { CheckoutRequestSchema } from '../schemas';
+import { runEffectEither } from '../runtime';
+import { errorToResponse } from '../http';
+import { createApiKey, CreateKeyBody } from '../keys';
 
 export const apiRoutes = new Hono<{ Bindings: Env }>();
 
-// Create API key (for dashboard/admin use)
-// POST /api/keys { name, redirect_uris }
+// ───────────────────────────────────────────────────────────────────────────────
+// POST /keys — create a new API key
+// ───────────────────────────────────────────────────────────────────────────────
 apiRoutes.post('/keys', async (c) => {
-  const body = await c.req.json<{ name?: string; redirect_uris?: string[] }>();
-  const name = body.name ?? 'default';
-  const redirectUris = body.redirect_uris ?? [];
+  const raw = await c.req.json().catch(() => ({}));
 
-  // Validate redirect URIs: must be valid URLs with https (or http for localhost)
-  for (const uri of redirectUris) {
-    try {
-      const parsed = new URL(uri);
-      if (parsed.protocol !== 'https:' && !(parsed.protocol === 'http:' && parsed.hostname === 'localhost')) {
-        return c.json({ error: { code: 'VALIDATION_ERROR', message: `Invalid redirect_uri: ${uri}. Must use HTTPS (or HTTP for localhost).`, action: 'Provide valid HTTPS redirect URIs', docs: 'https://inbox.dog/docs/api' } }, 400);
-      }
-    } catch {
-      return c.json({ error: { code: 'VALIDATION_ERROR', message: `Invalid redirect_uri: ${uri}. Must be a valid URL.`, action: 'Provide valid redirect URIs', docs: 'https://inbox.dog/docs/api' } }, 400);
-    }
-  }
+  const program = Effect.gen(function* () {
+    const body = yield* Schema.decodeUnknown(CreateKeyBody)(raw).pipe(
+      Effect.mapError(
+        () =>
+          new ValidationError({
+            field: 'body',
+            message: 'Invalid request body',
+          }),
+      ),
+    );
 
-  const clientId = `id_${generateId()}`;
-  const clientSecret = `sk_${generateSecret()}`;
+    const apiKey = yield* createApiKey({
+      name: body.name ?? body.client_name,
+      redirectUris: body.redirect_uris,
+    });
 
-  const apiKey: ApiKey = {
-    id: generateId(),
-    clientId,
-    clientSecret,
-    name,
-    createdAt: Date.now(),
-    credits: 10, // Start with 10 free credits
-    redirectUris,
-  };
-
-  await c.env.KV.put(`apikey:${clientId}`, JSON.stringify(apiKey));
-
-  c.header('Cache-Control', 'no-store');
-  return c.json({
-    client_id: clientId,
-    client_secret: clientSecret,
-    name,
-    credits: apiKey.credits,
-    redirect_uris: redirectUris,
+    return {
+      client_id: apiKey.clientId,
+      client_secret: apiKey.clientSecret,
+      name: apiKey.name,
+      credits: apiKey.credits,
+      redirect_uris: apiKey.redirectUris ?? [],
+    };
   });
+
+  const result = await runEffectEither(program, c.env);
+  if (result.ok) {
+    c.header('Cache-Control', 'no-store');
+    return c.json(result.value);
+  }
+  const { status, body: errBody } = errorToResponse(result.error);
+  return c.json(errBody, status as any);
 });
 
-// Get API key info
-// GET /api/keys/:clientId
+// ───────────────────────────────────────────────────────────────────────────────
+// GET /keys/:clientId — get key info (requires X-Client-Secret)
+// ───────────────────────────────────────────────────────────────────────────────
 apiRoutes.get('/keys/:clientId', async (c) => {
   const clientId = c.req.param('clientId');
   const clientSecret = c.req.header('X-Client-Secret');
 
   if (!clientSecret) {
-    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing X-Client-Secret header', action: 'Include your client_secret in the X-Client-Secret request header', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 401);
+    return c.json(
+      {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Missing X-Client-Secret header',
+          action:
+            'Include your client_secret in the X-Client-Secret request header',
+          docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS',
+        },
+      },
+      401,
+    );
   }
 
-  const apiKeyJson = await c.env.KV.get(`apikey:${clientId}`);
-  if (!apiKeyJson) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'API key not found', action: 'Check your client_id or create a new key via POST /api/keys', docs: 'https://inbox.dog/docs/api' } }, 404);
-  }
+  const program = Effect.gen(function* () {
+    const kv = yield* KVService;
 
-  const apiKey = JSON.parse(apiKeyJson) as ApiKey;
-  if (!await timingSafeEqual(apiKey.clientSecret, clientSecret)) {
-    return c.json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', action: 'Check your client_secret', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 401);
-  }
+    const apiKey = yield* kv.getApiKey(clientId);
 
-  return c.json({
-    client_id: apiKey.clientId,
-    name: apiKey.name,
-    credits: apiKey.credits,
-    created_at: apiKey.createdAt,
+    const secretMatch = yield* Effect.promise(() =>
+      timingSafeEqual(apiKey.clientSecret, clientSecret),
+    );
+    if (!secretMatch) {
+      return yield* Effect.fail(
+        new InvalidCredentialsError({ message: 'Invalid credentials' }),
+      );
+    }
+
+    return {
+      client_id: apiKey.clientId,
+      name: apiKey.name,
+      credits: apiKey.credits,
+      created_at: apiKey.createdAt,
+    };
   });
+
+  const result = await runEffectEither(program, c.env);
+  if (result.ok) {
+    return c.json(result.value);
+  }
+  const { status, body: errBody } = errorToResponse(result.error);
+  return c.json(errBody, status as any);
 });
 
-// Delete API key and all associated data
-// DELETE /api/keys/:clientId
+// ───────────────────────────────────────────────────────────────────────────────
+// DELETE /keys/:clientId — delete key (requires X-Client-Secret)
+// ───────────────────────────────────────────────────────────────────────────────
 apiRoutes.delete('/keys/:clientId', async (c) => {
   const clientId = c.req.param('clientId');
   const clientSecret = c.req.header('X-Client-Secret');
 
   if (!clientSecret) {
-    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing X-Client-Secret header', action: 'Include your client_secret in the X-Client-Secret request header', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 401);
+    return c.json(
+      {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Missing X-Client-Secret header',
+          action:
+            'Include your client_secret in the X-Client-Secret request header',
+          docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS',
+        },
+      },
+      401,
+    );
   }
 
-  const apiKeyJson = await c.env.KV.get(`apikey:${clientId}`);
-  if (!apiKeyJson) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'API key not found', action: 'Check your client_id', docs: 'https://inbox.dog/docs/api' } }, 404);
+  const program = Effect.gen(function* () {
+    const kv = yield* KVService;
+
+    const apiKey = yield* kv.getApiKey(clientId);
+
+    const secretMatch = yield* Effect.promise(() =>
+      timingSafeEqual(apiKey.clientSecret, clientSecret),
+    );
+    if (!secretMatch) {
+      return yield* Effect.fail(
+        new InvalidCredentialsError({ message: 'Invalid credentials' }),
+      );
+    }
+
+    yield* kv.deleteApiKey(clientId);
+
+    return { deleted: true, client_id: clientId };
+  });
+
+  const result = await runEffectEither(program, c.env);
+  if (result.ok) {
+    return c.json(result.value);
   }
-
-  const apiKey = JSON.parse(apiKeyJson) as ApiKey;
-  if (!await timingSafeEqual(apiKey.clientSecret, clientSecret)) {
-    return c.json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', action: 'Check your client_secret', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 401);
-  }
-
-  await c.env.KV.delete(`apikey:${clientId}`);
-
-  return c.json({ deleted: true, client_id: clientId });
+  const { status, body: errBody } = errorToResponse(result.error);
+  return c.json(errBody, status as any);
 });
 
-// Create Stripe checkout session
-// POST /api/checkout { client_id, client_secret, credits }
+// ───────────────────────────────────────────────────────────────────────────────
+// POST /checkout — create a Stripe checkout session
+// ───────────────────────────────────────────────────────────────────────────────
 apiRoutes.post('/checkout', async (c) => {
-  const body = await c.req.json<{
-    client_id?: string;
-    client_secret?: string;
-    credits?: number;
-  }>();
+  const raw = await c.req.json().catch(() => ({}));
+  const origin = new URL(c.req.url).origin;
 
-  const { client_id, client_secret, credits = 100 } = body;
+  const program = Effect.gen(function* () {
+    const body = yield* Schema.decodeUnknown(CheckoutRequestSchema)(raw).pipe(
+      Effect.mapError(
+        () =>
+          new ValidationError({
+            field: 'body',
+            message:
+              'Missing or invalid fields. Required: client_id, client_secret',
+          }),
+      ),
+    );
 
-  if (!client_id || !client_secret) {
-    return c.json({ error: { code: 'VALIDATION_ERROR', message: 'Missing client_id or client_secret', action: 'Provide client_id and client_secret in the request body', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 400);
-  }
+    const kv = yield* KVService;
+    const apiKey = yield* kv.getApiKey(body.client_id);
 
-  // Validate credentials
-  const apiKeyJson = await c.env.KV.get(`apikey:${client_id}`);
-  if (!apiKeyJson) {
-    return c.json({ error: { code: 'NOT_FOUND', message: 'API key not found', action: 'Check your client_id or create a new key via POST /api/keys', docs: 'https://inbox.dog/docs/api' } }, 401);
-  }
+    const secretMatch = yield* Effect.promise(() =>
+      timingSafeEqual(apiKey.clientSecret, body.client_secret),
+    );
+    if (!secretMatch) {
+      return yield* Effect.fail(
+        new InvalidCredentialsError({ message: 'Invalid credentials' }),
+      );
+    }
 
-  const apiKey = JSON.parse(apiKeyJson) as ApiKey;
-  if (!await timingSafeEqual(apiKey.clientSecret, client_secret)) {
-    return c.json({ error: { code: 'INVALID_CREDENTIALS', message: 'Invalid credentials', action: 'Check your client_secret', docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS' } }, 401);
-  }
+    const credits = body.credits ?? 100;
+    const amount = credits * 10; // $0.10 per credit in cents
 
-  // Price: $0.10 per credit (10 cents)
-  const amount = credits * 10; // in cents
+    const response = yield* Effect.tryPromise({
+      try: () =>
+        fetch('https://api.stripe.com/v1/checkout/sessions', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${c.env.STRIPE_SECRET_KEY}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: new URLSearchParams({
+            mode: 'payment',
+            success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${origin}/checkout/cancel`,
+            'line_items[0][price_data][currency]': 'usd',
+            'line_items[0][price_data][product_data][name]':
+              'OAuth Credits',
+            'line_items[0][price_data][product_data][description]': `${credits} OAuth flow credits`,
+            'line_items[0][price_data][unit_amount]': String(amount),
+            'line_items[0][quantity]': '1',
+            'metadata[client_id]': body.client_id,
+            'metadata[credits]': String(credits),
+          }),
+        }),
+      catch: () =>
+        new StripeError({ message: 'Failed to reach Stripe API' }),
+    });
 
-  // Create Stripe checkout session
-  const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${c.env.STRIPE_SECRET_KEY}`,
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: new URLSearchParams({
-      'mode': 'payment',
-      'success_url': `${new URL(c.req.url).origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      'cancel_url': `${new URL(c.req.url).origin}/checkout/cancel`,
-      'line_items[0][price_data][currency]': 'usd',
-      'line_items[0][price_data][product_data][name]': 'OAuth Credits',
-      'line_items[0][price_data][product_data][description]': `${credits} OAuth flow credits`,
-      'line_items[0][price_data][unit_amount]': String(amount),
-      'line_items[0][quantity]': '1',
-      'metadata[client_id]': client_id,
-      'metadata[credits]': String(credits),
-    }),
+    if (!response.ok) {
+      console.error('Stripe checkout error: HTTP', response.status);
+      return yield* Effect.fail(
+        new StripeError({ message: 'Failed to create checkout session' }),
+      );
+    }
+
+    const session = (yield* Effect.tryPromise({
+      try: () => response.json() as Promise<{ id: string; url: string }>,
+      catch: () =>
+        new StripeError({ message: 'Failed to parse Stripe response' }),
+    }));
+
+    return {
+      checkout_url: session.url,
+      session_id: session.id,
+    };
   });
 
-  if (!response.ok) {
-    console.error('Stripe checkout error: HTTP', response.status);
-    return c.json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to create checkout session', action: 'Retry the request. If the problem persists, check https://inbox.dog/health', docs: 'https://inbox.dog/docs/errors' } }, 500);
+  const result = await runEffectEither(program, c.env);
+  if (result.ok) {
+    return c.json(result.value);
   }
-
-  const session = (await response.json()) as { id: string; url: string };
-
-  return c.json({
-    checkout_url: session.url,
-    session_id: session.id,
-  });
+  const { status, body: errBody } = errorToResponse(result.error);
+  return c.json(errBody, status as any);
 });

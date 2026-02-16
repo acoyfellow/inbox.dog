@@ -1,85 +1,107 @@
 # inbox.dog
 
-**OAuth for email, simplified.** Get Gmail access tokens without implementing OAuth yourself.
+**Full Gmail access for your agents.** Read, write, search, and send — not just read-only.
 
-[![Live Demo](https://img.shields.io/badge/demo-inbox.dog-blue)](https://inbox.dog)
+[![Live](https://img.shields.io/badge/live-inbox.dog-blue)](https://inbox.dog)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-## What is this?
+## The problem
 
-A hosted OAuth service that handles the complexity of Google OAuth for email access. Your users authenticate once, and you get tokens to read/send emails via Gmail API.
+Most Gmail automations are read-only. Not by choice — Google requires a **CASA Tier 2 security audit** before any app can use Gmail write scopes in production. That audit costs $550+, takes months, and requires annual recertification.
 
-**3 API calls:**
+inbox.dog already passed the audit. Your agents get full read + write + search access today.
+
+## Two ways to connect
+
+### MCP Server (zero-code)
+
+Drop into Claude Desktop, Cursor, Windsurf, or any MCP-compatible agent:
+
+```json
+{
+  "mcpServers": {
+    "inbox-dog": {
+      "command": "npx",
+      "args": ["-y", "inbox.dog", "mcp"],
+      "env": {
+        "INBOXDOG_KEY": "YOUR_KEY",
+        "INBOXDOG_SECRET": "YOUR_SECRET"
+      }
+    }
+  }
+}
+```
+
+Tools: `read_emails`, `read_email`, `send_email`, `search_emails`, `get_profile`
+
+### npm Package (full control)
+
+```bash
+npm install inbox.dog
+```
 
 ```typescript
 import InboxDog from 'inbox.dog';
 const dog = new InboxDog();
 
 // 1. Send user to authenticate
-const url = dog.getAuthUrl({ clientId: 'YOUR_KEY', redirectUri: 'http://localhost:3000/callback' });
+const authUrl = dog.getAuthUrl({
+  clientId: 'YOUR_KEY',
+  redirectUri: 'http://localhost:3000/callback',
+});
 
-// 2. Exchange code for tokens (in your callback)
-const { access_token, email } = await dog.exchangeCode(code, 'YOUR_KEY', 'YOUR_SECRET');
+// 2. Exchange code for tokens
+const { access_token, refresh_token, email } =
+  await dog.exchangeCode(code, 'YOUR_KEY', 'YOUR_SECRET');
 
-// 3. Use with Gmail API
-const emails = await fetch('https://gmail.googleapis.com/gmail/v1/users/me/messages',
-  { headers: { Authorization: `Bearer ${access_token}` } });
+// 3. Your agent can now read AND write Gmail
+const emails = await fetch(
+  'https://gmail.googleapis.com/gmail/v1/users/me/messages/send',
+  {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${access_token}` },
+    body: JSON.stringify({ raw: encodedEmail }),
+  }
+);
 ```
 
 ## Features
 
-- **Complete OAuth Flow** - We handle the Google OAuth dance
-- **Gmail API Access** - Read emails, send messages, manage labels
-- **Token Refresh** - Automatic token management
-- **Usage-Based Billing** - $0.10 per OAuth flow, 10 free credits
-- **Standard OAuth 2.0** - Works with any HTTP client
-- **Open Source** - Self-host with your own Google credentials
+- **Full Read + Write + Search** — Not just read-only. Send emails, create drafts, manage labels, search inboxes.
+- **MCP Native** — Ships as an MCP server. Claude, Cursor, Windsurf, and any MCP client can use it directly.
+- **CASA Tier 2 Verified** — We passed Google's security audit so you don't have to.
+- **Auto-Refresh Tokens** — Tokens expire; inbox.dog handles refresh automatically. Refresh is free.
+- **$0.10 Per Auth** — Pay per OAuth flow, not per API call. 10 free credits to start.
+- **Open Source** — MIT licensed. Self-host on your own Cloudflare account whenever you want.
 
 ## Architecture
 
 ```
 ┌─────────────┐    ┌──────────────┐    ┌─────────────┐
-│  Your App   │───▶│  inbox.dog   │───▶│  Google     │
-│             │◀───│  (Effect-TS) │◀───│  OAuth      │
+│  Your Agent │───▶│  inbox.dog   │───▶│  Google     │
+│  or App     │◀───│  (Effect-TS) │◀───│  OAuth      │
 └─────────────┘    └──────────────┘    └─────────────┘
 ```
 
 Built with:
-- **[Effect](https://effect.website)** - Type-safe error handling, services, schemas
-- **[Hono](https://hono.dev)** - Fast web framework for Cloudflare Workers
-- **[Astro](https://astro.build)** - Static landing page
-- **Cloudflare Workers** - Edge deployment
-
-## npm Package
-
-```bash
-npm install inbox.dog
-```
-
-```ts
-import { InboxDog } from "inbox.dog";
-
-const dog = new InboxDog();
-const key = await dog.createKey("my-app");
-const url = dog.getAuthUrl({ clientId: key.client_id, redirectUri: "http://localhost:3000/callback" });
-// redirect user → exchange code → get tokens
-const tokens = await dog.exchangeCode(code, key.client_id, key.client_secret);
-```
-
-See [`package/README.md`](package/README.md) for full API docs.
+- **[Effect](https://effect.website)** — Type-safe error handling, services, schemas
+- **[Hono](https://hono.dev)** — Fast web framework for Cloudflare Workers
+- **[Astro](https://astro.build)** — Static landing page
+- **Cloudflare Workers** — Edge deployment
 
 ## Project Structure
 
 ```
 ├── landing/          # Astro landing page + docs
-│   ├── src/pages/    # index, docs, pricing, demo
+│   ├── src/pages/    # index, docs, pricing, demo, blog
 │   └── public/       # fonts, logo, llms.txt
 ├── worker/           # Cloudflare Worker (Effect-TS)
 │   ├── src/
-│   │   ├── routes/   # oauth, api, webhooks
+│   │   ├── routes/   # oauth, api, mcp, webhooks
 │   │   ├── services/ # google, kv (Effect services)
 │   │   ├── schemas.ts
-│   │   └── errors.ts # Tagged errors
+│   │   ├── errors.ts
+│   │   └── runtime.ts
 │   └── wrangler.toml
 ├── package/          # npm package (inbox.dog)
 │   └── src/index.ts  # TypeScript client library
@@ -87,21 +109,15 @@ See [`package/README.md`](package/README.md) for full API docs.
 └── .husky/           # Git hooks
 ```
 
-## Hosted vs Self-Hosted
+## Scopes
 
-inbox.dog is open source — you can self-host it. But there's a reason the hosted version exists.
+| Scope | Permission |
+|-------|------------|
+| `gmail:read` | Read-only |
+| `gmail:send` | Send only |
+| `gmail:full` | Full access (read, send, modify, label, draft) |
 
-Gmail uses **restricted OAuth scopes**, which means Google requires a [CASA Tier 2 security audit](https://appdefensealliance.dev/casa) before your app can go to production. That audit includes:
-
-- OWASP ZAP vulnerability scan across all endpoints
-- Security headers, caching directives, error disclosure review
-- Self-attestation questionnaire (50+ items)
-- Verification by an authorized lab (we used [TAC Security](https://tacsecurity.com), ~$550)
-- Annual recertification
-
-If you're building a product that needs Gmail access for fewer than ~5,500 users, the hosted version at $0.10/flow is cheaper than paying for the audit yourself. Above that, self-hosting makes more financial sense — and you'll have the full source code to work with.
-
-Either way, you skip the Google Cloud Console setup, OAuth consent screen review, and months of back-and-forth with Google's trust & safety team.
+Legacy scope names (`email`, `email:read`, `email:send`, `email:full`) are also supported.
 
 ## Self-Hosting
 
@@ -114,7 +130,6 @@ Either way, you skip the Google Cloud Console setup, OAuth consent screen review
 ### Setup
 
 ```bash
-# Clone
 git clone https://github.com/acoyfellow/inbox.dog
 cd inbox.dog
 
@@ -122,13 +137,15 @@ cd inbox.dog
 cd worker && npm install
 cd ../landing && npm install
 
-# Create KV namespace
+# Create KV namespaces (one per environment)
 wrangler kv:namespace create KV
-# Update wrangler.toml with the ID
+wrangler kv:namespace create KV --env staging
+# Update wrangler.toml with the IDs
 
 # Set secrets
 wrangler secret put GOOGLE_CLIENT_ID
 wrangler secret put GOOGLE_CLIENT_SECRET
+wrangler secret put ENCRYPTION_SECRET
 
 # Optional: Stripe for billing
 wrangler secret put STRIPE_SECRET_KEY
@@ -152,7 +169,7 @@ cd ../landing && npm run build && wrangler pages deploy dist
 
 ```bash
 POST /api/keys
-{"name": "my-app"}
+{"name": "my-app", "redirect_uris": ["https://myapp.com/callback"]}
 
 # Response
 {"client_id": "id_...", "client_secret": "sk_...", "credits": 10}
@@ -162,7 +179,7 @@ POST /api/keys
 
 ```bash
 # 1. Authorize
-GET /oauth/authorize?client_id=...&redirect_uri=...&scope=email
+GET /oauth/authorize?client_id=...&redirect_uri=...&scope=gmail:full
 
 # 2. Callback (automatic redirect)
 GET /oauth/callback?code=...&state=...
@@ -175,14 +192,17 @@ POST /oauth/token
 {"access_token": "...", "refresh_token": "...", "email": "user@example.com"}
 ```
 
-### Scopes
+## Pricing
 
-| Scope | Permission |
-|-------|------------|
-| `email` | Read-only (default) |
-| `email:read` | Read-only |
-| `email:send` | Send only |
-| `email:full` | Full access |
+| Item | Cost |
+|------|------|
+| OAuth flow | $0.10 |
+| Token refresh | Free |
+| Gmail API calls | Free (unlimited) |
+| Signup credits | 10 free |
+| Self-host | Free (MIT) |
+
+Cheaper than the CASA audit until ~5,500 OAuth flows.
 
 ## Development
 

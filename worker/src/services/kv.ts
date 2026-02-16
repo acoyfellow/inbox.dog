@@ -1,51 +1,101 @@
-import { Effect, Context, Layer, pipe } from 'effect';
-import { Schema } from '@effect/schema';
+import { Effect, Context, Layer, Schema } from 'effect';
 import { NotFoundError } from '../errors';
-import { ApiKeySchema, OAuthStateSchema, type ApiKey, type OAuthState } from '../schemas';
+import {
+  ApiKeySchema,
+  OAuthStateSchema,
+  AuthCodeDataSchema,
+  McpSessionDataSchema,
+  type ApiKey,
+  type OAuthState,
+  type AuthCodeData,
+  type McpSessionData,
+} from '../schemas';
 import { encrypt, decrypt } from '../crypto';
 
+// ---------------------------------------------------------------------------
+// Decode error — surfaces schema validation failures distinctly from not-found
+// ---------------------------------------------------------------------------
+
+import { Data } from 'effect';
+
+export class DecodeError extends Data.TaggedError('DecodeError')<{
+  readonly resource: string;
+  readonly id: string;
+  readonly cause: unknown;
+}> {}
+
+// ---------------------------------------------------------------------------
 // Service interface
+// ---------------------------------------------------------------------------
+
 export interface KVService {
-  readonly getApiKey: (clientId: string) => Effect.Effect<ApiKey, NotFoundError>;
+  // API keys
+  readonly getApiKey: (clientId: string) => Effect.Effect<ApiKey, NotFoundError | DecodeError>;
   readonly putApiKey: (clientId: string, apiKey: ApiKey) => Effect.Effect<void, never>;
   readonly deleteApiKey: (clientId: string) => Effect.Effect<void, never>;
-  readonly getOAuthState: (stateId: string) => Effect.Effect<OAuthState, NotFoundError>;
+
+  // OAuth state
+  readonly getOAuthState: (stateId: string) => Effect.Effect<OAuthState, NotFoundError | DecodeError>;
   readonly putOAuthState: (stateId: string, state: OAuthState, ttlSeconds: number) => Effect.Effect<void, never>;
   readonly deleteOAuthState: (stateId: string) => Effect.Effect<void, never>;
-  readonly putAuthCode: (
-    code: string,
-    data: { accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string; codeChallenge?: string; codeChallengeMethod?: string },
-    ttlSeconds: number
-  ) => Effect.Effect<void, never>;
-  readonly getAuthCode: (
-    code: string
-  ) => Effect.Effect<
-    { accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string; codeChallenge?: string; codeChallengeMethod?: string },
-    NotFoundError
-  >;
+
+  // Auth codes (encrypted)
+  readonly putAuthCode: (code: string, data: AuthCodeData, ttlSeconds: number) => Effect.Effect<void, never>;
+  readonly getAuthCode: (code: string) => Effect.Effect<AuthCodeData, NotFoundError | DecodeError>;
   readonly deleteAuthCode: (code: string) => Effect.Effect<void, never>;
+
+  // MCP sessions
+  readonly getMcpSession: (sessionId: string) => Effect.Effect<McpSessionData, NotFoundError | DecodeError>;
+  readonly putMcpSession: (sessionId: string, data: McpSessionData, ttlSeconds: number) => Effect.Effect<void, never>;
+  readonly deleteMcpSession: (sessionId: string) => Effect.Effect<void, never>;
+
+  // Credit operations
+  // NOTE: These do read-modify-write on KV which is NOT truly atomic.
+  // KV is eventually consistent — concurrent writes can race.
+  // For production credit handling, migrate to D1 (SQL transactions)
+  // or Durable Objects (single-threaded actor model) for true atomicity.
+  readonly deductCredit: (clientId: string) => Effect.Effect<ApiKey, NotFoundError | DecodeError>;
+  readonly addCredits: (clientId: string, amount: number) => Effect.Effect<ApiKey, NotFoundError | DecodeError>;
 }
 
 export const KVService = Context.GenericTag<KVService>('KVService');
 
-// Create service from KV namespace
-// encryptionSecret is used to encrypt/decrypt tokens stored in auth codes
-export const makeKVService = (kv: KVNamespace, encryptionSecret?: string): KVService => ({
-  getApiKey(clientId) {
-    return pipe(
-      Effect.tryPromise({
-        try: () => kv.get(`apikey:${clientId}`, 'json'),
-        catch: () => new NotFoundError({ resource: 'ApiKey', id: clientId }),
-      }),
-      Effect.flatMap((data) =>
-        data === null
-          ? Effect.fail(new NotFoundError({ resource: 'ApiKey', id: clientId }))
-          : pipe(
-              Schema.decodeUnknown(ApiKeySchema)(data),
-              Effect.mapError(() => new NotFoundError({ resource: 'ApiKey', id: clientId }))
-            )
-      )
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+/** Fetch from KV + schema-decode, producing NotFoundError or DecodeError */
+const getAndDecode = <A, I>(
+  kv: KVNamespace,
+  key: string,
+  schema: Schema.Schema<A, I>,
+  resource: string,
+  id: string,
+): Effect.Effect<A, NotFoundError | DecodeError> =>
+  Effect.gen(function* () {
+    const raw = yield* Effect.tryPromise({
+      try: () => kv.get(key, 'json'),
+      catch: () => new NotFoundError({ resource, id }),
+    });
+
+    if (raw === null) {
+      return yield* Effect.fail(new NotFoundError({ resource, id }));
+    }
+
+    return yield* Schema.decodeUnknown(schema)(raw).pipe(
+      Effect.mapError((cause) => new DecodeError({ resource, id, cause }))
     );
+  });
+
+// ---------------------------------------------------------------------------
+// Service implementation
+// ---------------------------------------------------------------------------
+
+export const makeKVService = (kv: KVNamespace, encryptionSecret?: string): KVService => ({
+  // -- API keys -------------------------------------------------------------
+
+  getApiKey(clientId) {
+    return getAndDecode(kv, `apikey:${clientId}`, ApiKeySchema, 'ApiKey', clientId);
   },
 
   putApiKey(clientId, apiKey) {
@@ -56,21 +106,10 @@ export const makeKVService = (kv: KVNamespace, encryptionSecret?: string): KVSer
     return Effect.promise(() => kv.delete(`apikey:${clientId}`));
   },
 
+  // -- OAuth state -----------------------------------------------------------
+
   getOAuthState(stateId) {
-    return pipe(
-      Effect.tryPromise({
-        try: () => kv.get(`oauth_state:${stateId}`, 'json'),
-        catch: () => new NotFoundError({ resource: 'OAuthState', id: stateId }),
-      }),
-      Effect.flatMap((data) =>
-        data === null
-          ? Effect.fail(new NotFoundError({ resource: 'OAuthState', id: stateId }))
-          : pipe(
-              Schema.decodeUnknown(OAuthStateSchema)(data),
-              Effect.mapError(() => new NotFoundError({ resource: 'OAuthState', id: stateId }))
-            )
-      )
-    );
+    return getAndDecode(kv, `oauth_state:${stateId}`, OAuthStateSchema, 'OAuthState', stateId);
   },
 
   putOAuthState(stateId, state, ttlSeconds) {
@@ -83,47 +122,93 @@ export const makeKVService = (kv: KVNamespace, encryptionSecret?: string): KVSer
     return Effect.promise(() => kv.delete(`oauth_state:${stateId}`));
   },
 
+  // -- Auth codes (encrypted) -----------------------------------------------
+
   putAuthCode(code, data, ttlSeconds) {
-    return encryptionSecret
-      ? Effect.tryPromise({
-          try: async () => {
-            const encrypted = await encrypt(JSON.stringify(data), encryptionSecret);
-            await kv.put(`auth_code:${code}`, encrypted, { expirationTtl: ttlSeconds });
-          },
-          catch: () => { throw new Error('Failed to encrypt auth code data'); },
-        })
-      : Effect.promise(() => kv.put(`auth_code:${code}`, JSON.stringify(data), { expirationTtl: ttlSeconds }));
+    return Effect.gen(function* () {
+      const json = JSON.stringify(data);
+      const value = encryptionSecret
+        ? yield* Effect.promise(() => encrypt(json, encryptionSecret))
+        : json;
+      yield* Effect.promise(() =>
+        kv.put(`auth_code:${code}`, value, { expirationTtl: ttlSeconds })
+      );
+    });
   },
 
   getAuthCode(code) {
-    return pipe(
-      Effect.tryPromise({
+    return Effect.gen(function* () {
+      const raw = yield* Effect.tryPromise({
         try: () => kv.get(`auth_code:${code}`, 'text'),
         catch: () => new NotFoundError({ resource: 'AuthCode', id: code }),
-      }),
-      Effect.flatMap((raw) => {
-        if (raw === null) {
-          return Effect.fail(new NotFoundError({ resource: 'AuthCode', id: code }));
-        }
-        if (encryptionSecret) {
-          return Effect.tryPromise({
-            try: async () => JSON.parse(await decrypt(raw, encryptionSecret)) as {
-              accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string; codeChallenge?: string; codeChallengeMethod?: string;
-            },
-            catch: () => new NotFoundError({ resource: 'AuthCode', id: code }),
-          });
-        }
-        return Effect.succeed(
-          JSON.parse(raw) as { accessToken: string; refreshToken: string; expiresIn: number; email: string; clientId: string; codeChallenge?: string; codeChallengeMethod?: string }
-        );
-      })
-    );
+      });
+
+      if (raw === null) {
+        return yield* Effect.fail(new NotFoundError({ resource: 'AuthCode', id: code }));
+      }
+
+      const jsonStr = encryptionSecret
+        ? yield* Effect.tryPromise({
+            try: () => decrypt(raw, encryptionSecret),
+            catch: () => new DecodeError({ resource: 'AuthCode', id: code, cause: 'decryption failed' }),
+          })
+        : raw;
+
+      const parsed = yield* Effect.try({
+        try: () => JSON.parse(jsonStr) as unknown,
+        catch: () => new DecodeError({ resource: 'AuthCode', id: code, cause: 'invalid JSON' }),
+      });
+
+      return yield* Schema.decodeUnknown(AuthCodeDataSchema)(parsed).pipe(
+        Effect.mapError((cause) => new DecodeError({ resource: 'AuthCode', id: code, cause }))
+      );
+    });
   },
 
   deleteAuthCode(code) {
     return Effect.promise(() => kv.delete(`auth_code:${code}`));
   },
+
+  // -- MCP sessions ---------------------------------------------------------
+
+  getMcpSession(sessionId) {
+    return getAndDecode(kv, `mcp_session:${sessionId}`, McpSessionDataSchema, 'McpSession', sessionId);
+  },
+
+  putMcpSession(sessionId, data, ttlSeconds) {
+    return Effect.promise(() =>
+      kv.put(`mcp_session:${sessionId}`, JSON.stringify(data), { expirationTtl: ttlSeconds })
+    );
+  },
+
+  deleteMcpSession(sessionId) {
+    return Effect.promise(() => kv.delete(`mcp_session:${sessionId}`));
+  },
+
+  // -- Credit operations (read-modify-write, NOT truly atomic on KV) --------
+
+  deductCredit(clientId) {
+    return Effect.gen(function* () {
+      const apiKey = yield* getAndDecode(kv, `apikey:${clientId}`, ApiKeySchema, 'ApiKey', clientId);
+      const updated: ApiKey = { ...apiKey, credits: apiKey.credits - 1 };
+      yield* Effect.promise(() => kv.put(`apikey:${clientId}`, JSON.stringify(updated)));
+      return updated;
+    });
+  },
+
+  addCredits(clientId, amount) {
+    return Effect.gen(function* () {
+      const apiKey = yield* getAndDecode(kv, `apikey:${clientId}`, ApiKeySchema, 'ApiKey', clientId);
+      const updated: ApiKey = { ...apiKey, credits: apiKey.credits + amount };
+      yield* Effect.promise(() => kv.put(`apikey:${clientId}`, JSON.stringify(updated)));
+      return updated;
+    });
+  },
 });
+
+// ---------------------------------------------------------------------------
+// Layer constructor
+// ---------------------------------------------------------------------------
 
 export const KVServiceLive = (kv: KVNamespace, encryptionSecret?: string) =>
   Layer.succeed(KVService, makeKVService(kv, encryptionSecret));

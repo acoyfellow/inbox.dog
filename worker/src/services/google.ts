@@ -1,9 +1,16 @@
-import { Effect, Context, Layer, pipe } from 'effect';
-import { Schema } from '@effect/schema';
-import { OAuthError, TokenExchangeError } from '../errors';
-import { GoogleTokenResponseSchema, GoogleUserInfoSchema, TokenResponse } from '../schemas';
+import { Effect, Context, Layer, Schema } from 'effect';
+import { TokenExchangeError } from '../errors';
+import {
+  GoogleTokenResponseSchema,
+  GoogleRefreshTokenResponseSchema,
+  GoogleUserInfoSchema,
+  type TokenResponse,
+} from '../schemas';
 
+// ---------------------------------------------------------------------------
 // Service interface
+// ---------------------------------------------------------------------------
+
 export interface GoogleOAuthService {
   readonly buildAuthUrl: (params: {
     clientId: string;
@@ -26,10 +33,16 @@ export interface GoogleOAuthService {
   }) => Effect.Effect<{ accessToken: string; expiresIn: number }, TokenExchangeError>;
 }
 
+// ---------------------------------------------------------------------------
 // Service tag
+// ---------------------------------------------------------------------------
+
 export const GoogleOAuthService = Context.GenericTag<GoogleOAuthService>('GoogleOAuthService');
 
-// Service implementation
+// ---------------------------------------------------------------------------
+// Implementation
+// ---------------------------------------------------------------------------
+
 const makeGoogleOAuthService = (): GoogleOAuthService => ({
   buildAuthUrl({ clientId, redirectUri, state, scope }) {
     const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
@@ -44,9 +57,9 @@ const makeGoogleOAuthService = (): GoogleOAuthService => ({
   },
 
   exchangeCode({ code, clientId, clientSecret, redirectUri }) {
-    return pipe(
-      // Step 1: Exchange code for tokens
-      Effect.tryPromise({
+    return Effect.gen(function* () {
+      // Step 1: Exchange authorization code for tokens
+      const tokenResponse = yield* Effect.tryPromise({
         try: () =>
           fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
@@ -60,68 +73,64 @@ const makeGoogleOAuthService = (): GoogleOAuthService => ({
             }),
           }),
         catch: (e) => new TokenExchangeError({ message: `Network error: ${e}` }),
-      }),
-      // Step 2: Check response status
-      Effect.flatMap((response) =>
-        response.ok
-          ? Effect.tryPromise({
-              try: () => response.json(),
-              catch: () => new TokenExchangeError({ message: 'Failed to parse token response' }),
-            })
-          : Effect.tryPromise({
-              try: () => response.text(),
-              catch: () => new TokenExchangeError({ message: 'Token exchange failed' }),
-            }).pipe(
-              Effect.flatMap((text) =>
-                Effect.fail(new TokenExchangeError({ message: 'Token exchange failed', details: text }))
-              )
-            )
-      ),
-      // Step 3: Validate response shape
-      Effect.flatMap((data) =>
-        pipe(
-          Schema.decodeUnknown(GoogleTokenResponseSchema)(data),
-          Effect.mapError(() => new TokenExchangeError({ message: 'Invalid token response format' }))
-        )
-      ),
-      // Step 4: Get user info
-      Effect.flatMap((tokens) =>
-        pipe(
-          Effect.tryPromise({
-            try: () =>
-              fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-                headers: { Authorization: `Bearer ${tokens.access_token}` },
-              }),
-            catch: (e) => new TokenExchangeError({ message: `Failed to fetch user info: ${e}` }),
+      });
+
+      // Step 2: Parse + validate response
+      if (!tokenResponse.ok) {
+        const text = yield* Effect.tryPromise({
+          try: () => tokenResponse.text(),
+          catch: () => new TokenExchangeError({ message: 'Token exchange failed' }),
+        });
+        return yield* Effect.fail(
+          new TokenExchangeError({ message: 'Token exchange failed', details: text })
+        );
+      }
+
+      const tokenJson = yield* Effect.tryPromise({
+        try: () => tokenResponse.json(),
+        catch: () => new TokenExchangeError({ message: 'Failed to parse token response' }),
+      });
+
+      const tokens = yield* Schema.decodeUnknown(GoogleTokenResponseSchema)(tokenJson).pipe(
+        Effect.mapError(() => new TokenExchangeError({ message: 'Invalid token response format' }))
+      );
+
+      // Step 3: Fetch user info
+      const userInfoResponse = yield* Effect.tryPromise({
+        try: () =>
+          fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: { Authorization: `Bearer ${tokens.access_token}` },
           }),
-          Effect.flatMap((response) =>
-            response.ok
-              ? Effect.tryPromise({
-                  try: () => response.json(),
-                  catch: () => new TokenExchangeError({ message: 'Failed to parse user info' }),
-                })
-              : Effect.fail(new TokenExchangeError({ message: 'Failed to get user info' }))
-          ),
-          Effect.flatMap((data) =>
-            pipe(
-              Schema.decodeUnknown(GoogleUserInfoSchema)(data),
-              Effect.mapError(() => new TokenExchangeError({ message: 'Invalid user info format' }))
-            )
-          ),
-          Effect.map((userInfo) => ({
-            accessToken: tokens.access_token,
-            refreshToken: tokens.refresh_token ?? '',
-            expiresIn: tokens.expires_in,
-            email: userInfo.email,
-          }))
-        )
-      )
-    );
+        catch: (e) => new TokenExchangeError({ message: `Failed to fetch user info: ${e}` }),
+      });
+
+      if (!userInfoResponse.ok) {
+        return yield* Effect.fail(
+          new TokenExchangeError({ message: 'Failed to get user info' })
+        );
+      }
+
+      const userInfoJson = yield* Effect.tryPromise({
+        try: () => userInfoResponse.json(),
+        catch: () => new TokenExchangeError({ message: 'Failed to parse user info' }),
+      });
+
+      const userInfo = yield* Schema.decodeUnknown(GoogleUserInfoSchema)(userInfoJson).pipe(
+        Effect.mapError(() => new TokenExchangeError({ message: 'Invalid user info format' }))
+      );
+
+      return {
+        accessToken: tokens.access_token,
+        refreshToken: tokens.refresh_token ?? '',
+        expiresIn: tokens.expires_in,
+        email: userInfo.email,
+      };
+    });
   },
 
   refreshToken({ refreshToken, clientId, clientSecret }) {
-    return pipe(
-      Effect.tryPromise({
+    return Effect.gen(function* () {
+      const response = yield* Effect.tryPromise({
         try: () =>
           fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
@@ -134,22 +143,37 @@ const makeGoogleOAuthService = (): GoogleOAuthService => ({
             }),
           }),
         catch: (e) => new TokenExchangeError({ message: `Network error: ${e}` }),
-      }),
-      Effect.flatMap((response) =>
-        response.ok
-          ? Effect.tryPromise({
-              try: () => response.json() as Promise<{ access_token: string; expires_in: number }>,
-              catch: () => new TokenExchangeError({ message: 'Failed to parse refresh response' }),
-            })
-          : Effect.fail(new TokenExchangeError({ message: 'Token refresh failed' }))
-      ),
-      Effect.map((data) => ({
+      });
+
+      if (!response.ok) {
+        return yield* Effect.fail(
+          new TokenExchangeError({ message: 'Token refresh failed' })
+        );
+      }
+
+      const json = yield* Effect.tryPromise({
+        try: () => response.json(),
+        catch: () => new TokenExchangeError({ message: 'Failed to parse refresh response' }),
+      });
+
+      // Schema-validate instead of raw `as` cast
+      const data = yield* Schema.decodeUnknown(GoogleRefreshTokenResponseSchema)(json).pipe(
+        Effect.mapError(() => new TokenExchangeError({ message: 'Invalid refresh token response format' }))
+      );
+
+      return {
         accessToken: data.access_token,
         expiresIn: data.expires_in,
-      }))
-    );
+      };
+    });
   },
 });
 
+// ---------------------------------------------------------------------------
 // Layer
-export const GoogleOAuthServiceLive = Layer.succeed(GoogleOAuthService, makeGoogleOAuthService());
+// ---------------------------------------------------------------------------
+
+export const GoogleOAuthServiceLive = Layer.succeed(
+  GoogleOAuthService,
+  makeGoogleOAuthService()
+);
