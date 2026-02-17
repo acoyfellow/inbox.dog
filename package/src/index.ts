@@ -1,7 +1,7 @@
 /** inbox.dog — Gmail OAuth tokens in 3 API calls + typed Gmail client */
 
 import { Gmail, type GmailOptions } from "./gmail";
-import type { TokenResponse, GmailTokens } from "./types";
+import type { TokenResponse, DeviceCodeResponse, GmailTokens } from "./types";
 
 const DEFAULT_BASE_URL = "https://inbox.dog";
 
@@ -116,6 +116,34 @@ export class InboxDog {
       refresh_token: refreshToken,
       client_id: clientId,
       client_secret: clientSecret,
+    });
+  }
+
+  // ── Device Auth (CLI / Agent flow) ─────────────────────────────────
+
+  /**
+   * Start a device-code auth flow for CLIs and agents that can't host a callback server.
+   * Returns an auth URL that the user should open in a browser.
+   *
+   * After the user authenticates, they'll see a code on inbox.dog's hosted page.
+   * Use `exchangeCode()` with that code to get tokens.
+   *
+   * ```ts
+   * const { auth_url } = await dog.getDeviceCode(clientId, clientSecret, "email:full");
+   * console.log(`Open: ${auth_url}`);
+   * const code = await prompt("Paste code: ");
+   * const tokens = await dog.exchangeCode(code, clientId, clientSecret);
+   * ```
+   */
+  async getDeviceCode(
+    clientId: string,
+    clientSecret: string,
+    scope?: "email" | "email:read" | "email:send" | "email:full",
+  ): Promise<DeviceCodeResponse> {
+    return this.post("/api/device/code", {
+      client_id: clientId,
+      client_secret: clientSecret,
+      scope: scope ?? "email",
     });
   }
 

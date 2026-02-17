@@ -92,6 +92,34 @@ import Layout from '../../layouts/Layout.astro';
         </div>
       </div>
 
+      <!-- POST /api/device/code -->
+      <div id="api-device-code" class="mb-10 border border-primary-200 rounded-lg overflow-hidden">
+        <div class="bg-primary-100 px-4 py-3 flex items-center gap-3">
+          <span class="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded">POST</span>
+          <code class="font-mono text-primary-900">/api/device/code</code>
+          <span class="text-primary-500 text-sm ml-auto">Start device auth (CLI/agent)</span>
+        </div>
+        <div class="p-4">
+          <p class="text-primary-600 text-sm mb-3">Get an auth URL for CLI/agent flows. Uses inbox.dog's hosted code display page as the redirect — no callback server needed. See <a href="/docs/guides/device-auth" class="text-primary-700 underline underline-offset-2 hover:text-primary-900">CLI &amp; Agent Auth guide</a>.</p>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Request Body</h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto mb-3">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "client_id": "id_...",
+  "client_secret": "sk_...",
+  "scope": "email:full"  // optional, defaults to "email"
+}`}</code></pre>
+          </div>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Response <span class="text-primary-400 font-normal">200</span></h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "auth_url": "https://inbox.dog/oauth/authorize?client_id=id_...&redirect_uri=https%3A%2F%2Finbox.dog%2Fconnect%2Foauth&scope=email%3Afull",
+  "redirect_uri": "https://inbox.dog/connect/oauth",
+  "expires_in": 600
+}`}</code></pre>
+          </div>
+        </div>
+      </div>
+
       <!-- GET /oauth/authorize -->
       <div id="oauth-authorize" class="mb-10 border border-primary-200 rounded-lg overflow-hidden">
         <div class="bg-primary-100 px-4 py-3 flex items-center gap-3">
