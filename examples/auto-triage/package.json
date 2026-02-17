@@ -1,0 +1,13 @@
+{
+  "name": "auto-triage",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "agents": "^0.4.0",
+    "inbox.dog": "latest"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "name": "chat-agent",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "agents": "^0.4.0",
+    "@ai-sdk/anthropic": "^1.0.0",
+    "ai": "^4.0.0",
+    "inbox.dog": "latest",
+    "zod": "^3.24.0"
+  }
+}
