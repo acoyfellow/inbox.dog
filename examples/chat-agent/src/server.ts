@@ -4,6 +4,8 @@
  * "What's unread?" / "Archive all newsletters" / "Draft a reply to Alice"
  * Deployed as a Cloudflare Worker with Durable Object state.
  *
+ * Auth: For production, add Cloudflare Access or a bearer-token check in fetch().
+ *
  *   npx wrangler secret put GMAIL_ACCESS_TOKEN
  *   npx wrangler secret put ANTHROPIC_API_KEY
  *   npx wrangler deploy

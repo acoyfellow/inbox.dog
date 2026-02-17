@@ -4,6 +4,9 @@
  * Connect from Claude Desktop, Cursor, or any MCP-compatible agent.
  * Stateless Cloudflare Worker, no Durable Objects needed.
  *
+ * Auth: MCP transport handles its own auth via OAuth or token headers.
+ * For production, add Cloudflare Access or a bearer-token check in fetch().
+ *
  *   npx wrangler secret put GMAIL_ACCESS_TOKEN
  *   npx wrangler deploy
  */
