@@ -53,6 +53,10 @@ export class TriageAgent extends Agent<Env, State> {
     const { messages } = await gmail.list({ query: "is:unread", max: 20 });
     if (messages.length === 0) return;
 
+    // resolve label names → IDs so the model can return human-readable names
+    const allLabels = await gmail.labels();
+    const labelMap = new Map(allLabels.map((l) => [l.name, l.id]));
+
     for (const email of messages) {
       const response = await this.env.AI.run("@cf/meta/llama-3.1-8b-instruct" as BaseAiTextGenerationModels, {
         messages: [
@@ -64,8 +68,11 @@ export class TriageAgent extends Agent<Env, State> {
         const text = "response" in response ? (response.response ?? "") : "";
         const decision: Decision = JSON.parse(text);
 
+        if (decision.action === "skip") continue;
+
         if (decision.labels?.length) {
-          await gmail.addLabels(email.id, decision.labels);
+          const labelIds = decision.labels.map((name) => labelMap.get(name) ?? name);
+          await gmail.addLabels(email.id, labelIds);
         }
         if (decision.action === "archive") {
           await gmail.archive(email.id);
