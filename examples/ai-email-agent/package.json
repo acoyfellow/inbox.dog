@@ -1,0 +1,17 @@
+{
+  "name": "ai-email-agent",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx index.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "inbox.dog": "file:../../package",
+    "@anthropic-ai/sdk": "^0.39.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.0.0",
+    "typescript": "^5.5.0"
+  }
+}
