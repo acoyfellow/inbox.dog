@@ -3,8 +3,10 @@
  *
  * Full e2e: Login with Google → chat with your email → deploy to Cloudflare
  *
- *   npx wrangler secret put INBOX_DOG_CLIENT_ID
- *   npx wrangler secret put INBOX_DOG_CLIENT_SECRET
+ * inbox.dog handles Google OAuth + CASA audit. You get full Gmail access
+ * without touching Google Cloud console. The API key is auto-provisioned
+ * on first login — the only secret you need is ANTHROPIC_API_KEY.
+ *
  *   npx wrangler secret put ANTHROPIC_API_KEY
  *   npx wrangler deploy
  */
@@ -16,14 +18,13 @@ import { InboxDog, Gmail } from "inbox.dog";
 import { z } from "zod";
 
 interface Env {
-  INBOX_DOG_CLIENT_ID: string;
-  INBOX_DOG_CLIENT_SECRET: string;
   ANTHROPIC_API_KEY: string;
   ChatAgent: DurableObjectNamespace;
 }
 
 type Tokens = { access_token: string; refresh_token: string };
-type AgentState = { tokens?: Tokens };
+type Credentials = { client_id: string; client_secret: string };
+type AgentState = { tokens?: Tokens; credentials?: Credentials };
 
 // ── Cookie helpers ──────────────────────────────────────────────────────────
 
@@ -57,17 +58,73 @@ function tokensFromCookie(header: string | null): Tokens | undefined {
 export class ChatAgent extends AIChatAgent<Env, AgentState> {
   initialState: AgentState = {};
 
+  /** Auto-provision an inbox.dog API key on first use, persist in DO state. */
+  private async ensureCredentials(): Promise<Credentials> {
+    if (this.state.credentials) return this.state.credentials;
+    const dog = new InboxDog();
+    const key = await dog.createKey("chat-agent");
+    const credentials = { client_id: key.client_id, client_secret: key.client_secret };
+    this.setState({ ...this.state, credentials });
+    return credentials;
+  }
+
+  /** Handle /auth/* routes inside the DO so we have access to persistent state. */
+  async onRequest(request: Request): Promise<Response> {
+    const url = new URL(request.url);
+
+    if (url.pathname === "/auth/login") {
+      const creds = await this.ensureCredentials();
+      const dog = new InboxDog();
+      const authUrl = dog.getAuthUrl({
+        clientId: creds.client_id,
+        redirectUri: `${url.origin}/auth/callback`,
+        scope: "email:full",
+      });
+      return Response.redirect(authUrl, 302);
+    }
+
+    if (url.pathname === "/auth/callback") {
+      const code = url.searchParams.get("code");
+      if (!code) return new Response("Missing code", { status: 400 });
+      const creds = await this.ensureCredentials();
+      const dog = new InboxDog();
+      const tokens = await dog.exchangeCode(code, creds.client_id, creds.client_secret);
+      return new Response(null, {
+        status: 302,
+        headers: {
+          Location: "/",
+          "Set-Cookie": tokenCookie({ access_token: tokens.access_token, refresh_token: tokens.refresh_token }),
+        },
+      });
+    }
+
+    if (url.pathname === "/auth/logout") {
+      return new Response(null, {
+        status: 302,
+        headers: { Location: "/", "Set-Cookie": clearCookie() },
+      });
+    }
+
+    if (url.pathname === "/auth/status") {
+      const tokens = tokensFromCookie(request.headers.get("cookie"));
+      return Response.json({ authenticated: !!tokens });
+    }
+
+    return new Response("Not found", { status: 404 });
+  }
+
   onConnect(connection: unknown, ctx: { request: Request }) {
     const tokens = tokensFromCookie(ctx.request.headers.get("cookie"));
-    if (tokens) this.setState({ tokens });
+    if (tokens) this.setState({ ...this.state, tokens });
   }
 
   async onChatMessage(onFinish: Parameters<AIChatAgent<Env, AgentState>["onChatMessage"]>[0]) {
     const tokens = this.state.tokens;
     if (!tokens) throw new Error("Not authenticated");
 
+    const creds = await this.ensureCredentials();
     const gmail = new Gmail(
-      { ...tokens, client_id: this.env.INBOX_DOG_CLIENT_ID, client_secret: this.env.INBOX_DOG_CLIENT_SECRET },
+      { ...tokens, client_id: creds.client_id, client_secret: creds.client_secret },
       { autoRefresh: true },
     );
     const anthropic = createAnthropic({ apiKey: this.env.ANTHROPIC_API_KEY });
@@ -114,53 +171,19 @@ export class ChatAgent extends AIChatAgent<Env, AgentState> {
   }
 }
 
-// ── Worker fetch: OAuth routes + agent routing ──────────────────────────────
+// ── Worker fetch: route /auth/* to the DO, everything else to agents/assets ─
 
 export default {
   async fetch(request: Request, env: Env) {
     const url = new URL(request.url);
-    const dog = new InboxDog();
 
-    // Login: redirect to inbox.dog OAuth
-    if (url.pathname === "/auth/login") {
-      const authUrl = dog.getAuthUrl({
-        clientId: env.INBOX_DOG_CLIENT_ID,
-        redirectUri: `${url.origin}/auth/callback`,
-        scope: "email:full",
-      });
-      return Response.redirect(authUrl, 302);
+    // Forward auth routes to the ChatAgent DO (which has persistent state for credentials)
+    if (url.pathname.startsWith("/auth/")) {
+      const id = env.ChatAgent.idFromName("default");
+      return env.ChatAgent.get(id).fetch(request);
     }
 
-    // Callback: exchange code for tokens, set cookie
-    if (url.pathname === "/auth/callback") {
-      const code = url.searchParams.get("code");
-      if (!code) return new Response("Missing code", { status: 400 });
-
-      const tokens = await dog.exchangeCode(code, env.INBOX_DOG_CLIENT_ID, env.INBOX_DOG_CLIENT_SECRET);
-      return new Response(null, {
-        status: 302,
-        headers: {
-          Location: "/",
-          "Set-Cookie": tokenCookie({ access_token: tokens.access_token, refresh_token: tokens.refresh_token }),
-        },
-      });
-    }
-
-    // Logout: clear cookie
-    if (url.pathname === "/auth/logout") {
-      return new Response(null, {
-        status: 302,
-        headers: { Location: "/", "Set-Cookie": clearCookie() },
-      });
-    }
-
-    // Auth status: let the frontend know if user is logged in
-    if (url.pathname === "/auth/status") {
-      const tokens = tokensFromCookie(request.headers.get("cookie"));
-      return Response.json({ authenticated: !!tokens });
-    }
-
-    // Agent routes (WebSocket + API)
+    // Agent routes (WebSocket + API) and static assets
     return (await routeAgentRequest(request, env)) ?? new Response("Not found", { status: 404 });
   },
 } satisfies ExportedHandler<Env>;
