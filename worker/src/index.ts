@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { oauthRoutes } from './routes/oauth';
 import { apiRoutes } from './routes/api';
+import { deviceRoutes } from './routes/device';
 import { webhookRoutes } from './routes/webhooks';
 import { mcpRoutes } from './routes/mcp';
 import { wellKnownRoutes } from './routes/well-known';
@@ -86,6 +87,17 @@ app.use('/api/keys', async (c, next) => {
   await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
   return next();
 });
+app.use('/api/device/code', async (c, next) => {
+  if (c.req.method !== 'POST') return next();
+  const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
+  const key = `ratelimit:device_code:${ip}`;
+  const current = parseInt(await c.env.KV.get(key) ?? '0', 10);
+  if (current >= 10) {
+    return c.json({ error: { code: 'RATE_LIMITED', message: 'Too many device code requests. Max 10 per minute.', action: 'Wait before retrying', docs: 'https://inbox.dog/docs/errors' } }, 429);
+  }
+  await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
+  return next();
+});
 app.use('/oauth/token', async (c, next) => {
   if (c.req.method !== 'POST') return next();
   const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
@@ -105,6 +117,7 @@ app.get('/health', (c) => c.json({ status: 'ok' }));
 app.route('/.well-known', wellKnownRoutes);
 app.route('/oauth', oauthRoutes);
 app.route('/api', apiRoutes);
+app.route('/api/device', deviceRoutes);
 app.route('/webhooks', webhookRoutes);
 app.route('/mcp', mcpRoutes);
 

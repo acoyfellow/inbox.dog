@@ -35,6 +35,12 @@ export interface CheckoutResponse {
   session_id: string;
 }
 
+export interface DeviceCodeResponse {
+  auth_url: string;
+  redirect_uri: string;
+  expires_in: number;
+}
+
 export interface InboxDogErrorDetail {
   code: string;
   message: string;

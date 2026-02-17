@@ -4,18 +4,22 @@ import Layout from '../../layouts/Layout.astro';
 
 <Layout title="OAuth Complete — inbox.dog" description="OAuth completed. Copy your one-time code.">
   <div class="max-w-2xl mx-auto px-4 py-16">
-    <h1 class="text-3xl font-bold mb-3 text-primary-900">✅ OAuth complete</h1>
-    <p class="text-primary-600 mb-6">You're authenticated. Copy this one-time code and paste it into your client (OpenClaw or any OAuth client using inbox.dog).</p>
+    <h1 class="text-3xl font-bold mb-3 text-primary-900">OAuth complete</h1>
+    <p class="text-primary-600 mb-6">Copy this one-time code and paste it into your CLI, agent, or OAuth client.</p>
 
     <div class="bg-primary-50 border border-primary-200 rounded-xl p-4 mb-4">
       <p class="text-xs uppercase tracking-wider text-primary-500 mb-2">Authorization code</p>
-      <code id="oauth-code" class="block text-primary-900 font-mono break-all">(missing code)</code>
+      <code id="oauth-code" class="block text-primary-900 font-mono break-all text-lg select-all">(missing code)</code>
     </div>
 
     <button id="copy-btn" class="px-4 py-2 rounded-lg bg-primary-900 text-primary-100 text-sm">Copy code</button>
     <p id="copy-status" class="text-primary-600 text-sm mt-3"></p>
 
-    <p class="text-primary-500 text-sm mt-8">Tip: this code is one-time use and expires quickly.</p>
+    <div class="mt-8 p-4 bg-primary-50 border border-primary-200 rounded-xl">
+      <p class="text-primary-700 text-sm font-medium mb-2">Next step</p>
+      <p class="text-primary-600 text-sm">Paste this code into your terminal where prompted, then your CLI will exchange it for Gmail tokens.</p>
+      <p class="text-primary-500 text-xs mt-2">This code is one-time use and expires in 5 minutes. You can close this tab after copying.</p>
+    </div>
   </div>
 
   <script>
@@ -30,15 +34,15 @@ import Layout from '../../layouts/Layout.astro';
       btn?.addEventListener('click', async () => {
         try {
           await navigator.clipboard.writeText(code);
-          status.textContent = 'Copied.';
+          status.textContent = 'Copied! You can paste it in your terminal now.';
         } catch {
-          status.textContent = 'Copy failed. Select and copy manually.';
+          status.textContent = 'Copy failed. Select the code above and copy manually.';
         }
       });
     } else {
       codeEl.textContent = 'No code in URL';
       if (btn) btn.setAttribute('disabled', 'true');
-      if (status) status.textContent = 'This page should be opened with ?code=...';
+      if (status) status.textContent = 'This page should be opened via the OAuth flow, not directly.';
     }
   </script>
 </Layout>

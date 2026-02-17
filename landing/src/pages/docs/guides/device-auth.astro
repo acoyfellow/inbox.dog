@@ -1,0 +1,175 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="Device Auth — CLI & Agent Flow">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">CLI &amp; Agent Auth</h1>
+    <p class="text-primary-600 mb-12">Authenticate Gmail from a terminal, CLI tool, or AI agent — no callback server needed.</p>
+
+    <!-- How it works -->
+    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-2">How it works</h2>
+      <ol class="list-decimal list-inside text-primary-600 text-sm space-y-2">
+        <li>Your CLI calls <code class="bg-primary-100 px-1 rounded font-mono">POST /api/device/code</code> to get an auth URL</li>
+        <li>The user opens the URL in a browser and authenticates with Google</li>
+        <li>They land on inbox.dog's hosted page showing a one-time code</li>
+        <li>They copy the code and paste it back into the terminal</li>
+        <li>Your CLI calls <code class="bg-primary-100 px-1 rounded font-mono">POST /oauth/token</code> to exchange the code for Gmail tokens</li>
+      </ol>
+    </section>
+
+    <!-- Prerequisites -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Prerequisites</h2>
+      <ul class="list-disc list-inside text-primary-600 space-y-1">
+        <li>An inbox.dog API key (<code class="bg-primary-100 px-1 rounded font-mono">client_id</code> + <code class="bg-primary-100 px-1 rounded font-mono">client_secret</code>)</li>
+        <li>A terminal or environment that can make HTTP requests</li>
+      </ul>
+      <p class="text-primary-500 text-sm mt-3">Don't have an API key? Create one:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mt-2">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`curl -s -X POST https://inbox.dog/api/keys \\
+  -H "Content-Type: application/json" \\
+  -d '{"name": "my-agent"}'`}</code></pre>
+      </div>
+    </section>
+
+    <!-- Step 1 -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Step 1: Get the auth URL</h2>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`curl -s -X POST https://inbox.dog/api/device/code \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "client_id": "id_YOUR_CLIENT_ID",
+    "client_secret": "sk_YOUR_CLIENT_SECRET",
+    "scope": "email:full"
+  }'`}</code></pre>
+      </div>
+      <p class="text-primary-600 mb-4">Response:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
+        <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "auth_url": "https://inbox.dog/oauth/authorize?client_id=id_...&redirect_uri=https%3A%2F%2Finbox.dog%2Fconnect%2Foauth&scope=email%3Afull",
+  "redirect_uri": "https://inbox.dog/connect/oauth",
+  "expires_in": 600
+}`}</code></pre>
+      </div>
+    </section>
+
+    <!-- Step 2 -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Step 2: User authenticates</h2>
+      <p class="text-primary-600 mb-4">Print the <code class="bg-primary-100 px-1 rounded font-mono">auth_url</code> to the terminal. The user opens it in their browser, signs in with Google, and sees a page with a code to copy.</p>
+    </section>
+
+    <!-- Step 3 -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Step 3: Exchange the code</h2>
+      <p class="text-primary-600 mb-4">Once the user pastes the code back, exchange it for Gmail tokens:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`curl -s -X POST https://inbox.dog/oauth/token \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "code": "PASTED_CODE_HERE",
+    "client_id": "id_YOUR_CLIENT_ID",
+    "client_secret": "sk_YOUR_CLIENT_SECRET"
+  }'`}</code></pre>
+      </div>
+      <p class="text-primary-600 mb-4">Response:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
+        <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "access_token": "ya29.a0AfH6SM...",
+  "refresh_token": "1//0eXy...",
+  "token_type": "Bearer",
+  "expires_in": 3599,
+  "email": "user@gmail.com"
+}`}</code></pre>
+      </div>
+      <p class="text-primary-500 text-sm mt-3">The code is one-time use and expires in 5 minutes. This exchange costs 1 credit.</p>
+    </section>
+
+    <!-- Node.js example -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Node.js Example</h2>
+      <p class="text-primary-600 mb-4">Using the <code class="bg-primary-100 px-1 rounded font-mono">inbox.dog</code> npm package:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
+        <pre class="text-primary-100 font-mono"><code class="language-typescript">{`import InboxDog from "inbox.dog";
+import * as readline from "node:readline/promises";
+
+const dog = new InboxDog();
+const clientId = process.env.INBOXDOG_KEY!;
+const clientSecret = process.env.INBOXDOG_SECRET!;
+
+// 1. Get the auth URL
+const { auth_url } = await dog.getDeviceCode(clientId, clientSecret, "email:full");
+console.log(\`Open this URL to authenticate:\\n\${auth_url}\\n\`);
+
+// 2. Wait for user to paste the code
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+const code = await rl.question("Paste the code here: ");
+rl.close();
+
+// 3. Exchange for tokens
+const tokens = await dog.exchangeCode(code.trim(), clientId, clientSecret);
+console.log(\`Authenticated as \${tokens.email}\`);
+
+// 4. Use Gmail
+const gmail = dog.gmail(tokens, clientId, clientSecret);
+const { messages } = await gmail.list({ query: "is:unread", maxResults: 5 });
+console.log(\`\${messages.length} unread messages\`);`}</code></pre>
+      </div>
+    </section>
+
+    <!-- Scopes -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Scopes</h2>
+      <table class="w-full text-sm">
+        <thead class="bg-primary-100">
+          <tr>
+            <th class="text-left p-2 text-primary-900">Scope</th>
+            <th class="text-left p-2 text-primary-900">Access</th>
+          </tr>
+        </thead>
+        <tbody class="text-primary-600">
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono">email</td><td class="p-2">Read-only Gmail + email address</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono">email:read</td><td class="p-2">Read-only Gmail + email address</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono">email:send</td><td class="p-2">Send email + email address</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2 font-mono">email:full</td><td class="p-2">Full Gmail access (read, send, modify)</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- API Reference -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-6 text-primary-900">API Reference</h2>
+
+      <div class="mb-10 border border-primary-200 rounded-lg overflow-hidden">
+        <div class="bg-primary-100 px-4 py-3 flex items-center gap-3">
+          <span class="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded">POST</span>
+          <code class="font-mono text-primary-900">/api/device/code</code>
+          <span class="text-primary-500 text-sm ml-auto">Start device auth</span>
+        </div>
+        <div class="p-4">
+          <p class="text-primary-600 text-sm mb-3">Validates your API key and returns an auth URL with <code class="bg-primary-100 px-1 rounded font-mono">redirect_uri</code> preset to inbox.dog's hosted code display page.</p>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Request Body</h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto mb-3">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "client_id": "id_...",        // required
+  "client_secret": "sk_...",    // required
+  "scope": "email:full"         // optional, defaults to "email"
+}`}</code></pre>
+          </div>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Response <span class="text-primary-400 font-normal">200</span></h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "auth_url": "https://inbox.dog/oauth/authorize?...",
+  "redirect_uri": "https://inbox.dog/connect/oauth",
+  "expires_in": 600
+}`}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</Layout>
