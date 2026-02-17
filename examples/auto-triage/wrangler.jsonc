@@ -1,0 +1,11 @@
+{
+  "name": "auto-triage",
+  "main": "src/server.ts",
+  "compatibility_date": "2025-04-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "ai": { "binding": "AI" },
+  "durable_objects": {
+    "bindings": [{ "name": "TriageAgent", "class_name": "TriageAgent" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["TriageAgent"] }]
+}

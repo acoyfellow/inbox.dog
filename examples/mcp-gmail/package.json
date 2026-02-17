@@ -1,0 +1,15 @@
+{
+  "name": "mcp-gmail",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy"
+  },
+  "dependencies": {
+    "agents": "^0.4.0",
+    "@modelcontextprotocol/sdk": "^1.12.0",
+    "inbox.dog": "latest",
+    "zod": "^3.24.0"
+  }
+}
