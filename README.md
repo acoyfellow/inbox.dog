@@ -89,6 +89,10 @@ Built with:
 - **[Astro](https://astro.build)** — Static landing page
 - **Cloudflare Workers** — Edge deployment
 
+## Documentation
+
+Index by intent: [docs/README.md](docs/README.md).
+
 ## Project Structure
 
 ```
