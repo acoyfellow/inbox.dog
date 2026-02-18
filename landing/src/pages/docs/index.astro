@@ -10,7 +10,11 @@ import Layout from '../../layouts/Layout.astro';
     <!-- Get Started -->
     <section class="mb-12">
       <h2 class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4">Get Started</h2>
-      <div class="grid md:grid-cols-2 gap-4">
+      <div class="grid md:grid-cols-3 gap-4">
+        <a href="/connect" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Connect Gmail</h3>
+          <p class="text-primary-500 text-sm">Create a key, connect Gmail in the browser. Use MCP with API key—no code.</p>
+        </a>
         <a href="/docs/tutorial" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
           <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Tutorial</h3>
           <p class="text-primary-500 text-sm">Build a working Gmail OAuth integration from scratch in 5 minutes.</p>
@@ -78,7 +82,11 @@ import Layout from '../../layouts/Layout.astro';
         </a>
         <a href="/pricing" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
           <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Pricing</h3>
-          <p class="text-primary-500 text-sm">$0.10 per OAuth flow. 10 free credits. Self-host for free.</p>
+          <p class="text-primary-500 text-sm">Free for now. Self-host for free.</p>
+        </a>
+        <a href="/docs/self-host" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Self-Host</h3>
+          <p class="text-primary-500 text-sm">Deploy to your Cloudflare account. CASA audit required for production Gmail write.</p>
         </a>
       </div>
     </section>

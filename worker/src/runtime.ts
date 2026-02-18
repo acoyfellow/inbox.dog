@@ -1,5 +1,6 @@
 import { Effect, Layer } from 'effect';
 import type { Env } from './types';
+import { ConfigService, ConfigServiceLive } from './services/config';
 import { GoogleOAuthService, GoogleOAuthServiceLive } from './services/google';
 import { KVService, KVServiceLive } from './services/kv';
 
@@ -7,7 +8,7 @@ import { KVService, KVServiceLive } from './services/kv';
 // App-wide service union
 // ---------------------------------------------------------------------------
 
-export type AppServices = GoogleOAuthService | KVService;
+export type AppServices = GoogleOAuthService | KVService | ConfigService;
 
 // ---------------------------------------------------------------------------
 // Layer builder — creates a fresh layer from the request's Env bindings
@@ -16,7 +17,8 @@ export type AppServices = GoogleOAuthService | KVService;
 export const makeAppLayer = (env: Env) =>
   Layer.mergeAll(
     GoogleOAuthServiceLive,
-    KVServiceLive(env.KV, env.ENCRYPTION_SECRET)
+    KVServiceLive(env.KV, env.ENCRYPTION_SECRET),
+    ConfigServiceLive(env)
   );
 
 // ---------------------------------------------------------------------------

@@ -1,8 +1,10 @@
 import { Hono } from 'hono';
 import { Effect } from 'effect';
 import type { Env } from '../types';
+import { ConfigService } from '../services/config';
+import { GoogleOAuthService } from '../services/google';
 import { KVService } from '../services/kv';
-import { encrypt, decrypt } from '../crypto';
+import { authenticateApiKey } from '../auth';
 import { runEffectEither } from '../runtime';
 
 export const mcpRoutes = new Hono<{ Bindings: Env }>();
@@ -490,81 +492,87 @@ async function executeTool(
 }
 
 // ── Bearer token → Gmail access token resolution (Effect-based) ─────────────
-
-interface SessionData {
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: number;
-  email: string;
-  clientId?: string;
-}
+// Supports: (1) mcp_* session tokens, (2) base64(client_id:client_secret) API key auth
 
 const resolveAccessToken = (
   bearerToken: string,
-  env: Env,
-): Effect.Effect<string | null, never, KVService> =>
+): Effect.Effect<
+  string | null,
+  never,
+  KVService | GoogleOAuthService | ConfigService
+> =>
   Effect.gen(function* () {
-    // Bearer token is a session ID that maps to stored Gmail tokens
-    const raw = yield* Effect.promise(() =>
-      env.KV.get(`mcp_session:${bearerToken}`),
-    );
-    if (!raw) return null;
+    const kv = yield* KVService;
+    const google = yield* GoogleOAuthService;
+    const config = yield* ConfigService;
 
-    // Try decrypting (new sessions are encrypted); fall back to raw for legacy sessions
-    const sessionJson: string = env.ENCRYPTION_SECRET
-      ? yield* Effect.tryPromise(() => decrypt(raw, env.ENCRYPTION_SECRET)).pipe(
-          Effect.orElseSucceed(() => raw),
-        )
-      : raw;
+    // 1. MCP session token (mcp_xxx)
+    if (bearerToken.startsWith('mcp_')) {
+      const session = yield* kv.getMcpSession(bearerToken).pipe(
+        Effect.catchAll(() => Effect.succeed(null)),
+      );
+      if (!session) return null;
 
-    const session = JSON.parse(sessionJson) as SessionData;
+      if (Date.now() < session.expiresAt - 60_000) {
+        return session.accessToken;
+      }
 
-    // If token is still valid (with 60s buffer), use it
-    if (Date.now() < session.expiresAt - 60_000) {
-      return session.accessToken;
+      const refreshed = yield* google.refreshToken({
+        refreshToken: session.refreshToken,
+        clientId: config.googleClientId,
+        clientSecret: config.googleClientSecret,
+      }).pipe(Effect.catchAll(() => Effect.succeed(null)));
+      if (!refreshed) return null;
+
+      const updated = {
+        ...session,
+        accessToken: refreshed.accessToken,
+        expiresAt: Date.now() + refreshed.expiresIn * 1000,
+      };
+      yield* kv.putMcpSession(bearerToken, updated, 90 * 24 * 60 * 60);
+      return refreshed.accessToken;
     }
 
-    // Token expired — refresh it
-    const refreshResp = yield* Effect.promise(() =>
-      fetch('https://oauth2.googleapis.com/token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          refresh_token: session.refreshToken,
-          client_id: env.GOOGLE_CLIENT_ID,
-          client_secret: env.GOOGLE_CLIENT_SECRET,
-          grant_type: 'refresh_token',
-        }),
-      }),
+    // 2. API key auth: base64(client_id:client_secret)
+    let clientId: string;
+    let clientSecret: string;
+    try {
+      const decoded = atob(bearerToken.replace(/-/g, '+').replace(/_/g, '/'));
+      const idx = decoded.indexOf(':');
+      if (idx < 1) return null;
+      clientId = decoded.slice(0, idx);
+      clientSecret = decoded.slice(idx + 1);
+    } catch {
+      return null;
+    }
+
+    const auth = yield* authenticateApiKey(clientId, clientSecret).pipe(
+      Effect.catchAll(() => Effect.succeed(null)),
     );
+    if (!auth) return null;
 
-    if (!refreshResp.ok) return null;
-
-    const refreshData = (yield* Effect.promise(() =>
-      refreshResp.json(),
-    )) as { access_token: string; expires_in: number };
-
-    // Update session with new access token
-    const updated: SessionData = {
-      ...session,
-      accessToken: refreshData.access_token,
-      expiresAt: Date.now() + refreshData.expires_in * 1000,
-    };
-    const updatedStr = JSON.stringify(updated);
-    const encrypted = yield* Effect.promise(() =>
-      env.ENCRYPTION_SECRET
-        ? encrypt(updatedStr, env.ENCRYPTION_SECRET)
-        : Promise.resolve(updatedStr),
+    const tokens = yield* kv.getGmailTokens(clientId).pipe(
+      Effect.catchAll(() => Effect.succeed(null)),
     );
-    yield* Effect.promise(() =>
-      env.KV.put(`mcp_session:${bearerToken}`, encrypted, {
-        expirationTtl: 90 * 24 * 60 * 60, // 90 days
-      }),
-    );
+    if (!tokens) return null;
 
-    return refreshData.access_token;
+    if (Date.now() < tokens.expiresAt - 60_000) {
+      return tokens.accessToken;
+    }
+
+    const refreshed = yield* google.refreshToken({
+      refreshToken: tokens.refreshToken,
+      clientId: config.googleClientId,
+      clientSecret: config.googleClientSecret,
+    }).pipe(Effect.catchAll(() => Effect.succeed(null)));
+    if (!refreshed) return null;
+
+    yield* kv.putGmailTokens(clientId, {
+      ...tokens,
+      accessToken: refreshed.accessToken,
+      expiresAt: Date.now() + refreshed.expiresIn * 1000,
+    });
+    return refreshed.accessToken;
   });
 
 // ── JSON-RPC dispatcher ─────────────────────────────────────────────────────
@@ -644,9 +652,7 @@ mcpRoutes.post('/', async (c) => {
       const bearerToken = authHeader.slice(7);
 
       // Resolve the bearer token to a Gmail access token via Effect
-      const program = Effect.gen(function* () {
-        return yield* resolveAccessToken(bearerToken, c.env);
-      });
+      const program = resolveAccessToken(bearerToken);
 
       const tokenResult = await runEffectEither(program, c.env);
       const accessToken = tokenResult.ok ? tokenResult.value : null;

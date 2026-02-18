@@ -2,16 +2,12 @@ import { Hono } from 'hono';
 import { Effect, Schema } from 'effect';
 import type { Env } from '../types';
 import { KVService } from '../services/kv';
-import { timingSafeEqual } from '../utils';
-import {
-  InvalidCredentialsError,
-  ValidationError,
-  StripeError,
-} from '../errors';
-import { CheckoutRequestSchema } from '../schemas';
+import { authenticateApiKey } from '../auth';
+import { ValidationError, InvalidCredentialsError } from '../errors';
 import { runEffectEither } from '../runtime';
 import { errorToResponse } from '../http';
 import { createApiKey, CreateKeyBody } from '../keys';
+import { generateId } from '../utils';
 
 export const apiRoutes = new Hono<{ Bindings: Env }>();
 
@@ -78,18 +74,7 @@ apiRoutes.get('/keys/:clientId', async (c) => {
   }
 
   const program = Effect.gen(function* () {
-    const kv = yield* KVService;
-
-    const apiKey = yield* kv.getApiKey(clientId);
-
-    const secretMatch = yield* Effect.promise(() =>
-      timingSafeEqual(apiKey.clientSecret, clientSecret),
-    );
-    if (!secretMatch) {
-      return yield* Effect.fail(
-        new InvalidCredentialsError({ message: 'Invalid credentials' }),
-      );
-    }
+    const apiKey = yield* authenticateApiKey(clientId, clientSecret);
 
     return {
       client_id: apiKey.clientId,
@@ -131,17 +116,7 @@ apiRoutes.delete('/keys/:clientId', async (c) => {
 
   const program = Effect.gen(function* () {
     const kv = yield* KVService;
-
-    const apiKey = yield* kv.getApiKey(clientId);
-
-    const secretMatch = yield* Effect.promise(() =>
-      timingSafeEqual(apiKey.clientSecret, clientSecret),
-    );
-    if (!secretMatch) {
-      return yield* Effect.fail(
-        new InvalidCredentialsError({ message: 'Invalid credentials' }),
-      );
-    }
+    const apiKey = yield* authenticateApiKey(clientId, clientSecret);
 
     yield* kv.deleteApiKey(clientId);
 
@@ -157,88 +132,115 @@ apiRoutes.delete('/keys/:clientId', async (c) => {
 });
 
 // ───────────────────────────────────────────────────────────────────────────────
-// POST /checkout — create a Stripe checkout session
+// POST /connect/prepare — create bind session for web Connect Gmail flow
 // ───────────────────────────────────────────────────────────────────────────────
-apiRoutes.post('/checkout', async (c) => {
+const ConnectPrepareBody = Schema.Struct({
+  client_id: Schema.String,
+  client_secret: Schema.String,
+});
+
+apiRoutes.post('/connect/prepare', async (c) => {
   const raw = await c.req.json().catch(() => ({}));
-  const origin = new URL(c.req.url).origin;
 
   const program = Effect.gen(function* () {
-    const body = yield* Schema.decodeUnknown(CheckoutRequestSchema)(raw).pipe(
+    const body = yield* Schema.decodeUnknown(ConnectPrepareBody)(raw).pipe(
       Effect.mapError(
         () =>
           new ValidationError({
             field: 'body',
-            message:
-              'Missing or invalid fields. Required: client_id, client_secret',
+            message: 'Invalid request. Provide client_id and client_secret.',
+          }),
+      ),
+    );
+
+    yield* authenticateApiKey(body.client_id, body.client_secret);
+
+    const kv = yield* KVService;
+    const bindToken = generateId();
+    yield* kv.putBindSession(
+      bindToken,
+      { clientId: body.client_id, clientSecret: body.client_secret },
+      600,
+    );
+
+    return { state: bindToken };
+  });
+
+  const result = await runEffectEither(program, c.env);
+  if (result.ok) {
+    c.header('Cache-Control', 'no-store');
+    return c.json(result.value);
+  }
+  const { status, body: errBody } = errorToResponse(result.error);
+  return c.json(errBody, status as any);
+});
+
+// ───────────────────────────────────────────────────────────────────────────────
+// POST /connect/complete — exchange auth code and store Gmail tokens (web bind)
+// ───────────────────────────────────────────────────────────────────────────────
+const ConnectCompleteBody = Schema.Struct({
+  code: Schema.String,
+  state: Schema.String,
+});
+
+apiRoutes.post('/connect/complete', async (c) => {
+  const raw = await c.req.json().catch(() => ({}));
+
+  const program = Effect.gen(function* () {
+    const body = yield* Schema.decodeUnknown(ConnectCompleteBody)(raw).pipe(
+      Effect.mapError(
+        () =>
+          new ValidationError({
+            field: 'body',
+            message: 'Invalid request. Provide code and state.',
           }),
       ),
     );
 
     const kv = yield* KVService;
-    const apiKey = yield* kv.getApiKey(body.client_id);
+    const bind = yield* kv.getBindSession(body.state);
+    yield* kv.deleteBindSession(body.state);
 
-    const secretMatch = yield* Effect.promise(() =>
-      timingSafeEqual(apiKey.clientSecret, body.client_secret),
-    );
-    if (!secretMatch) {
+    const authData = yield* kv.getAuthCode(body.code);
+    if (authData.clientId !== bind.clientId) {
       return yield* Effect.fail(
-        new InvalidCredentialsError({ message: 'Invalid credentials' }),
+        new InvalidCredentialsError({ message: 'Code was not issued to this client' }),
       );
     }
+    yield* kv.deleteAuthCode(body.code);
 
-    const credits = body.credits ?? 100;
-    const amount = credits * 10; // $0.10 per credit in cents
-
-    const response = yield* Effect.tryPromise({
-      try: () =>
-        fetch('https://api.stripe.com/v1/checkout/sessions', {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${c.env.STRIPE_SECRET_KEY}`,
-            'Content-Type': 'application/x-www-form-urlencoded',
-          },
-          body: new URLSearchParams({
-            mode: 'payment',
-            success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-            cancel_url: `${origin}/checkout/cancel`,
-            'line_items[0][price_data][currency]': 'usd',
-            'line_items[0][price_data][product_data][name]':
-              'OAuth Credits',
-            'line_items[0][price_data][product_data][description]': `${credits} OAuth flow credits`,
-            'line_items[0][price_data][unit_amount]': String(amount),
-            'line_items[0][quantity]': '1',
-            'metadata[client_id]': body.client_id,
-            'metadata[credits]': String(credits),
-          }),
-        }),
-      catch: () =>
-        new StripeError({ message: 'Failed to reach Stripe API' }),
+    yield* kv.putGmailTokens(bind.clientId, {
+      accessToken: authData.accessToken,
+      refreshToken: authData.refreshToken,
+      expiresAt: Date.now() + authData.expiresIn * 1000,
+      email: authData.email,
     });
 
-    if (!response.ok) {
-      console.error('Stripe checkout error: HTTP', response.status);
-      return yield* Effect.fail(
-        new StripeError({ message: 'Failed to create checkout session' }),
-      );
-    }
-
-    const session = (yield* Effect.tryPromise({
-      try: () => response.json() as Promise<{ id: string; url: string }>,
-      catch: () =>
-        new StripeError({ message: 'Failed to parse Stripe response' }),
-    }));
-
-    return {
-      checkout_url: session.url,
-      session_id: session.id,
-    };
+    return { success: true, email: authData.email };
   });
 
   const result = await runEffectEither(program, c.env);
   if (result.ok) {
+    c.header('Cache-Control', 'no-store');
     return c.json(result.value);
   }
   const { status, body: errBody } = errorToResponse(result.error);
   return c.json(errBody, status as any);
+});
+
+// ───────────────────────────────────────────────────────────────────────────────
+// POST /checkout — temporarily unavailable (was Stripe checkout)
+// ───────────────────────────────────────────────────────────────────────────────
+apiRoutes.post('/checkout', async (c) => {
+  return c.json(
+    {
+      error: {
+        code: 'CHECKOUT_UNAVAILABLE',
+        message: 'Checkout temporarily unavailable',
+        action: 'Credits are not enforced. Use inbox.dog freely.',
+        docs: 'https://inbox.dog/docs',
+      },
+    },
+    410
+  );
 });

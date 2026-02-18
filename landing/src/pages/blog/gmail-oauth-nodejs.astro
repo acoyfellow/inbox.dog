@@ -41,11 +41,9 @@ import Layout from '../../layouts/Layout.astro';
         <pre class="text-primary-100 font-mono"><code class="language-json">{`{
   "client_id": "id_abc123",
   "client_secret": "sk_xyz789",
-  "name": "my-app",
-  "credits": 10
+  "name": "my-app"
 }`}</code></pre>
       </div>
-      <p>You get 10 free credits. Each OAuth flow costs 1 credit ($0.10).</p>
 
       <!-- Step 2 -->
       <h2>Step 2: Create a Node.js server</h2>
@@ -115,7 +113,7 @@ console.log(email.snippet); // Preview of the email`}</code></pre>
 
       <!-- Token Refresh -->
       <h2>Refreshing expired tokens</h2>
-      <p>Access tokens expire after 1 hour (set by Google). Use the refresh token to get a new one — this is free, no credit cost:</p>
+      <p>Access tokens expire after 1 hour (set by Google). Use the refresh token to get a new one:</p>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
         <pre class="text-primary-100 font-mono"><code class="language-javascript">{`const fresh = await dog.refreshToken(
   storedRefreshToken,
@@ -136,13 +134,13 @@ try {
   const tokens = await dog.exchangeCode(code, CLIENT_ID, CLIENT_SECRET);
 } catch (e) {
   if (e instanceof InboxDogError) {
-    console.error(e.code);    // "INSUFFICIENT_CREDITS"
-    console.error(e.message); // "No credits remaining. Current balance: 0"
-    console.error(e.action);  // "Purchase credits via POST /api/checkout"
+    console.error(e.code);    // e.g. "INVALID_CREDENTIALS"
+    console.error(e.message);
+    console.error(e.action);
   }
 }`}</code></pre>
       </div>
-      <p>Error codes: <code>INVALID_CREDENTIALS</code> (401), <code>INSUFFICIENT_CREDITS</code> (402), <code>VALIDATION_ERROR</code> (400), <code>AUTH_CODE_NOT_FOUND</code> (400), <code>TOKEN_EXCHANGE_FAILED</code> (500). See <a href="/docs/errors">full error reference</a>.</p>
+      <p>Error codes: <code>INVALID_CREDENTIALS</code> (401), <code>VALIDATION_ERROR</code> (400), <code>AUTH_CODE_NOT_FOUND</code> (400), <code>TOKEN_EXCHANGE_FAILED</code> (500). See <a href="/docs/errors">full error reference</a>.</p>
 
       <!-- Scopes -->
       <h2>Available scopes</h2>

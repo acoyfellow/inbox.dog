@@ -1,9 +1,7 @@
 import { Hono } from 'hono';
 import { Effect } from 'effect';
 import type { Env } from '../types';
-import { KVService } from '../services/kv';
-import { InvalidCredentialsError, ValidationError } from '../errors';
-import { timingSafeEqual } from '../utils';
+import { authenticateApiKey } from '../auth';
 import { runEffectEither } from '../runtime';
 import { errorToResponse } from '../http';
 
@@ -47,20 +45,7 @@ deviceRoutes.post('/code', async (c) => {
   }
 
   const program = Effect.gen(function* () {
-    const kv = yield* KVService;
-
-    // Validate the API key exists
-    const apiKey = yield* kv.getApiKey(client_id);
-
-    // Verify client_secret
-    const secretMatch = yield* Effect.promise(() =>
-      timingSafeEqual(apiKey.clientSecret, client_secret),
-    );
-    if (!secretMatch) {
-      return yield* Effect.fail(
-        new InvalidCredentialsError({ message: 'Invalid client_secret' }),
-      );
-    }
+    yield* authenticateApiKey(client_id, client_secret);
 
     // Build the auth URL with redirect_uri pointed at the hosted code display page
     const origin = new URL(c.req.url).origin;

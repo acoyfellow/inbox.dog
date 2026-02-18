@@ -50,23 +50,24 @@ export class InboxDog {
 
   // ── API Keys ─────────────────────────────────────────────────────────
 
-  /** Create a new API key. Returns client_id, client_secret, and 10 free credits. */
+  /** Create a new API key. Returns client_id and client_secret. */
   async createKey(
     name?: string,
   ): Promise<{
     client_id: string;
     client_secret: string;
     name: string;
-    credits: number;
+    credits?: number;
+    redirect_uris?: string[];
   }> {
     return this.post("/api/keys", { name: name ?? "default" });
   }
 
-  /** Get API key info (credits remaining, creation date). */
+  /** Get API key info (creation date). */
   async getKey(
     clientId: string,
     clientSecret: string,
-  ): Promise<{ client_id: string; name: string; credits: number; created_at: number }> {
+  ): Promise<{ client_id: string; name: string; credits?: number; created_at: number }> {
     return this.request(`/api/keys/${clientId}`, {
       headers: { "X-Client-Secret": clientSecret },
     });
@@ -92,7 +93,7 @@ export class InboxDog {
     return url.toString();
   }
 
-  /** Exchange an authorization code for access + refresh tokens. Costs 1 credit. */
+  /** Exchange an authorization code for access + refresh tokens. */
   async exchangeCode(
     code: string,
     clientId: string,
@@ -105,7 +106,7 @@ export class InboxDog {
     });
   }
 
-  /** Refresh an expired access token. Free, no credit cost. */
+  /** Refresh an expired access token. */
   async refreshToken(
     refreshToken: string,
     clientId: string,
@@ -144,21 +145,6 @@ export class InboxDog {
       client_id: clientId,
       client_secret: clientSecret,
       scope: scope ?? "email",
-    });
-  }
-
-  // ── Billing ──────────────────────────────────────────────────────────
-
-  /** Create a Stripe checkout session to purchase credits. */
-  async checkout(
-    clientId: string,
-    clientSecret: string,
-    credits?: number,
-  ): Promise<{ checkout_url: string; session_id: string }> {
-    return this.post("/api/checkout", {
-      client_id: clientId,
-      client_secret: clientSecret,
-      credits: credits ?? 100,
     });
   }
 

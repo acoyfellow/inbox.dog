@@ -24,7 +24,7 @@
   "scripts": {
     "build": "tsup",
     "test": "vitest run",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "bun run build"
   },
   "mcpName": "dog.inbox/mcp",
   "keywords": [
@@ -52,5 +52,8 @@
     "tsup": "^8.0.0",
     "typescript": "^5.5.0",
     "vitest": "^3.0.0"
+  },
+  "bin": {
+    "inbox.dog": "./dist/cli.js"
   }
 }

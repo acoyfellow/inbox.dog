@@ -1,0 +1,59 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Connecting Gmail" description="Completing Gmail connection.">
+  <div class="min-h-[80vh] flex items-center justify-center py-20">
+    <div class="max-w-lg w-full mx-auto px-4">
+      <div id="loading" class="text-center">
+        <p class="text-primary-600">Connecting your Gmail account...</p>
+      </div>
+      <div id="success" class="hidden text-center">
+        <h1 class="text-3xl font-bold text-primary-900 mb-3">Gmail connected</h1>
+        <p class="text-primary-600 mb-6">Tokens are stored. Use your API key with MCP or the API.</p>
+        <a href="/connect" class="inline-block px-4 py-2 bg-primary-900 text-white rounded-lg hover:bg-primary-800">Connect another</a>
+      </div>
+      <div id="error" class="hidden text-center">
+        <h1 class="text-2xl font-bold text-red-700 mb-3">Connection failed</h1>
+        <p id="error-msg" class="text-primary-600 mb-6"></p>
+        <a href="/connect" class="inline-block px-4 py-2 bg-primary-900 text-white rounded-lg hover:bg-primary-800">Try again</a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const state = params.get('state');
+
+    const API_URL = typeof window !== 'undefined' ? window.location.origin : 'https://inbox.dog';
+
+    if (!code || !state) {
+      document.getElementById('loading')!.classList.add('hidden');
+      document.getElementById('error')!.classList.remove('hidden');
+      document.getElementById('error-msg')!.textContent = 'Missing code or state. Complete the flow from the Connect page.';
+    } else {
+      fetch(`${API_URL}/api/connect/complete`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code, state }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          document.getElementById('loading')!.classList.add('hidden');
+          if (data.success) {
+            document.getElementById('success')!.classList.remove('hidden');
+            window.history.replaceState({}, '', '/connect/callback');
+          } else {
+            document.getElementById('error')!.classList.remove('hidden');
+            document.getElementById('error-msg')!.textContent = data.error?.message || 'Unknown error';
+          }
+        })
+        .catch((err) => {
+          document.getElementById('loading')!.classList.add('hidden');
+          document.getElementById('error')!.classList.remove('hidden');
+          document.getElementById('error-msg')!.textContent = err.message || 'Request failed';
+        });
+    }
+  </script>
+</Layout>

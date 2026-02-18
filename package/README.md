@@ -3,7 +3,8 @@
 Gmail OAuth + typed client. No Google Cloud console required.
 
 ```
-npm install inbox.dog
+bun add inbox.dog
+# or: npm install inbox.dog
 ```
 
 ## Quick start
@@ -15,7 +16,7 @@ const dog = new InboxDog();
 
 // 1. Create an API key (one-time)
 const key = await dog.createKey("my-app");
-// → { client_id, client_secret, name, credits: 10 }
+// → { client_id, client_secret, name }
 
 // 2. Redirect user to Gmail consent
 const url = dog.getAuthUrl({
@@ -178,11 +179,11 @@ await gmail.batchModify({
 
 ### `createKey(name?): Promise<CreateKeyResponse>`
 
-Create a new API key. Returns `{ client_id, client_secret, name, credits }`.
+Create a new API key. Returns `{ client_id, client_secret, name }`.
 
 ### `getKey(clientId, clientSecret): Promise<KeyInfo>`
 
-Get key info. Returns `{ client_id, name, credits, created_at }`.
+Get key info. Returns `{ client_id, name, created_at }`.
 
 ### `getAuthUrl(opts): string`
 
@@ -199,18 +200,13 @@ Scopes: `"email"` (default, read-only), `"email:read"`, `"email:send"`, `"email:
 
 ### `exchangeCode(code, clientId, clientSecret): Promise<TokenResponse>`
 
-Exchange auth code for tokens. Costs 1 credit.
+Exchange auth code for tokens.
 Returns `{ access_token, refresh_token, token_type, expires_in, email }`.
 
 ### `refreshToken(refreshToken, clientId, clientSecret): Promise<RefreshResponse>`
 
-Refresh an expired access token. Free.
+Refresh an expired access token.
 Returns `{ access_token, token_type, expires_in }`.
-
-### `checkout(clientId, clientSecret, credits?): Promise<CheckoutResponse>`
-
-Create a Stripe checkout session.
-Returns `{ checkout_url, session_id }`.
 
 ### `gmail(tokens, opts?): Gmail`
 
@@ -237,4 +233,4 @@ try {
 - Docs: https://inbox.dog/docs
 - API Reference: https://inbox.dog/docs/api
 - GitHub: https://github.com/acoyfellow/inbox.dog
-- MCP Server: `npx @inboxdog/mcp-server`
+- MCP (stdio): `npx inbox.dog mcp` — requires `INBOX_DOG_CLIENT_ID`, `INBOX_DOG_CLIENT_SECRET`. Create a key and connect Gmail at https://inbox.dog/connect. Use with Claude Desktop, Cursor, etc.

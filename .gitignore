@@ -3,8 +3,12 @@ dist/
 build/
 .wrangler/
 .astro/
+.alchemy/
+.svelte-kit/
+output/
 *.log
 .env
 .env.local
+.dev.vars
 .DS_Store
 bun.lock

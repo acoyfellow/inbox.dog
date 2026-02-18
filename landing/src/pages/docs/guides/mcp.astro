@@ -8,10 +8,35 @@ import Layout from '../../../layouts/Layout.astro';
     <h1 class="text-4xl font-bold mb-4 text-primary-900">MCP Integration</h1>
     <p class="text-primary-600 mb-12">inbox.dog implements the <a href="https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization" class="text-primary-900 underline">MCP Authorization spec</a>. Any MCP client can connect, authenticate via OAuth, and use Gmail tools — no SDK needed.</p>
 
-    <!-- How it works -->
+    <!-- Quick setup (Web Bind) -->
     <section class="mb-12">
-      <h2 class="text-2xl font-bold mb-4 text-primary-900">How it works</h2>
-      <p class="text-primary-600 mb-4">MCP clients discover auth endpoints automatically via standard OAuth metadata:</p>
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Quick setup (stdio)</h2>
+      <p class="text-primary-600 mb-4">Create a key, connect Gmail in the browser, then run the stdio MCP proxy. No OAuth flow in the client:</p>
+      <ol class="list-decimal list-inside text-primary-600 space-y-2 mb-4">
+        <li>Go to <a href="https://inbox.dog/connect" class="text-primary-900 underline">inbox.dog/connect</a></li>
+        <li>Create an API key and click "Connect Gmail"</li>
+        <li>Configure your MCP client with <code class="bg-primary-100 px-1 rounded font-mono">npx inbox.dog mcp</code> and env vars</li>
+      </ol>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
+        <pre class="text-primary-100 font-mono"><code>{
+  "mcpServers": {
+    "inbox-dog": {
+      "command": "npx",
+      "args": ["-y", "inbox.dog", "mcp"],
+      "env": {
+        "INBOX_DOG_CLIENT_ID": "your_client_id",
+        "INBOX_DOG_CLIENT_SECRET": "your_client_secret"
+      }
+    }
+  }
+}</code></pre>
+      </div>
+    </section>
+
+    <!-- How it works (OAuth flow) -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">OAuth flow (MCP-native)</h2>
+      <p class="text-primary-600 mb-4">MCP clients can also discover auth endpoints automatically via standard OAuth metadata:</p>
       <ol class="list-decimal list-inside text-primary-600 space-y-2 mb-4">
         <li>Client connects to <code class="bg-primary-100 px-1 rounded font-mono">https://inbox.dog/mcp</code></li>
         <li>Server returns 401 with <code class="bg-primary-100 px-1 rounded font-mono">WWW-Authenticate</code> header pointing to resource metadata</li>

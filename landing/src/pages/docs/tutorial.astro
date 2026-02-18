@@ -38,7 +38,7 @@ import Layout from '../../layouts/Layout.astro';
   "client_id": "id_abc123def456...",
   "client_secret": "sk_xyz789ghi012...",
   "name": "tutorial",
-  "credits": 10
+  "redirect_uris": []
 }`}</code></pre>
       </div>
       <p class="text-primary-600">Save both values. You'll need them in the next step.</p>
@@ -130,7 +130,7 @@ app.listen(3000, () => console.log("Open http://localhost:3000"));`}</code></pre
         <li>After consent, Google redirected back to inbox.dog, which redirected to your <code class="bg-primary-100 px-1 rounded font-mono">/callback</code> with a short-lived code</li>
         <li>Your app exchanged that code for an <code class="bg-primary-100 px-1 rounded font-mono">access_token</code> and <code class="bg-primary-100 px-1 rounded font-mono">refresh_token</code></li>
         <li>The <code class="bg-primary-100 px-1 rounded font-mono">access_token</code> works directly with <code class="bg-primary-100 px-1 rounded font-mono">gmail.googleapis.com</code> for 1 hour</li>
-        <li>Use the <code class="bg-primary-100 px-1 rounded font-mono">refresh_token</code> to get a new access token when it expires (free, no credit cost)</li>
+        <li>Use the <code class="bg-primary-100 px-1 rounded font-mono">refresh_token</code> to get a new access token when it expires</li>
       </ol>
     </section>
 

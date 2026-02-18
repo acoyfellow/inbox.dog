@@ -1,0 +1,6 @@
+# Copy to .dev.vars and fill in. Used by wrangler dev.
+GMAIL_ACCESS_TOKEN=
+GMAIL_REFRESH_TOKEN=
+INBOX_DOG_CLIENT_ID=
+INBOX_DOG_CLIENT_SECRET=
+ANTHROPIC_API_KEY=

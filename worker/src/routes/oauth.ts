@@ -3,12 +3,10 @@ import { Effect, Schema } from 'effect';
 import type { Env } from '../types';
 import { GoogleOAuthService } from '../services/google';
 import { KVService } from '../services/kv';
-import { generateId } from '../utils';
-import { encrypt } from '../crypto';
-import { timingSafeEqual } from '../utils';
+import { generateId, timingSafeEqual } from '../utils';
+import { authenticateApiKey } from '../auth';
 import {
   InvalidCredentialsError,
-  InsufficientCreditsError,
   ValidationError,
 } from '../errors';
 import type { OAuthState, ApiKey } from '../schemas';
@@ -297,29 +295,10 @@ oauthRoutes.post('/token', async (c) => {
   const program = Effect.gen(function* () {
     const kv = yield* KVService;
 
-    // Validate credentials and get API key
-    const apiKey = yield* kv.getApiKey(client_id);
-
-    // Authenticate: client_secret OR PKCE code_verifier
-    if (client_secret) {
-      const secretMatch = yield* Effect.promise(() =>
-        timingSafeEqual(apiKey.clientSecret, client_secret),
-      );
-      if (!secretMatch) {
-        return yield* Effect.fail(
-          new InvalidCredentialsError({ message: 'Invalid client_secret' }),
-        );
-      }
-    }
-
-    if (apiKey.credits <= 0) {
-      return yield* Effect.fail(
-        new InsufficientCreditsError({
-          clientId: client_id,
-          credits: apiKey.credits,
-        }),
-      );
-    }
+    // Validate credentials: client_secret OR PKCE (verified later)
+    const apiKey = client_secret
+      ? yield* authenticateApiKey(client_id, client_secret)
+      : yield* kv.getApiKey(client_id);
 
     // Get auth code data
     const authData = yield* kv.getAuthCode(code);
@@ -375,32 +354,19 @@ oauthRoutes.post('/token', async (c) => {
 
     yield* kv.deleteAuthCode(code);
 
-    // Deduct credit
-    const updatedApiKey: ApiKey = {
-      ...apiKey,
-      credits: apiKey.credits - 1,
-    };
-    yield* kv.putApiKey(client_id, updatedApiKey);
-
     // If PKCE was used (MCP flow), create a session token that wraps Gmail tokens.
     if (code_verifier) {
       const sessionToken = `mcp_${generateId()}`;
-      const sessionData = JSON.stringify({
-        accessToken: authData.accessToken,
-        refreshToken: authData.refreshToken,
-        expiresAt: Date.now() + authData.expiresIn * 1000,
-        email: authData.email,
-        clientId: client_id,
-      });
-      const encrypted = yield* Effect.promise(() =>
-        c.env.ENCRYPTION_SECRET
-          ? encrypt(sessionData, c.env.ENCRYPTION_SECRET)
-          : Promise.resolve(sessionData),
-      );
-      yield* Effect.promise(() =>
-        c.env.KV.put(`mcp_session:${sessionToken}`, encrypted, {
-          expirationTtl: 90 * 24 * 60 * 60, // 90 days
-        }),
+      yield* kv.putMcpSession(
+        sessionToken,
+        {
+          accessToken: authData.accessToken,
+          refreshToken: authData.refreshToken,
+          expiresAt: Date.now() + authData.expiresIn * 1000,
+          email: authData.email,
+          clientId: client_id,
+        },
+        90 * 24 * 60 * 60, // 90 days
       );
       return {
         access_token: sessionToken,

@@ -64,19 +64,48 @@ export type AuthCodeData = Schema.Schema.Type<typeof AuthCodeDataSchema>;
 
 // ---------------------------------------------------------------------------
 // MCP session data (stored in KV for Model Context Protocol sessions)
+// Shape actually stored: { accessToken, refreshToken, expiresAt, email, clientId }
 // ---------------------------------------------------------------------------
 
-export const McpSessionDataSchema = Schema.Struct({
-  sessionId: Schema.String,
-  clientId: Schema.String,
-  email: Schema.String,
+export const McpStoredSessionSchema = Schema.Struct({
   accessToken: Schema.String,
   refreshToken: Schema.String,
   expiresAt: Schema.Number,
-  createdAt: Schema.Number,
+  email: Schema.String,
+  clientId: Schema.optional(Schema.String),
 });
 
-export type McpSessionData = Schema.Schema.Type<typeof McpSessionDataSchema>;
+export type McpStoredSession = Schema.Schema.Type<typeof McpStoredSessionSchema>;
+
+/** @deprecated Use McpStoredSessionSchema for new code. Kept for backward compat. */
+export const McpSessionDataSchema = McpStoredSessionSchema;
+
+export type McpSessionData = McpStoredSession;
+
+// ---------------------------------------------------------------------------
+// Bind session (short-lived, used during Connect Gmail web flow)
+// ---------------------------------------------------------------------------
+
+export const BindSessionSchema = Schema.Struct({
+  clientId: Schema.String,
+  clientSecret: Schema.String,
+});
+
+export type BindSession = Schema.Schema.Type<typeof BindSessionSchema>;
+
+// ---------------------------------------------------------------------------
+// Gmail tokens stored per API key (web bind flow)
+// Same shape as McpStoredSession, keyed by client_id
+// ---------------------------------------------------------------------------
+
+export const GmailTokensSchema = Schema.Struct({
+  accessToken: Schema.String,
+  refreshToken: Schema.String,
+  expiresAt: Schema.Number,
+  email: Schema.String,
+});
+
+export type GmailTokens = Schema.Schema.Type<typeof GmailTokensSchema>;
 
 // ---------------------------------------------------------------------------
 // Google API response schemas
