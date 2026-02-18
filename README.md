@@ -71,7 +71,7 @@ const emails = await fetch(
 - **MCP Native** — Ships as an MCP server. Claude, Cursor, Windsurf, and any MCP client can use it directly.
 - **CASA Tier 2 Verified** — We passed Google's security audit so you don't have to.
 - **Auto-Refresh Tokens** — Tokens expire; inbox.dog handles refresh automatically. Refresh is free.
-- **$0.10 Per Auth** — Pay per OAuth flow, not per API call. 10 free credits to start.
+- **Free to Use** — No paywall. Create an API key and start building.
 - **Open Source** — MIT licensed. Self-host on your own Cloudflare account whenever you want.
 
 ## Architecture
@@ -172,7 +172,7 @@ POST /api/keys
 {"name": "my-app", "redirect_uris": ["https://myapp.com/callback"]}
 
 # Response
-{"client_id": "id_...", "client_secret": "sk_...", "credits": 10}
+{"client_id": "id_...", "client_secret": "sk_...", "name": "my-app", "redirect_uris": []}
 ```
 
 ### OAuth Flow
@@ -196,13 +196,8 @@ POST /oauth/token
 
 | Item | Cost |
 |------|------|
-| OAuth flow | $0.10 |
-| Token refresh | Free |
-| Gmail API calls | Free (unlimited) |
-| Signup credits | 10 free |
+| Hosted | Free |
 | Self-host | Free (MIT) |
-
-Cheaper than the CASA audit until ~5,500 OAuth flows.
 
 ## Development
 

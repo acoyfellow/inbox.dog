@@ -4,23 +4,17 @@ import Layout from '../layouts/Layout.astro';
 
 <Layout title="Pricing">
   <div class="max-w-4xl mx-auto px-4 py-12">
-    <h1 class="text-4xl font-bold text-center mb-4 text-primary-900">Simple Pricing</h1>
-    <p class="text-xl text-primary-500 text-center mb-12">Pay only for what you use. No monthly fees.</p>
+    <h1 class="text-4xl font-bold text-center mb-4 text-primary-900">Free for Now</h1>
+    <p class="text-xl text-primary-500 text-center mb-12">inbox.dog is free to use. Create an API key and start building.</p>
 
     <div class="max-w-md mx-auto bg-white rounded-lg border border-primary-200 overflow-hidden">
       <div class="bg-primary-900 text-white p-6 text-center">
-        <h2 class="text-2xl font-bold">Pay Per Use</h2>
-        <div class="text-5xl font-bold mt-4">$0.10</div>
-        <div class="text-primary-300">per OAuth flow</div>
+        <h2 class="text-2xl font-bold">Hosted</h2>
+        <div class="text-5xl font-bold mt-4">Free</div>
+        <div class="text-primary-300">Use inbox.dog as a service</div>
       </div>
       <div class="p-6">
         <ul class="space-y-4 text-primary-600">
-          <li class="flex items-center">
-            <svg class="w-5 h-5 text-green-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
-            </svg>
-            <span>10 free credits to start</span>
-          </li>
           <li class="flex items-center">
             <svg class="w-5 h-5 text-green-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
@@ -31,23 +25,23 @@ import Layout from '../layouts/Layout.astro';
             <svg class="w-5 h-5 text-green-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
             </svg>
-            <span>Token refresh is free</span>
+            <span>CASA Tier 2 verified</span>
           </li>
           <li class="flex items-center">
             <svg class="w-5 h-5 text-green-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
             </svg>
-            <span>All scopes included</span>
+            <span>No Google Cloud setup</span>
           </li>
           <li class="flex items-center">
             <svg class="w-5 h-5 text-green-600 mr-3" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
             </svg>
-            <span>No expiration on credits</span>
+            <span>MCP and REST API</span>
           </li>
         </ul>
         <a href="/docs" class="block mt-8 bg-primary-900 text-white text-center py-3 rounded-lg font-medium hover:bg-primary-800 transition">
-          Get Started Free
+          Get Started
         </a>
       </div>
     </div>
@@ -55,12 +49,12 @@ import Layout from '../layouts/Layout.astro';
     <div class="mt-12 text-center">
       <h3 class="text-xl font-semibold mb-4 text-primary-900">Self-Host for Free</h3>
       <p class="text-primary-500 max-w-2xl mx-auto">
-        inbox.dog is open source. Deploy to your own Cloudflare account and pay nothing.
-        You'll need your own Google OAuth credentials.
+        inbox.dog is open source. Deploy to your own Cloudflare account. You'll need your own Google OAuth credentials and CASA audit for production Gmail write.
       </p>
-      <a href="https://github.com/acoyfellow/inbox.dog" class="inline-block mt-4 text-primary-600 hover:text-primary-900 transition">
-        View on GitHub
-      </a>
+      <div class="flex flex-wrap justify-center gap-4 mt-4">
+        <a href="/docs/self-host" class="text-primary-600 hover:text-primary-900 transition underline underline-offset-4">Self-host guide</a>
+        <a href="https://github.com/acoyfellow/inbox.dog" class="text-primary-600 hover:text-primary-900 transition underline underline-offset-4">GitHub</a>
+      </div>
     </div>
   </div>
 </Layout>

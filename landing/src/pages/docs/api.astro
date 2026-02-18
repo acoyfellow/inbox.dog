@@ -43,7 +43,7 @@ import Layout from '../../layouts/Layout.astro';
           <span class="text-primary-500 text-sm ml-auto">Create API key</span>
         </div>
         <div class="p-4">
-          <p class="text-primary-600 text-sm mb-3">Create a new API key. Returns credentials and 10 free credits. No authentication required.</p>
+          <p class="text-primary-600 text-sm mb-3">Create a new API key. No authentication required.</p>
           <h4 class="text-sm font-semibold text-primary-900 mb-2">Request Body</h4>
           <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto mb-3">
             <pre class="text-primary-100 font-mono"><code class="language-json">{`{
@@ -56,7 +56,7 @@ import Layout from '../../layouts/Layout.astro';
   "client_id": "id_abc123...",
   "client_secret": "sk_xyz789...",
   "name": "my-app",
-  "credits": 10
+  "redirect_uris": []
 }`}</code></pre>
           </div>
         </div>
@@ -70,7 +70,7 @@ import Layout from '../../layouts/Layout.astro';
           <span class="text-primary-500 text-sm ml-auto">Get key info</span>
         </div>
         <div class="p-4">
-          <p class="text-primary-600 text-sm mb-3">Retrieve API key details including remaining credits.</p>
+          <p class="text-primary-600 text-sm mb-3">Retrieve API key details.</p>
           <h4 class="text-sm font-semibold text-primary-900 mb-2">Headers</h4>
           <table class="w-full text-sm mb-3">
             <tbody class="text-primary-600">
@@ -85,7 +85,6 @@ import Layout from '../../layouts/Layout.astro';
             <pre class="text-primary-100 font-mono"><code class="language-json">{`{
   "client_id": "id_abc123...",
   "name": "my-app",
-  "credits": 10,
   "created_at": 1700000000000
 }`}</code></pre>
           </div>
@@ -161,7 +160,7 @@ import Layout from '../../layouts/Layout.astro';
           <span class="text-primary-500 text-sm ml-auto">Exchange code for tokens</span>
         </div>
         <div class="p-4">
-          <p class="text-primary-600 text-sm mb-3">Exchange an authorization code for access and refresh tokens. Costs 1 credit. Auth codes expire after 5 minutes.</p>
+          <p class="text-primary-600 text-sm mb-3">Exchange an authorization code for access and refresh tokens. Auth codes expire after 5 minutes.</p>
           <h4 class="text-sm font-semibold text-primary-900 mb-2">Request Body</h4>
           <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto mb-3">
             <pre class="text-primary-100 font-mono"><code class="language-json">{`{
@@ -191,7 +190,7 @@ import Layout from '../../layouts/Layout.astro';
           <span class="text-primary-500 text-sm ml-auto">Refresh access token</span>
         </div>
         <div class="p-4">
-          <p class="text-primary-600 text-sm mb-3">Use a refresh token to obtain a new access token. Free — no credit cost.</p>
+          <p class="text-primary-600 text-sm mb-3">Use a refresh token to obtain a new access token.</p>
           <h4 class="text-sm font-semibold text-primary-900 mb-2">Request Body</h4>
           <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto mb-3">
             <pre class="text-primary-100 font-mono"><code class="language-json">{`{
@@ -209,34 +208,6 @@ import Layout from '../../layouts/Layout.astro';
   "expires_in": 3600
 }`}</code></pre>
           </div>
-        </div>
-      </div>
-
-      <!-- POST /api/checkout -->
-      <div id="api-checkout" class="mb-10 border border-primary-200 rounded-lg overflow-hidden">
-        <div class="bg-primary-100 px-4 py-3 flex items-center gap-3">
-          <span class="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded">POST</span>
-          <code class="font-mono text-primary-900">/api/checkout</code>
-          <span class="text-primary-500 text-sm ml-auto">Purchase credits</span>
-        </div>
-        <div class="p-4">
-          <p class="text-primary-600 text-sm mb-3">Create a Stripe checkout session to purchase additional credits.</p>
-          <h4 class="text-sm font-semibold text-primary-900 mb-2">Request Body</h4>
-          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto mb-3">
-            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
-  "client_id": "YOUR_CLIENT_ID",
-  "client_secret": "YOUR_CLIENT_SECRET",
-  "credits": 100  // optional, defaults to 100
-}`}</code></pre>
-          </div>
-          <h4 class="text-sm font-semibold text-primary-900 mb-2">Response <span class="text-primary-400 font-normal">200</span></h4>
-          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto">
-            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
-  "checkout_url": "https://checkout.stripe.com/c/pay/...",
-  "session_id": "cs_live_..."
-}`}</code></pre>
-          </div>
-          <p class="text-primary-500 text-sm mt-2">Redirect the user to <code class="bg-primary-100 px-1 rounded font-mono">checkout_url</code> to complete payment.</p>
         </div>
       </div>
 
@@ -293,31 +264,8 @@ import Layout from '../../layouts/Layout.astro';
           <tr class="border-b border-primary-200"><td class="p-2">OAuth state TTL</td><td class="p-2">10 minutes</td><td class="p-2">User must complete consent within this window</td></tr>
           <tr class="border-b border-primary-200"><td class="p-2">Authorization code TTL</td><td class="p-2">5 minutes</td><td class="p-2">Exchange the code promptly after callback</td></tr>
           <tr class="border-b border-primary-200"><td class="p-2">Access token lifetime</td><td class="p-2">3600 seconds (1 hour)</td><td class="p-2">Set by Google. Use refresh token to renew.</td></tr>
-          <tr class="border-b border-primary-200"><td class="p-2">Credits per exchange</td><td class="p-2">1 credit</td><td class="p-2">Only on POST /oauth/token with authorization_code</td></tr>
-          <tr class="border-b border-primary-200"><td class="p-2">Token refresh cost</td><td class="p-2">Free</td><td class="p-2">No credit charge</td></tr>
         </tbody>
       </table>
-    </section>
-
-    <!-- Billing -->
-    <section id="billing" class="mb-12">
-      <h2 class="text-2xl font-bold mb-4 text-primary-900">Billing</h2>
-      <table class="w-full text-sm mb-4">
-        <thead class="bg-primary-100">
-          <tr>
-            <th class="text-left p-2 text-primary-900">Item</th>
-            <th class="text-left p-2 text-primary-900">Cost</th>
-          </tr>
-        </thead>
-        <tbody class="text-primary-600">
-          <tr class="border-b border-primary-200"><td class="p-2">New API key</td><td class="p-2">Free (includes 10 credits)</td></tr>
-          <tr class="border-b border-primary-200"><td class="p-2">OAuth token exchange</td><td class="p-2">1 credit ($0.10)</td></tr>
-          <tr class="border-b border-primary-200"><td class="p-2">Token refresh</td><td class="p-2">Free</td></tr>
-          <tr class="border-b border-primary-200"><td class="p-2">Additional credits</td><td class="p-2">$0.10 per credit via Stripe</td></tr>
-          <tr class="border-b border-primary-200"><td class="p-2">Self-hosted</td><td class="p-2">Free (MIT license)</td></tr>
-        </tbody>
-      </table>
-      <p class="text-primary-600 text-sm">Credits are only deducted on successful token exchanges. Failed flows, denied consent, and refreshes are free.</p>
     </section>
   </div>
 </Layout>

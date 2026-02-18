@@ -1,14 +1,16 @@
-import { Gmail } from "inbox.dog";
+import { InboxDog } from "inbox.dog";
 import Anthropic from "@anthropic-ai/sdk";
 import { buildPrompt, applyDecision, type Decision } from "./agent";
 
-// inbox.dog handles Gmail OAuth — no Google Cloud console, no CASA audit
-const gmail = new Gmail({
-  access_token: process.env.GMAIL_ACCESS_TOKEN!,
-  refresh_token: process.env.GMAIL_REFRESH_TOKEN,
-  client_id: process.env.INBOX_DOG_CLIENT_ID,
-  client_secret: process.env.INBOX_DOG_CLIENT_SECRET,
-});
+const dog = new InboxDog();
+const gmail = dog.gmail(
+  {
+    access_token: process.env.GMAIL_ACCESS_TOKEN!,
+    refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+  },
+  process.env.INBOX_DOG_CLIENT_ID,
+  process.env.INBOX_DOG_CLIENT_SECRET
+);
 
 const anthropic = new Anthropic();
 

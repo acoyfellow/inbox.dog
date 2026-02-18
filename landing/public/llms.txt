@@ -86,13 +86,8 @@ const response = await fetch(
 
 | Item | Cost |
 |------|------|
-| OAuth flow | $0.10 |
-| Token refresh | Free |
-| Gmail API calls | Free (unlimited) |
-| Signup credits | 10 free |
+| Hosted | Free |
 | Self-host | Free (MIT) |
-
-Cheaper than the audit until ~5,500 OAuth flows.
 
 ## Self-hosting
 

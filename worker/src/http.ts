@@ -1,6 +1,5 @@
 import {
   InvalidCredentialsError,
-  InsufficientCreditsError,
   NotFoundError,
   StateError,
   ValidationError,
@@ -32,19 +31,6 @@ export const errorToResponse = (error: unknown): { status: number; body: Structu
           message: error.message,
           action: 'Check your client_id and client_secret',
           docs: 'https://inbox.dog/docs/errors#INVALID_CREDENTIALS',
-        },
-      },
-    };
-  }
-  if (error instanceof InsufficientCreditsError) {
-    return {
-      status: 402,
-      body: {
-        error: {
-          code: 'INSUFFICIENT_CREDITS',
-          message: `No credits remaining. Current balance: ${error.credits}`,
-          action: 'Purchase credits via POST /api/checkout',
-          docs: 'https://inbox.dog/docs/errors#INSUFFICIENT_CREDITS',
         },
       },
     };

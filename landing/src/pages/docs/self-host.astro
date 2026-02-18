@@ -1,0 +1,63 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Self-Hosting" description="Deploy inbox.dog to your own Cloudflare account. Requires your own Google OAuth app and CASA audit for production Gmail write.">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">Self-Hosting</h1>
+    <p class="text-primary-600 mb-8">
+      inbox.dog is open source. You can deploy it to your own Cloudflare account and use your own Google OAuth credentials.
+    </p>
+
+    <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8">
+      <h2 class="text-lg font-semibold text-amber-900 mb-2">CASA Audit Required for Write Access</h2>
+      <p class="text-primary-600 mb-2">
+        For production Gmail <strong>write</strong> access (send, modify, labels), Google requires a CASA Tier 2 security audit. 
+        The hosted inbox.dog service has already passed this audit—self-hosted deployments do not inherit that certification.
+      </p>
+      <p class="text-primary-600 mb-2">
+        If you need write scopes in production, you must either use the hosted service or complete your own CASA audit for your deployment.
+      </p>
+      <p class="text-primary-600">
+        <a href="https://vet.coey.dev/" class="text-primary-900 underline font-medium">vet</a> — CASA Tier 2 security scanner. Pre-scan your app before the assessor arrives.
+      </p>
+    </div>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Prerequisites</h2>
+      <ul class="list-disc list-inside text-primary-600 space-y-2">
+        <li>Cloudflare account</li>
+        <li>Google Cloud project with OAuth 2.0 credentials</li>
+        <li>For write scopes: CASA Tier 2 audit (or use read-only)</li>
+      </ul>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Deploy</h2>
+      <ol class="list-decimal list-inside text-primary-600 space-y-3">
+        <li>Clone the repo: <code class="bg-primary-100 px-1 rounded font-mono">git clone https://github.com/acoyfellow/inbox.dog</code></li>
+        <li>Configure <code class="bg-primary-100 px-1 rounded font-mono">worker/wrangler.jsonc</code> with your KV namespace and bindings</li>
+        <li>Set <code class="bg-primary-100 px-1 rounded font-mono">GOOGLE_CLIENT_ID</code>, <code class="bg-primary-100 px-1 rounded font-mono">GOOGLE_CLIENT_SECRET</code> in secrets</li>
+        <li>Add your OAuth redirect URIs in the Google Cloud Console</li>
+        <li>Deploy: <code class="bg-primary-100 px-1 rounded font-mono">cd worker && wrangler deploy</code></li>
+      </ol>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Use Your Deployment</h2>
+      <p class="text-primary-600 mb-4">
+        Point the inbox.dog SDK at your deployed URL:
+      </p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
+        <pre class="text-primary-100 font-mono"><code>import { InboxDog } from 'inbox.dog';
+
+const dog = new InboxDog({ baseUrl: 'https://your-worker.your-domain.workers.dev' });</code></pre>
+      </div>
+    </section>
+
+    <p class="text-primary-500 text-sm">
+      <a href="https://github.com/acoyfellow/inbox.dog" class="hover:text-primary-700 underline">View source on GitHub</a>
+    </p>
+  </div>
+</Layout>

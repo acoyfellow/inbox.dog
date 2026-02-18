@@ -181,47 +181,6 @@ describe("InboxDog", () => {
     });
   });
 
-  describe("checkout", () => {
-    it("posts checkout request with default 100 credits", async () => {
-      const response = { checkout_url: "https://checkout.stripe.com/xxx", session_id: "cs_xxx" };
-      const fetch = mockFetch(response);
-      const dog = new InboxDog({ fetch });
-
-      const result = await dog.checkout("id_abc", "sk_abc");
-
-      expect(fetch).toHaveBeenCalledWith(
-        "https://inbox.dog/api/checkout",
-        expect.objectContaining({
-          method: "POST",
-          body: JSON.stringify({
-            client_id: "id_abc",
-            client_secret: "sk_abc",
-            credits: 100,
-          }),
-        }),
-      );
-      expect(result).toEqual(response);
-    });
-
-    it("accepts custom credit amount", async () => {
-      const fetch = mockFetch({ checkout_url: "https://stripe.com/x", session_id: "cs_y" });
-      const dog = new InboxDog({ fetch });
-
-      await dog.checkout("id_abc", "sk_abc", 500);
-
-      expect(fetch).toHaveBeenCalledWith(
-        "https://inbox.dog/api/checkout",
-        expect.objectContaining({
-          body: JSON.stringify({
-            client_id: "id_abc",
-            client_secret: "sk_abc",
-            credits: 500,
-          }),
-        }),
-      );
-    });
-  });
-
   describe("error handling", () => {
     it("throws InboxDogError on API error response", async () => {
       const fetch = mockFetch(

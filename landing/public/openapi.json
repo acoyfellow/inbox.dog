@@ -3,7 +3,7 @@
   "info": {
     "title": "inbox.dog API",
     "version": "1.0.0",
-    "description": "API for managing email inbox access via OAuth. Create API keys, authenticate with Google, and manage credits for email operations."
+    "description": "API for managing email inbox access via OAuth. Create API keys, authenticate with Google."
   },
   "servers": [
     {
@@ -216,50 +216,12 @@
               }
             }
           },
-          "402": {
-            "description": "Payment required (insufficient credits)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          },
           "500": {
             "description": "Internal server error",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/checkout": {
-      "post": {
-        "summary": "Create Stripe checkout for credits",
-        "description": "Creates a Stripe checkout session to purchase credits",
-        "operationId": "createCheckout",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/CheckoutRequest"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Checkout session created successfully",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/CheckoutResponse"
                 }
               }
             }
@@ -291,7 +253,7 @@
     "schemas": {
       "ApiKeyResponse": {
         "type": "object",
-        "required": ["client_id", "client_secret", "name", "credits"],
+        "required": ["client_id", "client_secret", "name"],
         "properties": {
           "client_id": {
             "type": "string",
@@ -313,7 +275,7 @@
       },
       "ApiKeyInfo": {
         "type": "object",
-        "required": ["client_id", "name", "credits", "created_at"],
+        "required": ["client_id", "name", "created_at"],
         "properties": {
           "client_id": {
             "type": "string",

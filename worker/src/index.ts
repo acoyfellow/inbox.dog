@@ -87,6 +87,28 @@ app.use('/api/keys', async (c, next) => {
   await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
   return next();
 });
+app.use('/api/connect/prepare', async (c, next) => {
+  if (c.req.method !== 'POST') return next();
+  const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
+  const key = `ratelimit:connect_prepare:${ip}`;
+  const current = parseInt(await c.env.KV.get(key) ?? '0', 10);
+  if (current >= 20) {
+    return c.json({ error: { code: 'RATE_LIMITED', message: 'Too many connect requests. Max 20 per minute.', action: 'Wait before retrying', docs: 'https://inbox.dog/docs/errors' } }, 429);
+  }
+  await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
+  return next();
+});
+app.use('/api/connect/complete', async (c, next) => {
+  if (c.req.method !== 'POST') return next();
+  const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
+  const key = `ratelimit:connect_complete:${ip}`;
+  const current = parseInt(await c.env.KV.get(key) ?? '0', 10);
+  if (current >= 20) {
+    return c.json({ error: { code: 'RATE_LIMITED', message: 'Too many connect requests. Max 20 per minute.', action: 'Wait before retrying', docs: 'https://inbox.dog/docs/errors' } }, 429);
+  }
+  await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
+  return next();
+});
 app.use('/api/device/code', async (c, next) => {
   if (c.req.method !== 'POST') return next();
   const ip = c.req.header('cf-connecting-ip') ?? 'unknown';

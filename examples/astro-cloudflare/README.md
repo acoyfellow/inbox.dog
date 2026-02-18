@@ -1,6 +1,6 @@
 # inbox.dog + Astro + Cloudflare Pages
 
-Gmail OAuth in an Astro app, deployed to Cloudflare Pages.
+Gmail OAuth in an Astro app, deployed to Cloudflare Pages. Uses the [hosted inbox.dog API](https://inbox.dog).
 
 [![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/acoyfellow/inbox.dog/tree/main/examples/astro-cloudflare)
 

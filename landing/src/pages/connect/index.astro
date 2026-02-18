@@ -1,0 +1,138 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Connect Gmail" description="Connect your Gmail to inbox.dog. No code, no Google Cloud setup.">
+  <div class="min-h-[80vh] flex items-center justify-center py-20">
+    <div class="max-w-lg w-full mx-auto px-4">
+      <div class="text-center mb-12">
+        <p class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4">Web Bind</p>
+        <h1 class="text-4xl font-bold text-primary-900 tracking-tight">Connect Gmail</h1>
+        <p class="text-primary-600 mt-2">Store tokens server-side. Use MCP or API with your API key—no copy/paste.</p>
+      </div>
+
+      <div class="p-6 bg-white rounded-2xl border border-primary-100">
+        <div class="mb-6">
+          <h2 class="text-lg font-semibold text-primary-900 mb-2">1. Create or use an API key</h2>
+          <p class="text-primary-500 text-sm mb-4">Create a new key or paste existing credentials below.</p>
+          <button id="create-key" class="w-full py-3 bg-primary-900 text-white font-medium rounded-xl hover:bg-primary-800 transition-colors">
+            Create API Key
+          </button>
+          <div id="credentials" class="mt-4 hidden">
+            <div class="p-4 bg-primary-50 rounded-xl border border-primary-100">
+              <div class="space-y-2 text-sm font-mono">
+                <div class="flex justify-between items-center gap-2">
+                  <span class="text-primary-400">Client ID</span>
+                  <span id="client-id" class="text-primary-700 truncate"></span>
+                </div>
+                <div class="flex justify-between items-center gap-2">
+                  <span class="text-primary-400">Secret</span>
+                  <span id="client-secret" class="text-primary-700 truncate"></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mt-4 pt-4 border-t border-primary-100">
+            <p class="text-primary-500 text-xs mb-2">Or use existing credentials:</p>
+            <input id="input-client-id" type="text" placeholder="Client ID" class="w-full px-3 py-2 text-sm border border-primary-200 rounded-lg mb-2" />
+            <input id="input-client-secret" type="password" placeholder="Client secret" class="w-full px-3 py-2 text-sm border border-primary-200 rounded-lg" />
+          </div>
+        </div>
+
+        <div>
+          <h2 class="text-lg font-semibold text-primary-900 mb-2">2. Connect Gmail</h2>
+          <p class="text-primary-500 text-sm mb-4">Authorize with Google. Tokens are stored and linked to your API key.</p>
+          <button id="connect-gmail" class="w-full py-3 bg-green-700 text-white font-medium rounded-xl hover:bg-green-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+            Connect Gmail
+          </button>
+        </div>
+      </div>
+
+      <p class="text-center text-primary-400 text-sm mt-8">
+        <a href="/docs" class="hover:text-primary-600">Docs</a> · <a href="/demo" class="hover:text-primary-600">Demo</a>
+      </p>
+    </div>
+  </div>
+
+  <script>
+    const API_URL = typeof window !== 'undefined' ? window.location.origin : 'https://inbox.dog';
+    const CONNECT_CALLBACK = `${API_URL}/connect/callback`;
+
+    let clientId = '';
+    let clientSecret = '';
+
+    function hasCredentials() {
+      return clientId && clientSecret;
+    }
+
+    function updateConnectButton() {
+      const btn = document.getElementById('connect-gmail');
+      if (btn) btn.disabled = !hasCredentials();
+    }
+
+    document.getElementById('create-key')?.addEventListener('click', async () => {
+      const btn = document.getElementById('create-key') as HTMLButtonElement;
+      btn.textContent = 'Creating...';
+      btn.disabled = true;
+
+      const res = await fetch(`${API_URL}/api/keys`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'connect-web',
+          redirect_uris: [CONNECT_CALLBACK],
+        }),
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error?.message || 'Failed to create key');
+        btn.textContent = 'Create API Key';
+        btn.disabled = false;
+        return;
+      }
+
+      clientId = data.client_id;
+      clientSecret = data.client_secret;
+
+      document.getElementById('client-id')!.textContent = clientId;
+      document.getElementById('client-secret')!.textContent = clientSecret.substring(0, 20) + '...';
+      document.getElementById('credentials')!.classList.remove('hidden');
+      (document.getElementById('input-client-id') as HTMLInputElement).value = clientId;
+      (document.getElementById('input-client-secret') as HTMLInputElement).value = clientSecret;
+
+      btn.textContent = 'Created';
+      btn.classList.remove('bg-primary-900', 'hover:bg-primary-800');
+      btn.classList.add('bg-green-700');
+      updateConnectButton();
+    });
+
+    document.getElementById('input-client-id')?.addEventListener('input', (e) => {
+      clientId = (e.target as HTMLInputElement).value.trim();
+      updateConnectButton();
+    });
+    document.getElementById('input-client-secret')?.addEventListener('input', (e) => {
+      clientSecret = (e.target as HTMLInputElement).value.trim();
+      updateConnectButton();
+    });
+
+    document.getElementById('connect-gmail')?.addEventListener('click', async () => {
+      if (!hasCredentials()) return;
+
+      const res = await fetch(`${API_URL}/api/connect/prepare`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        alert(data.error?.message || 'Failed to prepare');
+        return;
+      }
+
+      const authUrl = `${API_URL}/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(CONNECT_CALLBACK)}&state=${encodeURIComponent(data.state)}&scope=gmail:full`;
+      window.location.href = authUrl;
+    });
+  </script>
+</Layout>

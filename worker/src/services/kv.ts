@@ -5,10 +5,14 @@ import {
   OAuthStateSchema,
   AuthCodeDataSchema,
   McpSessionDataSchema,
+  BindSessionSchema,
+  GmailTokensSchema,
   type ApiKey,
   type OAuthState,
   type AuthCodeData,
   type McpSessionData,
+  type BindSession,
+  type GmailTokens,
 } from '../schemas';
 import { encrypt, decrypt } from '../crypto';
 
@@ -48,6 +52,15 @@ export interface KVService {
   readonly getMcpSession: (sessionId: string) => Effect.Effect<McpSessionData, NotFoundError | DecodeError>;
   readonly putMcpSession: (sessionId: string, data: McpSessionData, ttlSeconds: number) => Effect.Effect<void, never>;
   readonly deleteMcpSession: (sessionId: string) => Effect.Effect<void, never>;
+
+  // Bind sessions (web flow, short-lived)
+  readonly getBindSession: (token: string) => Effect.Effect<BindSession, NotFoundError | DecodeError>;
+  readonly putBindSession: (token: string, data: BindSession, ttlSeconds: number) => Effect.Effect<void, never>;
+  readonly deleteBindSession: (token: string) => Effect.Effect<void, never>;
+
+  // Gmail tokens (web bind, per API key)
+  readonly getGmailTokens: (clientId: string) => Effect.Effect<GmailTokens, NotFoundError | DecodeError>;
+  readonly putGmailTokens: (clientId: string, data: GmailTokens, ttlSeconds?: number) => Effect.Effect<void, never>;
 
   // Credit operations
   // NOTE: These do read-modify-write on KV which is NOT truly atomic.
@@ -169,20 +182,112 @@ export const makeKVService = (kv: KVNamespace, encryptionSecret?: string): KVSer
     return Effect.promise(() => kv.delete(`auth_code:${code}`));
   },
 
-  // -- MCP sessions ---------------------------------------------------------
+  // -- MCP sessions (encrypted when encryptionSecret is set) ----------------
 
   getMcpSession(sessionId) {
-    return getAndDecode(kv, `mcp_session:${sessionId}`, McpSessionDataSchema, 'McpSession', sessionId);
+    return Effect.gen(function* () {
+      const raw = yield* Effect.tryPromise({
+        try: () => kv.get(`mcp_session:${sessionId}`, 'text'),
+        catch: () => new NotFoundError({ resource: 'McpSession', id: sessionId }),
+      });
+
+      if (raw === null) {
+        return yield* Effect.fail(new NotFoundError({ resource: 'McpSession', id: sessionId }));
+      }
+
+      const jsonStr = encryptionSecret
+        ? yield* Effect.tryPromise({
+            try: () => decrypt(raw, encryptionSecret),
+            catch: () =>
+              new DecodeError({ resource: 'McpSession', id: sessionId, cause: 'decryption failed' }),
+          })
+        : raw;
+
+      const parsed = yield* Effect.try({
+        try: () => JSON.parse(jsonStr) as unknown,
+        catch: () => new DecodeError({ resource: 'McpSession', id: sessionId, cause: 'invalid JSON' }),
+      });
+
+      return yield* Schema.decodeUnknown(McpSessionDataSchema)(parsed).pipe(
+        Effect.mapError((cause) => new DecodeError({ resource: 'McpSession', id: sessionId, cause }))
+      );
+    });
   },
 
   putMcpSession(sessionId, data, ttlSeconds) {
-    return Effect.promise(() =>
-      kv.put(`mcp_session:${sessionId}`, JSON.stringify(data), { expirationTtl: ttlSeconds })
-    );
+    return Effect.gen(function* () {
+      const json = JSON.stringify(data);
+      const value = encryptionSecret
+        ? yield* Effect.promise(() => encrypt(json, encryptionSecret))
+        : json;
+      yield* Effect.promise(() =>
+        kv.put(`mcp_session:${sessionId}`, value, { expirationTtl: ttlSeconds })
+      );
+    });
   },
 
   deleteMcpSession(sessionId) {
     return Effect.promise(() => kv.delete(`mcp_session:${sessionId}`));
+  },
+
+  // -- Bind sessions (web flow) ----------------------------------------------
+
+  getBindSession(token) {
+    return getAndDecode(kv, `bind_session:${token}`, BindSessionSchema, 'BindSession', token);
+  },
+
+  putBindSession(token, data, ttlSeconds) {
+    return Effect.promise(() =>
+      kv.put(`bind_session:${token}`, JSON.stringify(data), { expirationTtl: ttlSeconds })
+    );
+  },
+
+  deleteBindSession(token) {
+    return Effect.promise(() => kv.delete(`bind_session:${token}`));
+  },
+
+  // -- Gmail tokens (web bind, encrypted when encryptionSecret is set) --------
+
+  getGmailTokens(clientId) {
+    return Effect.gen(function* () {
+      const raw = yield* Effect.tryPromise({
+        try: () => kv.get(`gmail_tokens:${clientId}`, 'text'),
+        catch: () => new NotFoundError({ resource: 'GmailTokens', id: clientId }),
+      });
+
+      if (raw === null) {
+        return yield* Effect.fail(new NotFoundError({ resource: 'GmailTokens', id: clientId }));
+      }
+
+      const jsonStr = encryptionSecret
+        ? yield* Effect.tryPromise({
+            try: () => decrypt(raw, encryptionSecret),
+            catch: () =>
+              new DecodeError({ resource: 'GmailTokens', id: clientId, cause: 'decryption failed' }),
+          })
+        : raw;
+
+      const parsed = yield* Effect.try({
+        try: () => JSON.parse(jsonStr) as unknown,
+        catch: () => new DecodeError({ resource: 'GmailTokens', id: clientId, cause: 'invalid JSON' }),
+      });
+
+      return yield* Schema.decodeUnknown(GmailTokensSchema)(parsed).pipe(
+        Effect.mapError((cause) => new DecodeError({ resource: 'GmailTokens', id: clientId, cause }))
+      );
+    });
+  },
+
+  putGmailTokens(clientId, data, ttlSeconds = 90 * 24 * 60 * 60) {
+    return Effect.gen(function* () {
+      const json = JSON.stringify(data);
+      const value = encryptionSecret
+        ? yield* Effect.promise(() => encrypt(json, encryptionSecret))
+        : json;
+      yield* Effect.promise(() =>
+        kv.put(`gmail_tokens:${clientId}`, value, { expirationTtl: ttlSeconds })
+      );
+    });
   },
 
   // -- Credit operations (read-modify-write, NOT truly atomic on KV) --------

@@ -8,8 +8,8 @@ const mcpCode = `{
       "command": "npx",
       "args": ["-y", "inbox.dog", "mcp"],
       "env": {
-        "INBOXDOG_KEY": "YOUR_KEY",
-        "INBOXDOG_SECRET": "YOUR_SECRET"
+        "INBOX_DOG_CLIENT_ID": "YOUR_CLIENT_ID",
+        "INBOX_DOG_CLIENT_SECRET": "YOUR_CLIENT_SECRET"
       }
     }
   }
@@ -69,9 +69,12 @@ const response = await fetch(
       </div>
 
       <div class="flex flex-col sm:flex-row gap-4 justify-center mt-10 reveal-up delay-4">
-        <a href="/docs" class="group relative px-8 py-4 bg-primary-900 text-white font-medium rounded-full overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,0,0,0.2)]">
-          <span class="relative z-10">Start integrating</span>
+        <a href="/connect" class="group relative px-8 py-4 bg-primary-900 text-white font-medium rounded-full overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,0,0,0.2)]">
+          <span class="relative z-10">Connect Gmail</span>
           <div class="absolute inset-0 bg-primary-800 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+        </a>
+        <a href="/docs" class="group px-8 py-4 border-2 border-primary-200 text-primary-700 font-medium rounded-full transition-all duration-300 hover:border-primary-400 hover:shadow-[0_0_30px_rgba(0,0,0,0.08)]">
+          Docs
         </a>
         <a href="https://github.com/acoyfellow/inbox.dog" class="group px-8 py-4 border-2 border-primary-200 text-primary-700 font-medium rounded-full transition-all duration-300 hover:border-primary-400 hover:shadow-[0_0_30px_rgba(0,0,0,0.08)]">
           View source
@@ -247,15 +250,15 @@ const response = await fetch(
           <p class="text-primary-500 leading-relaxed">Tokens expire. inbox.dog handles refresh automatically so your agent never loses access mid-task. Refresh is free.</p>
         </div>
 
-        <!-- $0.10 per auth -->
+        <!-- Free to use -->
         <div class="feature-card group p-8 bg-white rounded-2xl border border-primary-100 transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1">
           <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-900 transition-colors duration-300">
             <svg class="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-primary-900 mb-3">$0.10 Per Auth</h3>
-          <p class="text-primary-500 leading-relaxed">Pay per OAuth flow — not per API call. Authenticate once, make unlimited Gmail requests. 10 free credits to start.</p>
+          <h3 class="text-xl font-semibold text-primary-900 mb-3">Free to Use</h3>
+          <p class="text-primary-500 leading-relaxed">Authenticate once, make unlimited Gmail requests. No paywall. Create an API key and start building.</p>
         </div>
 
         <!-- Open Source -->
@@ -277,7 +280,7 @@ const response = await fetch(
     <div class="max-w-4xl mx-auto px-4 text-center relative z-10">
       <div class="inline-block mb-8">
         <div class="px-4 py-2 bg-primary-100 rounded-full text-sm font-medium text-primary-600">
-          10 free credits — no card required
+          Free — no card required
         </div>
       </div>
       <h2 class="text-5xl md:text-6xl font-bold text-primary-900 tracking-tight mb-6 text-balance">

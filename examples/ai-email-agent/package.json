@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "start": "npx tsx index.ts",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
     "test": "vitest run"
   },
   "dependencies": {
@@ -12,6 +14,7 @@
   },
   "devDependencies": {
     "vitest": "^3.0.0",
-    "typescript": "^5.5.0"
+    "typescript": "^5.5.0",
+    "wrangler": "^4.0.0"
   }
 }
