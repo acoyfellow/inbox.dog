@@ -1,0 +1,44 @@
+---
+import { InboxDog, InboxDogError } from "inbox.dog";
+import { setCookie } from "../lib/session";
+
+export const prerender = false;
+const code = Astro.url.searchParams.get("code");
+const err = Astro.url.searchParams.get("error");
+const env = Astro.locals.runtime?.env;
+const cid = import.meta.env.INBOX_DOG_CLIENT_ID;
+const csec = import.meta.env.INBOX_DOG_CLIENT_SECRET;
+
+if (err || !code) return Astro.redirect(`/?error=${encodeURIComponent(err || "invalid")}`);
+
+let t: { access_token: string; refresh_token: string; email: string };
+try {
+  t = await new InboxDog().exchangeCode(code, cid, csec);
+} catch (e) {
+  return Astro.redirect(`/?error=${encodeURIComponent(e instanceof InboxDogError ? e.message : "exchange failed")}`);
+}
+
+const session = {
+  access_token: t.access_token,
+  refresh_token: t.refresh_token,
+  client_id: cid,
+  client_secret: csec,
+  email: t.email,
+};
+
+const userId = t.email.replace(/[^a-zA-Z0-9._-]/g, "_");
+if (env?.INBOX_AGENT) {
+  const id = env.INBOX_AGENT.idFromName(userId);
+  const stub = env.INBOX_AGENT.get(id);
+  await stub.fetch(new Request("http://localhost/session", {
+    method: "PUT",
+    body: JSON.stringify(session),
+    headers: { "Content-Type": "application/json" },
+  }));
+}
+
+return new Response(null, {
+  status: 302,
+  headers: { Location: "/chat", "Set-Cookie": setCookie(userId) },
+});
+---

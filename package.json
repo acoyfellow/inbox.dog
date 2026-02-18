@@ -1,0 +1,11 @@
+{
+  "name": "inbox.dog",
+  "private": true,
+  "scripts": {
+    "prepush": "cd examples/gmail-chat && bun run lint && bun run typecheck && bun run build",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.0.0"
+  }
+}

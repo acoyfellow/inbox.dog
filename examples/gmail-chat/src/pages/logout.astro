@@ -1,0 +1,13 @@
+---
+import { getCookie, clearCookie } from "../lib/session";
+
+export const prerender = false;
+const userId = getCookie(Astro.request);
+const env = Astro.locals.runtime?.env;
+if (userId && env?.INBOX_AGENT) {
+  const id = env.INBOX_AGENT.idFromName(userId);
+  const stub = env.INBOX_AGENT.get(id);
+  await stub.fetch(new Request("http://localhost/session", { method: "DELETE" }));
+}
+return new Response(null, { status: 302, headers: { Location: "/", "Set-Cookie": clearCookie() } });
+---

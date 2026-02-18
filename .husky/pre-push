@@ -20,4 +20,13 @@ if [ $? -ne 0 ]; then
 fi
 cd ..
 
+# Lint, typecheck, build gmail-chat
+echo "Lint, typecheck, build gmail-chat..."
+cd examples/gmail-chat && bun run lint && bun run typecheck && bun run build
+if [ $? -ne 0 ]; then
+  echo "❌ gmail-chat lint/typecheck/build failed"
+  exit 1
+fi
+cd ../..
+
 echo "✅ All pre-push checks passed"

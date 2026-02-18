@@ -1,0 +1,23 @@
+---
+import { InboxDog } from "inbox.dog";
+import { getCookie } from "../lib/session";
+
+export const prerender = false;
+const userId = getCookie(Astro.request);
+if (userId) return Astro.redirect("/chat");
+
+const clientId = import.meta.env.INBOX_DOG_CLIENT_ID;
+const authUrl = new InboxDog().getAuthUrl({
+  clientId,
+  redirectUri: `${Astro.url.origin}/callback`,
+  scope: "email:read",
+});
+---
+<html lang="en">
+<head><meta charset="utf-8"/><meta name="viewport" content="width=device-width"/><title>Gmail Chat</title></head>
+<body style="font-family:system-ui;max-width:480px;margin:6rem auto;padding:0 1rem">
+  <h1>Gmail Chat</h1>
+  <p>Chat with your inbox. ai + agents + inbox.dog</p>
+  <a href={authUrl} style="display:inline-block;background:#1a1a1a;color:#fff;padding:.75rem 1.5rem;border-radius:.5rem;text-decoration:none;margin-top:1rem">Connect with Google</a>
+</body>
+</html>

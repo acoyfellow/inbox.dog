@@ -1,0 +1,38 @@
+{
+  "name": "gmail-chat",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "lint": "eslint .",
+    "typecheck": "astro check",
+    "build": "astro build",
+    "preview": "wrangler pages dev dist",
+    "deploy": "wrangler pages deploy dist --project-name gmail-chat",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "ai": "^4.0.0",
+    "@ai-sdk/anthropic": "^1.0.0",
+    "@ai-sdk/react": "^1.0.0",
+    "@astrojs/cloudflare": "^12.0.0",
+    "@astrojs/react": "^4.0.0",
+    "astro": "^5.0.0",
+    "effect": "^3.0.0",
+    "agents": "^0.1.0",
+    "inbox.dog": "^0.2.0",
+    "prism-react-renderer": "^2.4.0",
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.0",
+    "@eslint/js": "^9.0.0",
+    "eslint": "^9.0.0",
+    "tailwindcss": "^3.4.0",
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.0.0",
+    "vitest": "^2.0.0"
+  }
+}

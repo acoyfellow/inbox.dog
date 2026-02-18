@@ -1,0 +1,24 @@
+name: Deploy gmail-chat
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "examples/gmail-chat/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Install and build
+        working-directory: examples/gmail-chat
+        run: bun install --frozen-lockfile && bun run build
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: examples/gmail-chat
+          command: pages deploy dist --project-name gmail-chat
