@@ -1,3 +1,5 @@
+# Deploy gmail-chat to Cloudflare Pages on push to main when examples/gmail-chat changes.
+# Required repo secrets: CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID
 name: Deploy gmail-chat
 
 on:
@@ -16,9 +18,8 @@ jobs:
         working-directory: examples/gmail-chat
         run: bun install --frozen-lockfile && bun run build
       - name: Deploy to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: examples/gmail-chat
-          command: pages deploy dist --project-name gmail-chat
+        working-directory: examples/gmail-chat
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: bunx wrangler pages deploy dist --project-name gmail-chat
