@@ -1,6 +1,6 @@
-import { AIChatAgent } from "agents/ai-chat-agent";
-import { streamText } from "ai";
-import type { CoreMessage, StreamTextOnFinishCallback, ToolSet } from "ai";
+import { AIChatAgent } from "@cloudflare/ai-chat";
+import { convertToModelMessages, stepCountIs, streamText } from "ai";
+import type { StreamTextOnFinishCallback, ToolSet } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { Effect, Schema } from "effect";
 import { Gmail } from "inbox.dog";
@@ -91,16 +91,17 @@ export class InboxAgent extends AIChatAgent<AgentEnv> {
       system = "You are a helpful assistant. The user has not connected their Gmail account yet. Politely tell them to log out and reconnect with Google to use Gmail features. You can still have a general conversation.";
     }
 
+    const modelMessages = await convertToModelMessages(this.messages);
     const result = streamText({
       model: anthropic("claude-sonnet-4-20250514"),
       system,
-      messages: this.messages as unknown as CoreMessage[],
+      messages: modelMessages,
       tools: tools as ToolSet,
-      maxSteps: 5,
+      stopWhen: stepCountIs(5),
       onFinish: onFinish as unknown as StreamTextOnFinishCallback<ToolSet>,
       abortSignal: options?.abortSignal,
     });
 
-    return result.toDataStreamResponse();
+    return result.toUIMessageStreamResponse();
   }
 }
