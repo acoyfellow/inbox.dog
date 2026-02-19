@@ -1,5 +1,0 @@
-# Copy to .dev.vars and fill in. Used by wrangler dev.
-# From inbox.dog/connect — create key, click Connect Gmail
-INBOX_DOG_CLIENT_ID=
-INBOX_DOG_CLIENT_SECRET=
-ANTHROPIC_API_KEY=

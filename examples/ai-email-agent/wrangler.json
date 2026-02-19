@@ -1,8 +1,0 @@
-{
-  "name": "ai-email-agent",
-  "main": "worker.ts",
-  "compatibility_date": "2024-12-18",
-  "triggers": {
-    "crons": ["*/15 * * * *"]
-  }
-}
