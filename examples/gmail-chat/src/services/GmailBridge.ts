@@ -1,20 +1,13 @@
 import { WorkerEntrypoint } from "cloudflare:workers";
 import { Gmail } from "inbox.dog";
 
-/**
- * In-memory registry of Gmail client instances.
- * Keyed by session ID so the bridge can look them up
- * without needing to serialize the Gmail object across isolates.
- */
-const sessions = new Map<string, Gmail>();
-
-export function registerGmail(sessionId: string, gmail: Gmail): void {
-  sessions.set(sessionId, gmail);
-}
-
-export function unregisterGmail(sessionId: string): void {
-  sessions.delete(sessionId);
-}
+type GmailBridgeProps = {
+  sessionId: string;
+  access_token: string;
+  refresh_token: string;
+  client_id: string;
+  client_secret: string;
+};
 
 /** Derived from Gmail.api — single source of truth. */
 const ALLOWED = new Set(Object.keys(Gmail.api));
@@ -24,15 +17,21 @@ const ALLOWED = new Set(Object.keys(Gmail.api));
  * The sandboxed script calls env.GMAIL.call(method, args), which routes
  * back to this entrypoint in the parent worker via a service binding.
  *
- * ctx.props.sessionId identifies which Gmail client to use.
+ * ctx.props contains session metadata and OAuth tokens for Gmail initialization.
  */
 export class GmailBridge extends WorkerEntrypoint {
   async call(method: string, args: unknown[]): Promise<unknown> {
-    const sessionId = (this.ctx.props as { sessionId: string }).sessionId;
-    const gmail = sessions.get(sessionId);
-    if (!gmail) {
+    const props = this.ctx.props as Partial<GmailBridgeProps>;
+    const { access_token, refresh_token, client_id, client_secret } = props;
+    if (!access_token || !refresh_token || !client_id || !client_secret) {
       throw new Error("Gmail session not found — please reconnect.");
     }
+
+    const gmail = new Gmail(
+      { access_token, refresh_token, client_id, client_secret },
+      { baseUrl: "https://inbox.dog", autoRefresh: true }
+    );
+
     if (!ALLOWED.has(method)) {
       throw new Error(`Method not allowed: ${method}`);
     }

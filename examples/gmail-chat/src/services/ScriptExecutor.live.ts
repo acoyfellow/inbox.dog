@@ -1,9 +1,15 @@
 import { Effect, Layer, Schema } from "effect";
-import type { Gmail } from "inbox.dog";
 import { ScriptExecutor } from "./ScriptExecutor";
 import { GmailScriptArgs, ScriptResult, RawResult } from "../domain/script";
 import { ScriptExecutionError, ScriptTimeoutError } from "../domain/errors";
-import { registerGmail, unregisterGmail } from "./GmailBridge";
+
+type GmailSessionProps = {
+  sessionId: string;
+  access_token: string;
+  refresh_token: string;
+  client_id: string;
+  client_secret: string;
+};
 
 /**
  * Build an ES module that runs inside a Worker Loader isolate.
@@ -34,19 +40,15 @@ function buildRunnerModule(code: string): string {
 }
 
 export function ScriptExecutorLive(
-  gmail: Gmail,
+  session: GmailSessionProps,
   loaderEnv: { LOADER: any },
   ctx: { exports: Record<string, (opts?: any) => any> },
-  sessionId: string,
 ) {
-  // Register the Gmail client so the GmailBridge entrypoint can find it
-  registerGmail(sessionId, gmail);
-
   return Layer.succeed(ScriptExecutor, {
     execute: (args: GmailScriptArgs) =>
       Effect.gen(function* () {
         const code = typeof args.code === "string" ? args.code : (args as { code: string }).code;
-        const id = `script:${sessionId}:${Date.now()}`;
+        const id = `script:${session.sessionId}:${Date.now()}`;
 
         const run = Effect.tryPromise({
           try: async () => {
@@ -58,7 +60,7 @@ export function ScriptExecutorLive(
               },
               globalOutbound: null,
               env: {
-                GMAIL: ctx.exports.GmailBridge({ props: { sessionId } }),
+                GMAIL: ctx.exports.GmailBridge({ props: session }),
               },
             }));
 

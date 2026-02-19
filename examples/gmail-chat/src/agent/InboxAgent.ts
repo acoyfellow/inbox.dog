@@ -3,7 +3,6 @@ import { convertToModelMessages, stepCountIs, streamText } from "ai";
 import type { StreamTextOnFinishCallback, ToolSet } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { Effect, Schema } from "effect";
-import { Gmail } from "inbox.dog";
 import { ScriptExecutor } from "../services/ScriptExecutor";
 import { ScriptExecutorLive } from "../services/ScriptExecutor.live";
 import { GmailScriptArgs } from "../domain/script";
@@ -47,21 +46,17 @@ export class InboxAgent extends AIChatAgent<AgentEnv> {
     let system = SYSTEM_PROMPT;
 
     if (session?.access_token) {
-      const gmail = new Gmail(
+      const sessionId = session.email.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const executorLayer = ScriptExecutorLive(
         {
+          sessionId,
           access_token: session.access_token,
           refresh_token: session.refresh_token,
           client_id: session.client_id,
           client_secret: session.client_secret,
         },
-        { baseUrl: "https://inbox.dog", autoRefresh: true }
-      );
-      const sessionId = session.email.replace(/[^a-zA-Z0-9._-]/g, "_");
-      const executorLayer = ScriptExecutorLive(
-        gmail,
         { LOADER: this.env.LOADER },
         this.ctx as any,
-        sessionId,
       );
       tools.run_gmail_script = {
         description: "Execute JavaScript against sandboxed Gmail API. The script has access to a `gmail` object. Return a useful summary.",
