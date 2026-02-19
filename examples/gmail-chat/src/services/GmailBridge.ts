@@ -9,8 +9,34 @@ type GmailBridgeProps = {
   client_secret: string;
 };
 
+const FALLBACK_ALLOWED_METHODS = [
+  "list",
+  "get",
+  "search",
+  "send",
+  "labels",
+  "profile",
+  "archive",
+  "markRead",
+  "markUnread",
+  "trash",
+  "untrash",
+  "addLabels",
+  "removeLabels",
+  "createDraft",
+  "listDrafts",
+  "attachments",
+  "attachment",
+] as const;
+
+type GmailCtor = { api?: Record<string, unknown> };
+
 /** Derived from Gmail.api — single source of truth. */
-const ALLOWED = new Set(Object.keys(Gmail.api));
+const ALLOWED = new Set(
+  Object.keys((Gmail as unknown as GmailCtor).api ?? {}).length > 0
+    ? Object.keys((Gmail as unknown as GmailCtor).api ?? {})
+    : [...FALLBACK_ALLOWED_METHODS]
+);
 
 /**
  * WorkerEntrypoint that proxies Gmail API calls from a sandboxed Worker Loader isolate.
