@@ -10,15 +10,39 @@ interface GmailChatProps {
   userId: string;
 }
 
+type ChatErrorView = {
+  title: string;
+  detail: string;
+};
+
+export function formatChatError(error: Error | undefined): ChatErrorView | null {
+  if (!error) return null;
+  const message = typeof error.message === "string" ? error.message : String(error);
+
+  if (message.toLowerCase().includes("credit balance is too low")) {
+    return {
+      title: "Anthropic credits exhausted",
+      detail: "This app cannot chat because the configured ANTHROPIC_API_KEY is out of credits. Add Anthropic credits or set a new key in Worker secrets.",
+    };
+  }
+
+  return {
+    title: "Chat request failed",
+    detail: message,
+  };
+}
+
 function MessageList({
   messages,
   isLoading,
+  errorView,
 }: {
   messages: UIMessage[];
   isLoading: boolean;
+  errorView: ChatErrorView | null;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
-  useAutoScroll(scrollRef, [messages, isLoading]);
+  useAutoScroll(scrollRef, [messages, isLoading, errorView?.detail]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4" ref={scrollRef}>
@@ -48,6 +72,12 @@ function MessageList({
           ...
         </div>
       )}
+      {errorView && (
+        <div className="max-w-[85%] rounded-lg border border-red-400/50 bg-red-950/40 px-4 py-3 text-sm text-red-100">
+          <div className="font-medium">{errorView.title}</div>
+          <div className="mt-1 text-red-100/90">{errorView.detail}</div>
+        </div>
+      )}
     </div>
   );
 }
@@ -60,26 +90,28 @@ export function GmailChat({ userId }: GmailChatProps) {
     host,
   });
 
-  const { messages, sendMessage, status } = useAgentChat({
+  const { messages, sendMessage, status, error, clearError } = useAgentChat({
     agent,
   });
   const [input, setInput] = useState("");
   const isLoading = status === "submitted" || status === "streaming";
+  const errorView = formatChatError(error);
 
   const handleSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
       event.preventDefault();
       const text = input.trim();
       if (!text || isLoading) return;
+      if (error) clearError();
       void sendMessage({ text });
       setInput("");
     },
-    [input, isLoading, sendMessage]
+    [input, isLoading, sendMessage, error, clearError]
   );
 
   return (
     <div className="flex h-full flex-col">
-      <MessageList messages={messages} isLoading={isLoading} />
+      <MessageList messages={messages} isLoading={isLoading} errorView={errorView} />
       <ChatInput
         input={input}
         onChange={(e) => setInput(e.target.value)}

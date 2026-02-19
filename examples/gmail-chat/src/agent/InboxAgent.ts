@@ -1,5 +1,5 @@
 import { AIChatAgent } from "@cloudflare/ai-chat";
-import { convertToModelMessages, stepCountIs, streamText } from "ai";
+import { convertToModelMessages, stepCountIs, streamText, tool } from "ai";
 import type { StreamTextOnFinishCallback, ToolSet } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { Effect, Schema } from "effect";
@@ -42,7 +42,7 @@ export class InboxAgent extends AIChatAgent<AgentEnv> {
     const session = await this.ctx.storage.get<GmailSession>("gmail_session");
     const anthropic = createAnthropic({ apiKey: this.env.ANTHROPIC_API_KEY });
 
-    const tools: Record<string, unknown> = {};
+    const tools: ToolSet = {};
     let system = SYSTEM_PROMPT;
 
     if (session?.access_token) {
@@ -68,9 +68,9 @@ export class InboxAgent extends AIChatAgent<AgentEnv> {
           };
         },
       );
-      tools.run_gmail_script = {
+      tools.run_gmail_script = tool({
         description: "Execute JavaScript against sandboxed Gmail API. The script has access to a `gmail` object. Return a useful summary.",
-        parameters: runGmailScriptParams,
+        inputSchema: runGmailScriptParams,
         execute: async ({ code, intent }: { code: string; intent: string }) => {
           const args = Schema.decodeSync(GmailScriptArgs)({ code, intent });
           const program = Effect.gen(function* () {
@@ -91,7 +91,7 @@ export class InboxAgent extends AIChatAgent<AgentEnv> {
           );
           return value;
         },
-      };
+      });
     } else {
       system = "You are a helpful assistant. The user has not connected their Gmail account yet. Politely tell them to log out and reconnect with Google to use Gmail features. You can still have a general conversation.";
     }
@@ -101,7 +101,7 @@ export class InboxAgent extends AIChatAgent<AgentEnv> {
       model: anthropic("claude-sonnet-4-20250514"),
       system,
       messages: modelMessages,
-      tools: tools as ToolSet,
+      tools,
       stopWhen: stepCountIs(5),
       onFinish: onFinish as unknown as StreamTextOnFinishCallback<ToolSet>,
       abortSignal: options?.abortSignal,
