@@ -3,7 +3,18 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>Gmail Chat</title>
+    <script>
+      (function(){
+        var t=localStorage.getItem("theme");
+        if(!t){
+          t="dark";
+        }
+        document.documentElement.dataset.theme=t;
+        document.documentElement.dataset.mode=t;
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

@@ -10,14 +10,14 @@ async function bootstrap() {
     fetch("/api/auth-url"),
   ]);
 
-  const meData = authRes.ok ? await authRes.json() : null;
+  const meData = authRes.ok ? (await authRes.json()) as { userId?: string } : null;
   const auth: Auth =
     meData?.userId ? { status: "ok", userId: meData.userId } : { status: "unauthenticated" };
 
   let authUrl: string | null = null;
   let authUrlError: string | null = null;
   try {
-    const authUrlData = await authUrlRes.json();
+    const authUrlData = (await authUrlRes.json()) as { authUrl?: string; error?: string };
     authUrl = authUrlData.authUrl ?? null;
     authUrlError = authUrlData.error ?? null;
   } catch {

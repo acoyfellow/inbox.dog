@@ -1,4 +1,70 @@
+@source "../node_modules/@cloudflare/kumo/dist/**/*.{js,jsx,ts,tsx}";
+@import "@cloudflare/kumo/styles/tailwind";
 @import "tailwindcss";
+
+@variant dark (&:is([data-mode="dark"],[data-mode="dark"] *,[data-theme="dark"],[data-theme="dark"] *));
+
+:root {
+  color-scheme: dark;
+  --page-bg: #0a0a0b;
+  --page-text: #e4e4e7;
+  --page-muted: #71717a;
+  --page-muted-2: #52525b;
+  --page-border: rgba(255,255,255,0.08);
+  --page-border-2: rgba(255,255,255,0.12);
+  --card-bg: rgba(255,255,255,0.02);
+  --card-border: rgba(255,255,255,0.06);
+  --gradient-from: #fafafa;
+  --gradient-to: #a1a1aa;
+  --glow-r: 59; --glow-g: 130; --glow-b: 246;
+  --glow-opacity: 0.06;
+  --glow-2-r: 168; --glow-2-g: 85; --glow-2-b: 247;
+  --glow-2-opacity: 0.04;
+  --glow-3-r: 236; --glow-3-g: 72; --glow-3-b: 153;
+  --glow-3-opacity: 0.03;
+}
+
+[data-mode="light"],
+[data-theme="light"] {
+  color-scheme: light;
+  --page-bg: #fafafa;
+  --page-text: #18181b;
+  --page-muted: #52525b;
+  --page-muted-2: #71717a;
+  --page-border: rgba(0,0,0,0.08);
+  --page-border-2: rgba(0,0,0,0.12);
+  --card-bg: rgba(0,0,0,0.02);
+  --card-border: rgba(0,0,0,0.06);
+  --gradient-from: #18181b;
+  --gradient-to: #71717a;
+  --glow-r: 59; --glow-g: 130; --glow-b: 246;
+  --glow-opacity: 0.08;
+  --glow-2-r: 168; --glow-2-g: 85; --glow-2-b: 247;
+  --glow-2-opacity: 0.06;
+  --glow-3-r: 236; --glow-3-g: 72; --glow-3-b: 153;
+  --glow-3-opacity: 0.05;
+}
+
+[data-mode="dark"],
+[data-theme="dark"] {
+  color-scheme: dark;
+  --page-bg: #0a0a0b;
+  --page-text: #e4e4e7;
+  --page-muted: #71717a;
+  --page-muted-2: #52525b;
+  --page-border: rgba(255,255,255,0.08);
+  --page-border-2: rgba(255,255,255,0.12);
+  --card-bg: rgba(255,255,255,0.02);
+  --card-border: rgba(255,255,255,0.06);
+  --gradient-from: #fafafa;
+  --gradient-to: #a1a1aa;
+  --glow-r: 59; --glow-g: 130; --glow-b: 246;
+  --glow-opacity: 0.06;
+  --glow-2-r: 168; --glow-2-g: 85; --glow-2-b: 247;
+  --glow-2-opacity: 0.04;
+  --glow-3-r: 236; --glow-3-g: 72; --glow-3-b: 153;
+  --glow-3-opacity: 0.03;
+}
 
 html,
 body,
@@ -6,4 +72,22 @@ body,
   width: 100%;
   height: 100%;
   margin: 0;
+}
+
+[data-mode="light"] .chat-input-bar input,
+[data-mode="light"] .chat-input-bar [data-baseui] input,
+[data-theme="light"] .chat-input-bar input,
+[data-theme="light"] .chat-input-bar [data-baseui] input {
+  background: #fff !important;
+  color: #18181b !important;
+  border-color: #d4d4d8 !important;
+}
+[data-mode="light"] .chat-input-bar input::placeholder,
+[data-theme="light"] .chat-input-bar input::placeholder {
+  color: #71717a;
+}
+[data-mode="light"] .chat-input-bar > div:first-child,
+[data-theme="light"] .chat-input-bar > div:first-child {
+  background: #fff !important;
+  border-color: #d4d4d8 !important;
 }

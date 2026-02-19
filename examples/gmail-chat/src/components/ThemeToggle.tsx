@@ -15,7 +15,7 @@ function subscribe(cb: () => void) {
 }
 
 function getTheme() {
-  return document.documentElement.dataset.theme ?? "dark";
+  return document.documentElement.dataset.theme ?? document.documentElement.dataset.mode ?? "dark";
 }
 
 export function ThemeToggle({ className = "" }: { className?: string }) {
@@ -24,6 +24,7 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
   const toggle = () => {
     const next = theme === "dark" ? "light" : "dark";
     document.documentElement.dataset.theme = next;
+    document.documentElement.dataset.mode = next;
     localStorage.setItem("theme", next);
     window.dispatchEvent(new CustomEvent(THEME_CHANGE));
   };
