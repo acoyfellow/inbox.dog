@@ -38,7 +38,7 @@ const mockKV: KVService = {
 
 const KVLayer = Layer.succeed(KVService, mockKV);
 
-const runEither = <A, E>(effect: Effect.Effect<A, E>) =>
+const runEither = <A, E>(effect: Effect.Effect<A, E, KVService>) =>
   Effect.runPromise(Effect.provide(Effect.either(effect), KVLayer));
 
 describe('authenticateApiKey', () => {
