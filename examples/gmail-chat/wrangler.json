@@ -3,6 +3,12 @@
   "name": "gmail-chat",
   "compatibility_date": "2026-01-28",
   "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
   "main": "src/server.ts",
   "assets": {
     "directory": "./dist",
