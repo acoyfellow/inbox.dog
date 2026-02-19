@@ -3,10 +3,12 @@ import { ResultCards } from "./ResultCards";
 
 interface ToolInvocationProps {
   invocation: {
-    toolName: string;
-    args: { code?: string; intent?: string };
+    type: string;
     state: string;
-    result?: unknown;
+    input?: unknown;
+    output?: unknown;
+    errorText?: string;
+    toolName?: string;
   };
 }
 
@@ -19,27 +21,45 @@ function PlayIcon() {
 }
 
 export function ToolInvocation({ invocation }: ToolInvocationProps) {
-  const { toolName, args, state, result } = invocation;
+  const toolName = invocation.type === "dynamic-tool"
+    ? invocation.toolName
+    : invocation.type.replace("tool-", "");
+  const input = (typeof invocation.input === "object" && invocation.input !== null
+    ? invocation.input
+    : {}) as { code?: string; intent?: string };
+  const { state } = invocation;
+
   if (toolName !== "run_gmail_script") return null;
 
   return (
     <div
       className={`rounded-lg border border-neutral-800 bg-neutral-900/50 ${
-        state === "call" ? "border-l-4 border-l-green-500 animate-pulse" : ""
-      } ${state === "result" ? "border-l-4 border-l-green-500/50" : ""}`}
+        state === "input-available" ? "border-l-4 border-l-green-500 animate-pulse" : ""
+      } ${
+        state === "output-available" || state === "output-error"
+          ? "border-l-4 border-l-green-500/50"
+          : ""
+      }`}
     >
       <div className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-400">
         <PlayIcon />
-        <span>{args.intent ?? "Running script..."}</span>
+        <span>{input.intent ?? "Running script..."}</span>
       </div>
-      <ScriptBlock code={args.code ?? ""} isStreaming={state === "partial-call"} />
-      {state === "partial-call" && (
+      <ScriptBlock code={input.code ?? ""} isStreaming={state === "input-streaming"} />
+      {state === "input-streaming" && (
         <div className="px-4 py-2 text-xs text-neutral-500">Writing script...</div>
       )}
-      {state === "call" && (
+      {state === "input-available" && (
         <div className="px-4 py-2 text-xs text-green-400">Executing...</div>
       )}
-      {state === "result" && result !== undefined && <ResultCards result={result} />}
+      {state === "output-available" && invocation.output !== undefined && (
+        <ResultCards result={invocation.output} />
+      )}
+      {state === "output-error" && (
+        <div className="px-4 py-2 text-xs text-red-300">
+          {invocation.errorText ?? "Tool execution failed."}
+        </div>
+      )}
     </div>
   );
 }

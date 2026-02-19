@@ -1,23 +1,20 @@
-import { useState, useRef, useCallback } from "react";
+import { useCallback, useRef, useState } from "react";
+import { isTextUIPart, isToolOrDynamicToolUIPart, type UIMessage } from "ai";
+import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { useAgent } from "agents/react";
 import { useAutoScroll } from "../lib/hooks";
 import { ChatInput } from "./ChatInput";
+import { ToolInvocation } from "./ToolInvocation";
 
 interface GmailChatProps {
   userId: string;
 }
 
-type ChatMessage = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-};
-
 function MessageList({
   messages,
   isLoading,
 }: {
-  messages: ChatMessage[];
+  messages: UIMessage[];
   isLoading: boolean;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -28,25 +25,32 @@ function MessageList({
       {messages.map((msg) => (
         <div
           key={msg.id}
-          className={`max-w-[85%] whitespace-pre-wrap rounded-lg px-4 py-2.5 text-sm ${
+          className={`max-w-[85%] space-y-2 whitespace-pre-wrap rounded-lg px-4 py-2.5 text-sm ${
             msg.role === "user"
-              ? "ml-auto bg-neutral-700 text-neutral-100"
-              : "bg-neutral-900 text-neutral-200"
+              ? "ml-auto bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100"
+              : "bg-neutral-100 text-neutral-800 dark:bg-neutral-900 dark:text-neutral-200"
           }`}
         >
-          {msg.content}
+          {msg.parts.map((part, index) => {
+            const key = `${msg.id}-part-${index}`;
+            if (isTextUIPart(part)) {
+              return <div key={key}>{part.text}</div>;
+            }
+            if (isToolOrDynamicToolUIPart(part)) {
+              return <ToolInvocation key={key} invocation={part} />;
+            }
+            return null;
+          })}
         </div>
       ))}
       {isLoading && (
-        <div className="max-w-[85%] rounded-lg bg-neutral-900 px-4 py-2.5 text-sm text-neutral-500">
+        <div className="max-w-[85%] rounded-lg bg-neutral-100 px-4 py-2.5 text-sm text-neutral-500 dark:bg-neutral-900">
           ...
         </div>
       )}
     </div>
   );
 }
-
-let msgCounter = 0;
 
 export function GmailChat({ userId }: GmailChatProps) {
   const host = typeof window !== "undefined" ? window.location.origin : "";
@@ -56,91 +60,21 @@ export function GmailChat({ userId }: GmailChatProps) {
     host,
   });
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const { messages, sendMessage, status } = useAgentChat({
+    agent,
+  });
   const [input, setInput] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const assistantTextRef = useRef("");
+  const isLoading = status === "submitted" || status === "streaming";
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
+    (event: React.FormEvent<HTMLFormElement>) => {
+      event.preventDefault();
       const text = input.trim();
       if (!text || isLoading) return;
-
-      const userMsg: ChatMessage = { id: `user-${++msgCounter}`, role: "user", content: text };
-      const assistantId = `assistant-${++msgCounter}`;
-      setMessages((prev) => [...prev, userMsg]);
+      void sendMessage({ text });
       setInput("");
-      setIsLoading(true);
-      assistantTextRef.current = "";
-
-      const requestId = `req-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-
-      const onMessage = (event: MessageEvent) => {
-        let data: { type: string; id: string; body?: string; done?: boolean; error?: boolean };
-        try {
-          data = JSON.parse(event.data);
-        } catch {
-          return;
-        }
-        if (data.type !== "cf_agent_use_chat_response" || data.id !== requestId) return;
-
-        if (data.error) {
-          assistantTextRef.current = `Error: ${data.body}`;
-          setMessages((prev) => {
-            const existing = prev.find((m) => m.id === assistantId);
-            if (existing) return prev.map((m) => (m.id === assistantId ? { ...m, content: assistantTextRef.current } : m));
-            return [...prev, { id: assistantId, role: "assistant", content: assistantTextRef.current }];
-          });
-        }
-
-        if (data.body) {
-          // Parse AI SDK data stream format: 0:"text chunk"\n
-          const textMatches = data.body.matchAll(/0:"((?:[^"\\]|\\.)*)"/g);
-          for (const match of textMatches) {
-            const decoded = match[1]
-              .replace(/\\n/g, "\n")
-              .replace(/\\"/g, '"')
-              .replace(/\\\\/g, "\\");
-            assistantTextRef.current += decoded;
-          }
-          if (assistantTextRef.current) {
-            setMessages((prev) => {
-              const existing = prev.find((m) => m.id === assistantId);
-              if (existing) return prev.map((m) => (m.id === assistantId ? { ...m, content: assistantTextRef.current } : m));
-              return [...prev, { id: assistantId, role: "assistant", content: assistantTextRef.current }];
-            });
-          }
-        }
-
-        if (data.done) {
-          setIsLoading(false);
-          agent.removeEventListener("message", onMessage);
-        }
-      };
-
-      agent.addEventListener("message", onMessage);
-
-      // Build the messages array for the agent (all messages including the new one)
-      const allMessages = [...messages, userMsg].map((m) => ({
-        role: m.role,
-        content: m.content,
-      }));
-
-      agent.send(
-        JSON.stringify({
-          id: requestId,
-          type: "cf_agent_use_chat_request",
-          init: {
-            method: "POST",
-            body: JSON.stringify({ messages: allMessages }),
-            headers: { "Content-Type": "application/json" },
-          },
-          url: `${host}/agents/inbox-agent/${encodeURIComponent(userId)}`,
-        })
-      );
     },
-    [input, isLoading, messages, agent, host, userId]
+    [input, isLoading, sendMessage]
   );
 
   return (
