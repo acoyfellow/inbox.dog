@@ -1,0 +1,11 @@
+{
+  "name": "inbox-dog-example",
+  "compatibility_date": "2024-09-23",
+  "pages_build_output_dir": "dist",
+  "kv_namespaces": [
+    {
+      "binding": "SESSIONS",
+      "id": "REPLACE_AFTER_RUNNING_wrangler_kv_namespace_create_SESSIONS"
+    }
+  ]
+}

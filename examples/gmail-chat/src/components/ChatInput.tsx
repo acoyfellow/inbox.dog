@@ -1,13 +1,13 @@
 interface ChatInputProps {
   input: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onSubmit: React.FormEventHandler<HTMLFormElement>;
   disabled?: boolean;
 }
 
 export function ChatInput({ input, onChange, onSubmit, disabled }: ChatInputProps) {
   return (
-    <form className="flex gap-2 border-t border-neutral-800 p-4" onSubmit={onSubmit}>
+    <form className="flex flex-shrink-0 gap-2 border-t border-neutral-800 p-4" onSubmit={onSubmit}>
       <input
         type="text"
         value={input}

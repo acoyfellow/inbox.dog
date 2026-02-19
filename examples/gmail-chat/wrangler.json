@@ -1,5 +1,20 @@
 {
+  "$schema": "./node_modules/wrangler/config-schema.json",
   "name": "gmail-chat",
-  "compatibility_date": "2025-02-01",
-  "pages_build_output_dir": "dist"
+  "compatibility_date": "2026-01-28",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "src/server.ts",
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/agents/*", "/api/*", "/callback", "/logout"]
+  },
+  "worker_loaders": [{ "binding": "LOADER" }],
+  "services": [{ "binding": "INBOX_DOG", "service": "inbox-dog-oauth-production" }],
+  "durable_objects": {
+    "bindings": [{ "name": "INBOX_AGENT", "class_name": "InboxAgent" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["InboxAgent"] }],
+  "routes": []
 }

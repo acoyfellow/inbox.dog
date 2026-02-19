@@ -6,7 +6,7 @@ import type { TokenResponse, DeviceCodeResponse, GmailTokens } from "./types";
 const DEFAULT_BASE_URL = "https://inbox.dog";
 
 // Re-export everything
-export { Gmail, GmailError, type GmailOptions } from "./gmail";
+export { Gmail, GmailError, type GmailOptions, type MethodDoc } from "./gmail";
 export * from "./types";
 
 // ── Error ────────────────────────────────────────────────────────────────
@@ -45,7 +45,8 @@ export class InboxDog {
 
   constructor(opts: InboxDogOptions = {}) {
     this.baseUrl = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
-    this.fetchFn = opts.fetch ?? globalThis.fetch;
+    // Wrap so fetch is never stored by reference (Cloudflare Workers "Illegal invocation" otherwise)
+    this.fetchFn = opts.fetch ?? ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init));
   }
 
   // ── API Keys ─────────────────────────────────────────────────────────
@@ -69,6 +70,24 @@ export class InboxDog {
     clientSecret: string,
   ): Promise<{ client_id: string; name: string; credits?: number; created_at: number }> {
     return this.request(`/api/keys/${clientId}`, {
+      headers: { "X-Client-Secret": clientSecret },
+    });
+  }
+
+  /**
+   * Fetch Gmail tokens for a web-bound key. Use after Connect Gmail at inbox.dog/connect.
+   * Requires only client_id + client_secret — no OAuth flow in your app.
+   */
+  async getTokens(
+    clientId: string,
+    clientSecret: string,
+  ): Promise<{
+    access_token: string;
+    refresh_token: string;
+    expires_at: number;
+    email: string;
+  }> {
+    return this.request(this.baseUrl + "/api/tokens?client_id=" + encodeURIComponent(clientId), {
       headers: { "X-Client-Secret": clientSecret },
     });
   }
@@ -151,6 +170,25 @@ export class InboxDog {
   // ── Gmail Client ─────────────────────────────────────────────────────
 
   /**
+   * Gmail client from API key only. Use after Connect Gmail at inbox.dog/connect.
+   * Fetches tokens from hosted inbox.dog — no OAuth, no token env vars.
+   */
+  async gmailFromKey(
+    clientId: string,
+    clientSecret: string,
+  ): Promise<Gmail> {
+    const tokens = await this.getTokens(clientId, clientSecret);
+    return this.gmail(
+      {
+        access_token: tokens.access_token,
+        refresh_token: tokens.refresh_token,
+      },
+      clientId,
+      clientSecret,
+    );
+  }
+
+  /**
    * Create a typed Gmail client from tokens.
    *
    * Pass `clientId` and `clientSecret` to enable automatic token refresh:
@@ -161,11 +199,7 @@ export class InboxDog {
    * const unread = await gmail.list({ query: "is:unread" })
    * ```
    *
-   * Also accepts raw GmailTokens if you already have an access token:
-   *
-   * ```ts
-   * const gmail = dog.gmail({ access_token: "ya29...." })
-   * ```
+   * Or use gmailFromKey() after Connect Gmail — no tokens needed.
    */
   gmail(
     tokens: TokenResponse | GmailTokens,

@@ -3,29 +3,20 @@ import Anthropic from "@anthropic-ai/sdk";
 import { buildPrompt, applyDecision, type Decision } from "./agent";
 
 export interface Env {
-  GMAIL_ACCESS_TOKEN: string;
-  GMAIL_REFRESH_TOKEN?: string;
-  INBOX_DOG_CLIENT_ID?: string;
-  INBOX_DOG_CLIENT_SECRET?: string;
+  INBOX_DOG_CLIENT_ID: string;
+  INBOX_DOG_CLIENT_SECRET: string;
   ANTHROPIC_API_KEY: string;
 }
 
 async function triage(env: Env): Promise<{ processed: number; log: string[] }> {
   const log: string[] = [];
-  if (!env.GMAIL_ACCESS_TOKEN) {
-    throw new Error("Missing GMAIL_ACCESS_TOKEN. Add to .dev.vars for local dev.");
+  if (!env.INBOX_DOG_CLIENT_ID || !env.INBOX_DOG_CLIENT_SECRET) {
+    throw new Error("Set INBOX_DOG_CLIENT_ID and INBOX_DOG_CLIENT_SECRET. Create a key at inbox.dog/connect, then Connect Gmail.");
   }
   const dog = new InboxDog({
     fetch: (url, init) => fetch(url, init),
   });
-  const gmail = dog.gmail(
-    {
-      access_token: env.GMAIL_ACCESS_TOKEN,
-      refresh_token: env.GMAIL_REFRESH_TOKEN,
-    },
-    env.INBOX_DOG_CLIENT_ID,
-    env.INBOX_DOG_CLIENT_SECRET
-  );
+  const gmail = await dog.gmailFromKey(env.INBOX_DOG_CLIENT_ID, env.INBOX_DOG_CLIENT_SECRET);
  
   const anthropic = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
   const { messages } = await gmail.list({ query: "is:unread", max: 20 });

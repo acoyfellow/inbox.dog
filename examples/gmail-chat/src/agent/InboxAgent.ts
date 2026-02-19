@@ -1,5 +1,4 @@
 import { AIChatAgent } from "agents/ai-chat-agent";
-import type { AgentContext } from "agents";
 import { streamText } from "ai";
 import type { CoreMessage, StreamTextOnFinishCallback, ToolSet } from "ai";
 import { createAnthropic } from "@ai-sdk/anthropic";
@@ -19,91 +18,84 @@ interface GmailSession {
   email: string;
 }
 
-interface Env {
+interface AgentEnv {
   ANTHROPIC_API_KEY: string;
   INBOX_DOG_CLIENT_ID: string;
   INBOX_DOG_CLIENT_SECRET: string;
+  LOADER: WorkerLoader;
 }
 
-export class InboxAgent extends AIChatAgent<Env> {
-  declare ctx: AgentContext;
-  declare env: Env;
-
-  override async onRequest(request: Request): Promise<Response> {
+export class InboxAgent extends AIChatAgent<AgentEnv> {
+  async onRequest(request: Request): Promise<Response> {
     const url = new URL(request.url);
-    if (request.method === "PUT" && url.pathname.endsWith("/session")) {
-      const session = (await request.json()) as GmailSession;
+    if (url.pathname === "/session" && request.method === "PUT") {
+      const session = await request.json() as GmailSession;
       await this.ctx.storage.put("gmail_session", session);
-      return new Response(JSON.stringify({ ok: true }), {
-        headers: { "Content-Type": "application/json" },
-      });
-    }
-    if (request.method === "DELETE" && url.pathname.endsWith("/session")) {
-      await this.ctx.storage.delete("gmail_session");
-      return new Response(JSON.stringify({ ok: true }), {
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response("ok");
     }
     return super.onRequest(request);
   }
 
   override async onChatMessage(
-    ...args: Parameters<AIChatAgent<Env>["onChatMessage"]>
-  ): ReturnType<AIChatAgent<Env>["onChatMessage"]> {
-    const [onFinish, options] = args;
+    onFinish: StreamTextOnFinishCallback<ToolSet>,
+    options?: { abortSignal: AbortSignal | undefined },
+  ): Promise<Response | undefined> {
     const session = await this.ctx.storage.get<GmailSession>("gmail_session");
-    if (!session?.access_token) {
-      return new Response(
-        JSON.stringify({ error: "Please connect your Gmail account first." }),
-        { status: 401, headers: { "Content-Type": "application/json" } }
-      );
-    }
-
-    const gmail = new Gmail(
-      {
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-        client_id: session.client_id,
-        client_secret: session.client_secret,
-      },
-      { baseUrl: "https://inbox.dog", autoRefresh: true }
-    );
-
-    const executorLayer = ScriptExecutorLive(gmail);
     const anthropic = createAnthropic({ apiKey: this.env.ANTHROPIC_API_KEY });
+
+    const tools: Record<string, unknown> = {};
+    let system = SYSTEM_PROMPT;
+
+    if (session?.access_token) {
+      const gmail = new Gmail(
+        {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+          client_id: session.client_id,
+          client_secret: session.client_secret,
+        },
+        { baseUrl: "https://inbox.dog", autoRefresh: true }
+      );
+      const sessionId = session.email.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const executorLayer = ScriptExecutorLive(
+        gmail,
+        { LOADER: this.env.LOADER },
+        this.ctx as any,
+        sessionId,
+      );
+      tools.run_gmail_script = {
+        description: "Execute JavaScript against sandboxed Gmail API. The script has access to a `gmail` object. Return a useful summary.",
+        parameters: runGmailScriptParams,
+        execute: async ({ code, intent }: { code: string; intent: string }) => {
+          const args = Schema.decodeSync(GmailScriptArgs)({ code, intent });
+          const program = Effect.gen(function* () {
+            const executor = yield* ScriptExecutor;
+            return yield* executor.execute(args);
+          });
+          const value = await Effect.runPromise(
+            program.pipe(
+              Effect.provide(executorLayer),
+              Effect.catchAll((err) =>
+                Effect.succeed({
+                  _tag: "Error",
+                  error: (err as { _tag?: string })._tag ?? "Unknown",
+                  message: err instanceof Error ? err.message : String(err),
+                })
+              )
+            )
+          );
+          return JSON.stringify(value, null, 2);
+        },
+      };
+    } else {
+      system = "You are a helpful assistant. The user has not connected their Gmail account yet. Politely tell them to log out and reconnect with Google to use Gmail features. You can still have a general conversation.";
+    }
 
     const result = streamText({
       model: anthropic("claude-sonnet-4-20250514"),
-      system: SYSTEM_PROMPT,
+      system,
       messages: this.messages as unknown as CoreMessage[],
-      tools: {
-        run_gmail_script: {
-          description: "Execute JavaScript against sandboxed Gmail API. The script has access to a `gmail` object. Return a useful summary.",
-          parameters: runGmailScriptParams,
-          execute: async ({ code, intent }) => {
-            const args = Schema.decodeSync(GmailScriptArgs)({ code, intent });
-            const program = Effect.gen(function* () {
-              const executor = yield* ScriptExecutor;
-              return yield* executor.execute(args);
-            });
-            const value = await Effect.runPromise(
-              program.pipe(
-                Effect.provide(executorLayer),
-                Effect.catchAll((err) =>
-                  Effect.succeed({
-                    _tag: "Error",
-                    error: (err as { _tag?: string })._tag ?? "Unknown",
-                    message: err instanceof Error ? err.message : String(err),
-                  })
-                )
-              )
-            );
-            return typeof value === "object" && value !== null && "_tag" in value
-              ? JSON.stringify(value, null, 2)
-              : JSON.stringify(value, null, 2);
-          },
-        },
-      },
+      tools: tools as ToolSet,
       maxSteps: 5,
       onFinish: onFinish as unknown as StreamTextOnFinishCallback<ToolSet>,
       abortSignal: options?.abortSignal,

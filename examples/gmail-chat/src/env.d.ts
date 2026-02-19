@@ -1,14 +1,10 @@
-/// <reference path="../.astro/types.d.ts" />
+/// <reference types="vite/client" />
 
-interface CloudflareRuntimeEnv {
-  INBOX_AGENT?: {
-    idFromName(name: string): unknown;
-    get(id: unknown): { fetch(input: RequestInfo, init?: RequestInit): Promise<Response> };
-  };
-}
-
-declare namespace App {
-  interface Locals {
-    runtime?: { env?: CloudflareRuntimeEnv };
-  }
+interface Env {
+  INBOX_AGENT: DurableObjectNamespace;
+  ASSETS: Fetcher;
+  LOADER: WorkerLoader;
+  INBOX_DOG_CLIENT_ID: string;
+  INBOX_DOG_CLIENT_SECRET: string;
+  ANTHROPIC_API_KEY: string;
 }

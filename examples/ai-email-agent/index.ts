@@ -3,20 +3,16 @@ import Anthropic from "@anthropic-ai/sdk";
 import { buildPrompt, applyDecision, type Decision } from "./agent";
 
 const dog = new InboxDog();
-const gmail = dog.gmail(
-  {
-    access_token: process.env.GMAIL_ACCESS_TOKEN!,
-    refresh_token: process.env.GMAIL_REFRESH_TOKEN,
-  },
-  process.env.INBOX_DOG_CLIENT_ID,
-  process.env.INBOX_DOG_CLIENT_SECRET
-);
-
 const anthropic = new Anthropic();
 
-// ── the agent loop ──────────────────────────────────────────────────────────
-
 async function triage() {
+  if (!process.env.INBOX_DOG_CLIENT_ID || !process.env.INBOX_DOG_CLIENT_SECRET) {
+    throw new Error("Set INBOX_DOG_CLIENT_ID and INBOX_DOG_CLIENT_SECRET. Create a key at inbox.dog/connect, then Connect Gmail.");
+  }
+  const gmail = await dog.gmailFromKey(
+    process.env.INBOX_DOG_CLIENT_ID,
+    process.env.INBOX_DOG_CLIENT_SECRET,
+  );
   const { messages } = await gmail.list({ query: "is:unread", max: 20 });
 
   if (!messages.length) {

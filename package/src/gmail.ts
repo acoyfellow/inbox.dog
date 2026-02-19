@@ -45,7 +45,118 @@ export class GmailError extends Error {
   }
 }
 
+export interface MethodDoc {
+  signature: string;
+  description: string;
+  returns: string;
+}
+
 export class Gmail {
+  /** Structured API metadata — single source of truth for LLM prompts and allowlists. */
+  static readonly api: Record<string, MethodDoc> = {
+    list: {
+      signature: "(opts?: { query?: string, max?: number, labelIds?: string[], pageToken?: string })",
+      description: "List emails matching a query. max defaults to 10, capped at 100.",
+      returns: "{ messages: EmailSummary[], total: number, nextPageToken?: string }",
+    },
+    get: {
+      signature: "(id: string)",
+      description: "Get full email content by ID including decoded body.",
+      returns: "{ id, threadId, from, to, cc, bcc, subject, date, snippet, body, labelIds }",
+    },
+    search: {
+      signature: "(query: string, opts?: { max?: number, pageToken?: string })",
+      description: "Search emails. Shorthand for list({ query, ...opts }).",
+      returns: "{ messages: EmailSummary[], total: number, nextPageToken?: string }",
+    },
+    send: {
+      signature: "(opts: { to: string | string[], subject: string, body: string, cc?: string | string[], bcc?: string | string[], replyTo?: string, threadId?: string })",
+      description: "Send an email.",
+      returns: "{ id: string, threadId: string }",
+    },
+    labels: {
+      signature: "()",
+      description: "List all labels (system and user-created).",
+      returns: "{ id, name, type: 'system' | 'user', messagesTotal?, messagesUnread? }[]",
+    },
+    profile: {
+      signature: "()",
+      description: "Get authenticated user's Gmail profile.",
+      returns: "{ emailAddress, messagesTotal, threadsTotal, historyId }",
+    },
+    archive: {
+      signature: "(ids: string | string[])",
+      description: "Archive messages (remove INBOX label).",
+      returns: "void",
+    },
+    markRead: {
+      signature: "(ids: string | string[])",
+      description: "Mark messages as read.",
+      returns: "void",
+    },
+    markUnread: {
+      signature: "(ids: string | string[])",
+      description: "Mark messages as unread.",
+      returns: "void",
+    },
+    trash: {
+      signature: "(ids: string | string[])",
+      description: "Move messages to trash.",
+      returns: "void",
+    },
+    untrash: {
+      signature: "(ids: string | string[])",
+      description: "Restore messages from trash.",
+      returns: "void",
+    },
+    addLabels: {
+      signature: "(ids: string | string[], labelIds: string[])",
+      description: "Add labels to messages.",
+      returns: "void",
+    },
+    removeLabels: {
+      signature: "(ids: string | string[], labelIds: string[])",
+      description: "Remove labels from messages.",
+      returns: "void",
+    },
+    createDraft: {
+      signature: "(opts: { to: string | string[], subject: string, body: string, cc?: string | string[], bcc?: string | string[], threadId?: string })",
+      description: "Create a draft.",
+      returns: "{ id: string, message: EmailSummary }",
+    },
+    listDrafts: {
+      signature: "(opts?: { max?: number })",
+      description: "List drafts. max defaults to 10, capped at 100.",
+      returns: "{ id: string, message: EmailSummary }[]",
+    },
+    attachments: {
+      signature: "(messageId: string)",
+      description: "List attachments on a message (metadata only).",
+      returns: "{ id, filename, mimeType, size }[]",
+    },
+    attachment: {
+      signature: "(messageId: string, attachmentId: string)",
+      description: "Download attachment binary data.",
+      returns: "{ id, filename, mimeType, size, data: Uint8Array }",
+    },
+  };
+
+  /** Format API metadata as an LLM-friendly reference string. */
+  static describe(): string {
+    const lines = Object.entries(Gmail.api).map(
+      ([name, m]) => `gmail.${name}${m.signature} → ${m.returns}\n  ${m.description}`,
+    );
+    return [
+      "## Gmail API",
+      "",
+      ...lines,
+      "",
+      "## Types",
+      "EmailSummary: { id, threadId, from, subject, date, snippet, labelIds }",
+      "Email: EmailSummary + { to, cc, bcc, body }",
+    ].join("\n");
+  }
+
   private tokens: GmailTokens;
   private fetchFn: typeof globalThis.fetch;
   private baseUrl: string;

@@ -132,6 +132,49 @@ apiRoutes.delete('/keys/:clientId', async (c) => {
 });
 
 // ───────────────────────────────────────────────────────────────────────────────
+// GET /tokens — fetch Gmail tokens for web-bound API key (no OAuth in your app)
+// Auth via X-Client-Secret header. Returns tokens stored at Connect Gmail.
+// ───────────────────────────────────────────────────────────────────────────────
+apiRoutes.get('/tokens', async (c) => {
+  const clientId = c.req.query('client_id') ?? c.req.header('X-Client-ID');
+  const clientSecret = c.req.header('X-Client-Secret');
+
+  if (!clientId || !clientSecret) {
+    return c.json(
+      {
+        error: {
+          code: 'VALIDATION_ERROR',
+          message: 'Missing client_id and client_secret',
+          action: 'Provide client_id (query or X-Client-ID header) and X-Client-Secret header',
+          docs: 'https://inbox.dog/docs/api',
+        },
+      },
+      401,
+    );
+  }
+
+  const program = Effect.gen(function* () {
+    yield* authenticateApiKey(clientId, clientSecret);
+    const kv = yield* KVService;
+    const tokens = yield* kv.getGmailTokens(clientId);
+    return {
+      access_token: tokens.accessToken,
+      refresh_token: tokens.refreshToken,
+      expires_at: tokens.expiresAt,
+      email: tokens.email,
+    };
+  });
+
+  const result = await runEffectEither(program, c.env);
+  if (result.ok) {
+    c.header('Cache-Control', 'no-store');
+    return c.json(result.value);
+  }
+  const { status, body: errBody } = errorToResponse(result.error);
+  return c.json(errBody, status as any);
+});
+
+// ───────────────────────────────────────────────────────────────────────────────
 // POST /connect/prepare — create bind session for web Connect Gmail flow
 // ───────────────────────────────────────────────────────────────────────────────
 const ConnectPrepareBody = Schema.Struct({
