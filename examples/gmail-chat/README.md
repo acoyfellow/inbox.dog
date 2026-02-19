@@ -26,12 +26,29 @@ Chat with your Gmail inbox using AI. One tool, infinite Gmail.
 
 ```bash
 cp .env.example .env
-# Fill in your credentials:
-#   INBOX_DOG_CLIENT_ID     — from inbox.dog
-#   INBOX_DOG_CLIENT_SECRET — from inbox.dog
-#   ANTHROPIC_API_KEY       — from console.anthropic.com
-
 npm install
+```
+
+### Get inbox.dog credentials
+
+The app needs its own inbox.dog client ID and secret (one per app, for OAuth redirect URIs). From the repo root:
+
+```bash
+# From inbox.dog repo root (not examples/gmail-chat)
+bun scripts/create-key.ts "Gmail Chat Example"
+```
+
+This returns `client_id` and `client_secret`. Add them to `.env` as `INBOX_DOG_CLIENT_ID` and `INBOX_DOG_CLIENT_SECRET`.
+
+Add your redirect URIs to the app in the inbox.dog dashboard:
+- Local: `http://localhost:5173/callback`
+- Deploy: `https://your-app.workers.dev/callback`
+
+### Workers AI model
+
+This app uses Cloudflare Workers AI via the native `AI` binding in `wrangler.json`, configured to use `@cf/zai-org/glm-4.7-flash`. No Anthropic key is required.
+
+```bash
 npm run dev
 ```
 
@@ -44,7 +61,6 @@ npm run deploy
 Then set your secrets in the Cloudflare dashboard (Workers & Pages → gmail-chat → Settings → Variables and Secrets):
 - `INBOX_DOG_CLIENT_ID`
 - `INBOX_DOG_CLIENT_SECRET`
-- `ANTHROPIC_API_KEY`
 
 Add your deploy URL + `/callback` as a redirect URI in your inbox.dog app settings.
 

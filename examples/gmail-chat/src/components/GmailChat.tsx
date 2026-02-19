@@ -18,11 +18,18 @@ type ChatErrorView = {
 export function formatChatError(error: Error | undefined): ChatErrorView | null {
   if (!error) return null;
   const message = typeof error.message === "string" ? error.message : String(error);
+  const lower = message.toLowerCase();
 
-  if (message.toLowerCase().includes("credit balance is too low")) {
+  if (
+    lower.includes("credit balance is too low")
+    || lower.includes("quota")
+    || lower.includes("insufficient")
+    || lower.includes("workers ai")
+    || lower.includes("neurons")
+  ) {
     return {
-      title: "Anthropic credits exhausted",
-      detail: "This app cannot chat because the configured ANTHROPIC_API_KEY is out of credits. Add Anthropic credits or set a new key in Worker secrets.",
+      title: "Cloudflare AI quota or billing issue",
+      detail: `Chat failed because Workers AI rejected the request: ${message}`,
     };
   }
 
