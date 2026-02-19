@@ -4,6 +4,7 @@
 
 [![Live](https://img.shields.io/badge/live-inbox.dog-blue)](https://inbox.dog)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/acoyfellow/inbox.dog/tree/main/worker)
 
 ## The problem
 

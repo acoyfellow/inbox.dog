@@ -2,6 +2,8 @@
 
 Gmail OAuth plus AI chat about your inbox. Land on a page, connect with Google, chat, log out. No token env vars for users.
 
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/acoyfellow/inbox.dog/tree/main/examples/astro-cloudflare)
+
 ## Setup
 
 ### 1. Get API key + KV
