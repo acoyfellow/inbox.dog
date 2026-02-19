@@ -34,6 +34,13 @@ export class InboxAgent extends AIChatAgent<AgentEnv> {
       await this.ctx.storage.put("gmail_session", session);
       return new Response("ok");
     }
+    if (url.pathname === "/session" && request.method === "GET") {
+      const session = await this.ctx.storage.get<GmailSession>("gmail_session");
+      if (!session) {
+        return new Response("not found", { status: 404 });
+      }
+      return Response.json(session);
+    }
     return super.onRequest(request);
   }
 

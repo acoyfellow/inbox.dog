@@ -6,6 +6,11 @@ import { routeAgentRequest } from "agents";
 import { InboxAgent } from "./agent/index";
 import { GmailBridge } from "./services/GmailBridge";
 import { getCookie, setCookie, clearCookie } from "./lib/session";
+import {
+  DEFAULT_CONVERSATION_ID,
+  normalizeConversationId,
+  toConversationRoomName,
+} from "./lib/conversations";
 
 interface Env {
   INBOX_AGENT: DurableObjectNamespace;
@@ -13,6 +18,14 @@ interface Env {
   INBOX_DOG: Fetcher;
   INBOX_DOG_CLIENT_ID: string;
   INBOX_DOG_CLIENT_SECRET: string;
+}
+
+interface GmailSession {
+  access_token: string;
+  refresh_token: string;
+  client_id: string;
+  client_secret: string;
+  email: string;
 }
 
 export { InboxAgent, GmailBridge };
@@ -36,6 +49,9 @@ export default {
     }
     if (path === "/api/me") {
       return handleMe(request);
+    }
+    if (path === "/api/chat/session" && request.method === "POST") {
+      return handleEnsureConversationSession(request, env);
     }
 
     return env.ASSETS.fetch(request);
@@ -127,6 +143,82 @@ async function handleAuthUrl(env: Env, url: URL): Promise<Response> {
     scope: "email:read",
   });
   return Response.json({ authUrl });
+}
+
+async function handleEnsureConversationSession(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const userId = getCookie(request);
+  if (!userId) {
+    return new Response(null, { status: 401 });
+  }
+
+  let body: { conversationId?: unknown };
+  try {
+    body = await request.json() as { conversationId?: unknown };
+  } catch {
+    return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const conversationId = normalizeConversationId(body.conversationId);
+  if (!conversationId) {
+    return Response.json({ error: "Invalid conversationId" }, { status: 400 });
+  }
+
+  const sourceRoom = toConversationRoomName(userId, DEFAULT_CONVERSATION_ID);
+  const targetRoom = toConversationRoomName(userId, conversationId);
+
+  if (sourceRoom === targetRoom) {
+    return Response.json({ ok: true });
+  }
+
+  const targetStub = env.INBOX_AGENT.get(env.INBOX_AGENT.idFromName(targetRoom));
+  const existingRes = await targetStub.fetch(
+    new Request("http://localhost/session", {
+      method: "GET",
+      headers: { "x-partykit-room": targetRoom },
+    }),
+  );
+  if (existingRes.ok) {
+    return Response.json({ ok: true });
+  }
+
+  const sourceStub = env.INBOX_AGENT.get(env.INBOX_AGENT.idFromName(sourceRoom));
+  const sourceRes = await sourceStub.fetch(
+    new Request("http://localhost/session", {
+      method: "GET",
+      headers: { "x-partykit-room": sourceRoom },
+    }),
+  );
+  if (!sourceRes.ok) {
+    return Response.json(
+      { error: "Gmail session not found. Reconnect your account." },
+      { status: 409 },
+    );
+  }
+
+  const session = await sourceRes.json() as GmailSession;
+
+  const putRes = await targetStub.fetch(
+    new Request("http://localhost/session", {
+      method: "PUT",
+      body: JSON.stringify(session),
+      headers: {
+        "Content-Type": "application/json",
+        "x-partykit-room": targetRoom,
+      },
+    }),
+  );
+
+  if (!putRes.ok) {
+    return Response.json(
+      { error: "Failed to initialize conversation session" },
+      { status: 500 },
+    );
+  }
+
+  return Response.json({ ok: true });
 }
 
 function handleMe(request: Request): Response {
