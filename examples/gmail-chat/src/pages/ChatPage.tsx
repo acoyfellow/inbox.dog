@@ -280,47 +280,35 @@ export default function ChatPage({ userId }: { userId: string }) {
         return (
           <div
             key={conversation.id}
-            className={`relative flex items-start gap-1 rounded-md border p-1 ${
-              isActive
-                ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
-                : "border-neutral-300 bg-white text-neutral-800 dark:border-neutral-700 dark:bg-neutral-950/70 dark:text-neutral-200"
-            }`}
+            className={`relative flex items-start gap-1 rounded-md border border-neutral-300 bg-white text-neutral-800 dark:border-neutral-700 dark:bg-neutral-950/70 dark:text-neutral-200`}
           >
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={() => markConversationActive(conversation.id)}
-              className={`h-auto w-full justify-start px-2 py-1 text-left ${
+              className={`h-auto w-auto justify-start p-3 text-left ${
                 isActive
                   ? "hover:bg-white/10 dark:hover:bg-neutral-900/10"
                   : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
               }`}
             >
               <div className="truncate text-sm font-medium">{conversation.title}</div>
-              <div
-                className={`mt-1 truncate text-xs ${
-                  isActive
-                    ? "text-white/80 dark:text-neutral-700"
-                    : "text-neutral-500 dark:text-neutral-400"
-                }`}
-              >
-                {isDefault ? "Default conversation" : conversation.id}
-              </div>
+              
             </Button>
             <div className="relative" data-conversation-menu="true">
               <Button
                 type="button"
                 aria-label={`Conversation actions for ${conversation.title}`}
                 shape="square"
-                size="sm"
+                
                 variant="ghost"
                 onClick={() =>
                   setOpenConversationMenuId((prev) =>
                     prev === conversation.id ? null : conversation.id,
                   )
                 }
-                className={`text-sm ${
+                className={`p-3 text-sm ${
                   isActive
                     ? "text-white/80 hover:bg-white/10 hover:text-white dark:text-neutral-700 dark:hover:bg-neutral-900/10 dark:hover:text-neutral-900"
                     : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
@@ -360,7 +348,7 @@ export default function ChatPage({ userId }: { userId: string }) {
 
   return (
     <div className="flex h-screen flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
-      <header className="flex flex-shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
+      <header className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
         <h1 className="text-base font-medium">Gmail Chat</h1>
         <div className="flex items-center gap-1">
           <Button
@@ -379,7 +367,7 @@ export default function ChatPage({ userId }: { userId: string }) {
         </div>
       </header>
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-neutral-200 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-900/40 md:flex">
+        <aside className="hidden w-64 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-900/40 md:flex">
           <div className="flex items-center justify-between px-3 py-2.5">
             <div className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
               Conversations
@@ -391,7 +379,7 @@ export default function ChatPage({ userId }: { userId: string }) {
               onClick={createConversation}
               className="text-xs"
             >
-              New
+              +
             </Button>
           </div>
           {renderConversationList()}

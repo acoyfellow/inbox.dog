@@ -19,7 +19,7 @@ export function ChatInput({
   const boundedPercent = Math.max(0, Math.min(100, contextPercent));
 
   return (
-    <form className="chat-input-bar flex flex-shrink-0 gap-2 border-t border-neutral-200 p-4 dark:border-neutral-800" onSubmit={onSubmit}>
+    <form className="chat-input-bar flex shrink-0 gap-2 border-t border-neutral-200 p-4 dark:border-neutral-800" onSubmit={onSubmit}>
       <Input
         value={input}
         onChange={onChange}
@@ -33,7 +33,7 @@ export function ChatInput({
           type="submit"
           variant="primary"
           disabled={disabled || !input.trim()}
-          className="bg-kumo-brand !text-white hover:bg-kumo-brand-hover disabled:bg-kumo-brand/50"
+          className="bg-kumo-brand text-white! hover:bg-kumo-brand-hover disabled:bg-kumo-brand/50"
         >
           Send
         </Button>
