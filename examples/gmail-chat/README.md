@@ -2,6 +2,8 @@
 
 Chat with your Gmail inbox using AI. One tool, infinite Gmail.
 
+[![Deploy to Cloudflare Workers](https://deploy.workers.cloudflare.com/button)](https://deploy.workers.cloudflare.com/?url=https://github.com/acoyfellow/inbox.dog/tree/main/examples/gmail-chat)
+
 ## What it does
 
 1. **Landing** — Connect with Google
