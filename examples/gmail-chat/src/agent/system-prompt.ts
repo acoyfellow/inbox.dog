@@ -1,9 +1,41 @@
 import { Gmail } from "inbox.dog";
 
+type GmailCtor = {
+  describe?: () => string;
+  api?: Record<string, {
+    signature?: string;
+    description?: string;
+    returns?: string;
+  }>;
+};
+
+function getGmailReference(): string {
+  const gmail = Gmail as unknown as GmailCtor;
+  if (typeof gmail.describe === "function") {
+    return gmail.describe();
+  }
+
+  if (gmail.api && Object.keys(gmail.api).length > 0) {
+    const lines = Object.entries(gmail.api).map(([name, method]) => {
+      const signature = method.signature ?? "()";
+      const returns = method.returns ?? "unknown";
+      const description = method.description ?? "";
+      return `gmail.${name}${signature} -> ${returns}${description ? `\n  ${description}` : ""}`;
+    });
+    return ["## Gmail API", "", ...lines].join("\n");
+  }
+
+  return [
+    "## Gmail API",
+    "",
+    "Use the `gmail` object for inbox operations (list, get, search, send, labels, profile, archive, markRead, markUnread, trash).",
+  ].join("\n");
+}
+
 export const SYSTEM_PROMPT = `You are an AI email assistant powered by inbox.dog.
 You have one tool: run_gmail_script. It executes JavaScript in a sandboxed environment with a \`gmail\` object.
 
-${Gmail.describe()}
+${getGmailReference()}
 
 ## Code Rules
 
