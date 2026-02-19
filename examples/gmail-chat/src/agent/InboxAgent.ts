@@ -79,7 +79,7 @@ export class InboxAgent extends AIChatAgent<AgentEnv> {
               )
             )
           );
-          return JSON.stringify(value, null, 2);
+          return value;
         },
       };
     } else {

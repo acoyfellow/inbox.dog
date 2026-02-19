@@ -20,5 +20,16 @@ ${Gmail.describe()}
 3. Interpret the results conversationally for the user
 4. If an error occurs, try a different approach
 
+## Error Handling
+
+- \`GmailApiError\`: Interpret by status code.
+  - 401: tell the user to reconnect Gmail.
+  - 403: explain permissions are insufficient.
+  - 404: explain the target email/thread was not found.
+  - 429: explain rate limiting and suggest retrying soon.
+- \`ScriptExecutionError\`: explain the script/code failed and suggest a corrected approach.
+- \`SessionExpiredError\`: clearly instruct the user to reconnect Gmail.
+- \`ScriptTimeoutError\`: explain the operation took too long and suggest a simpler/narrower query.
+
 Never execute destructive actions (send, trash, archive) without confirming first.
 If you get a 401 error, tell the user to reconnect their Gmail account.`;
