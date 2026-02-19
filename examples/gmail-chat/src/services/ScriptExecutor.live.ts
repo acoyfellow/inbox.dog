@@ -11,6 +11,28 @@ type GmailSessionProps = {
   client_secret: string;
 };
 
+type LoaderWorkerDefinition = {
+  compatibilityDate: string;
+  mainModule: string;
+  modules: Record<string, string>;
+  globalOutbound: null;
+  env: { GMAIL: unknown };
+};
+
+type LoaderEntrypoint = {
+  fetch: (request: RequestInfo | URL) => Promise<Response>;
+};
+
+type LoaderWorker = {
+  getEntrypoint: () => LoaderEntrypoint;
+};
+
+type LoaderService = {
+  get: (id: string, init: () => LoaderWorkerDefinition | Promise<LoaderWorkerDefinition>) => LoaderWorker;
+};
+
+type GmailBridgeFactory = (opts?: { props?: GmailSessionProps }) => unknown;
+
 /**
  * Build an ES module that runs inside a Worker Loader isolate.
  * The code is inlined directly — no `new Function()` needed.
@@ -41,8 +63,8 @@ function buildRunnerModule(code: string): string {
 
 export function ScriptExecutorLive(
   session: GmailSessionProps,
-  loaderEnv: { LOADER: any },
-  ctx: { exports: Record<string, (opts?: any) => any> },
+  loaderEnv: { LOADER: LoaderService },
+  ctx: { exports: { GmailBridge: GmailBridgeFactory } },
 ) {
   return Layer.succeed(ScriptExecutor, {
     execute: (args: GmailScriptArgs) =>

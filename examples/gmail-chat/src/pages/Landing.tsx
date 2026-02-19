@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Button } from "@cloudflare/kumo/components/button";
+import { ThemeToggle } from "../components/ThemeToggle";
 
 const ERROR_MAP: Record<string, string> = {
   "OAuthState not found": "Your sign-in link expired. Please try again.",
@@ -53,13 +55,14 @@ export default function Landing({
 
   return (
     <div className="landing-root">
+      <ThemeToggle className="fixed top-4 right-4 z-10" />
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700&display=swap');
 
         .landing-root {
           min-height: 100vh;
-          background: #0a0a0b;
-          color: #e4e4e7;
+          background: var(--page-bg);
+          color: var(--page-text);
           font-family: 'Outfit', sans-serif;
           display: flex;
           align-items: center;
@@ -76,9 +79,9 @@ export default function Landing({
           width: 200%;
           height: 200%;
           background:
-            radial-gradient(ellipse at 20% 50%, rgba(59, 130, 246, 0.06) 0%, transparent 50%),
-            radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.04) 0%, transparent 50%),
-            radial-gradient(ellipse at 50% 80%, rgba(236, 72, 153, 0.03) 0%, transparent 50%);
+            radial-gradient(ellipse at 20% 50%, rgba(var(--glow-r), var(--glow-g), var(--glow-b), var(--glow-opacity)) 0%, transparent 50%),
+            radial-gradient(ellipse at 80% 20%, rgba(var(--glow-2-r), var(--glow-2-g), var(--glow-2-b), var(--glow-2-opacity)) 0%, transparent 50%),
+            radial-gradient(ellipse at 50% 80%, rgba(var(--glow-3-r), var(--glow-3-g), var(--glow-3-b), var(--glow-3-opacity)) 0%, transparent 50%);
           animation: drift 20s ease-in-out infinite alternate;
         }
 
@@ -111,12 +114,12 @@ export default function Landing({
           gap: 6px;
           padding: 5px 12px;
           border-radius: 100px;
-          border: 1px solid rgba(255,255,255,0.08);
-          background: rgba(255,255,255,0.03);
+          border: 1px solid var(--page-border);
+          background: var(--card-bg);
           font-size: 12px;
           font-weight: 400;
           letter-spacing: 0.05em;
-          color: #71717a;
+          color: var(--page-muted);
           font-family: 'JetBrains Mono', monospace;
           margin-bottom: 2rem;
           opacity: 0;
@@ -149,7 +152,7 @@ export default function Landing({
           letter-spacing: -0.04em;
           line-height: 1;
           margin: 0 0 1rem;
-          background: linear-gradient(135deg, #fafafa 0%, #a1a1aa 100%);
+          background: linear-gradient(135deg, var(--gradient-from) 0%, var(--gradient-to) 100%);
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
@@ -166,7 +169,7 @@ export default function Landing({
         .landing-desc {
           font-size: 1.1rem;
           font-weight: 300;
-          color: #71717a;
+          color: var(--page-muted);
           line-height: 1.6;
           margin: 0 0 2.5rem;
           opacity: 0;
@@ -180,8 +183,8 @@ export default function Landing({
         }
 
         .landing-code {
-          background: rgba(255,255,255,0.02);
-          border: 1px solid rgba(255,255,255,0.06);
+          background: var(--card-bg);
+          border: 1px solid var(--card-border);
           border-radius: 12px;
           padding: 1.25rem 1.5rem;
           margin-bottom: 2rem;
@@ -205,70 +208,44 @@ export default function Landing({
           gap: 8px;
           margin-bottom: 1rem;
           padding-bottom: 0.75rem;
-          border-bottom: 1px solid rgba(255,255,255,0.05);
+          border-bottom: 1px solid var(--card-border);
         }
 
         .landing-code-dot {
           width: 8px;
           height: 8px;
           border-radius: 50%;
-          background: rgba(255,255,255,0.1);
+          background: var(--page-border);
         }
 
         .landing-code-label {
           font-size: 11px;
-          color: #52525b;
+          color: var(--page-muted-2);
           letter-spacing: 0.05em;
           margin-left: auto;
         }
 
         .landing-code-line {
-          color: #52525b;
+          color: var(--page-muted-2);
         }
 
         .landing-code-line .kw { color: #c084fc; }
         .landing-code-line .fn { color: #60a5fa; }
         .landing-code-line .str { color: #4ade80; }
-        .landing-code-line .prop { color: #e4e4e7; }
+        .landing-code-line .prop { color: var(--page-text); }
         .landing-code-line .num { color: #fb923c; }
 
-        .landing-cta {
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          padding: 14px 28px;
-          border-radius: 10px;
-          background: #fafafa;
-          color: #0a0a0b;
-          font-family: 'Outfit', sans-serif;
-          font-size: 15px;
-          font-weight: 600;
-          letter-spacing: -0.01em;
-          text-decoration: none;
-          transition: all 0.2s ease;
-          border: none;
-          cursor: pointer;
+        .landing-cta-wrapper {
           opacity: 0;
           transform: translateY(12px);
           transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.4s;
         }
-
-        .landing-cta.show {
+        .landing-cta-wrapper.show {
           opacity: 1;
           transform: translateY(0);
         }
-
-        .landing-cta:hover {
-          background: #e4e4e7;
-          transform: translateY(-1px) !important;
-          box-shadow: 0 4px 24px rgba(255,255,255,0.1);
-        }
-
-        .landing-cta:active {
-          transform: translateY(0) !important;
-        }
-
-        .landing-cta svg {
+        .landing-cta-wrapper [data-slot] svg,
+        .landing-cta-wrapper button svg {
           width: 18px;
           height: 18px;
         }
@@ -294,21 +271,21 @@ export default function Landing({
           gap: 6px;
           padding: 6px 12px;
           border-radius: 8px;
-          border: 1px solid rgba(255,255,255,0.06);
-          background: rgba(255,255,255,0.02);
+          border: 1px solid var(--card-border);
+          background: var(--card-bg);
           font-size: 12px;
-          color: #52525b;
+          color: var(--page-muted-2);
           font-family: 'JetBrains Mono', monospace;
           transition: all 0.2s ease;
         }
 
         .landing-chip:hover {
-          border-color: rgba(255,255,255,0.12);
-          color: #71717a;
+          border-color: var(--page-border-2);
+          color: var(--page-muted);
         }
 
         .landing-chip-name {
-          color: #a1a1aa;
+          color: var(--gradient-to);
           font-weight: 500;
         }
 
@@ -332,7 +309,7 @@ export default function Landing({
 
         .landing-loading {
           font-size: 14px;
-          color: #52525b;
+          color: var(--page-muted-2);
           opacity: 0;
           transition: opacity 0.5s ease 0.4s;
         }
@@ -343,8 +320,9 @@ export default function Landing({
 
         .landing-hint {
           font-size: 12px;
-          color: #3f3f46;
+          color: var(--page-muted-2);
           margin-top: 0.5rem;
+          opacity: 0.9;
         }
 
         @media (max-width: 480px) {
@@ -398,15 +376,21 @@ export default function Landing({
         )}
 
         {authUrl ? (
-          <a href={authUrl} className={`landing-cta ${mounted ? "show" : ""}`}>
-            <svg viewBox="0 0 24 24" fill="none">
+          <div className={`landing-cta-wrapper ${mounted ? "show" : ""}`}>
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => { window.location.href = authUrl; }}
+            >
+            <svg viewBox="0 0 24 24" fill="none" style={{ width: 18, height: 18, marginRight: 10 }}>
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
               <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18A10.96 10.96 0 0 0 1 12c0 1.77.42 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
             Connect with Google
-          </a>
+            </Button>
+          </div>
         ) : (
           !rawError && (
             <span className={`landing-loading ${mounted ? "show" : ""}`}>
@@ -430,7 +414,7 @@ export default function Landing({
 
 function colorize(text: string) {
   const parts: React.ReactNode[] = [];
-  let remaining = text;
+  const remaining = text;
   let key = 0;
 
   const rules: [RegExp, string][] = [
@@ -438,7 +422,7 @@ function colorize(text: string) {
     [/\b(gmail\.list|gmail\.search|gmail\.get)\b/g, "fn"],
     [/("[^"]*")/g, "str"],
     [/\b(\d+)\b/g, "num"],
-    [/\b(query|max|messages|map|from|subject)\b(?=[:,\)])/g, "prop"],
+    [/\b(query|max|messages|map|from|subject)\b(?=[:,)])/g, "prop"],
   ];
 
   // Simple single-pass: just return colored spans

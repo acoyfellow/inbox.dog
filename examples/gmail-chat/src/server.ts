@@ -18,7 +18,7 @@ interface Env {
 export { InboxAgent, GmailBridge };
 
 export default {
-  async fetch(request: Request, env: Env, _ctx: ExecutionContext): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const agentRes = await routeAgentRequest(request, env, { cors: true });
     if (agentRes) return agentRes;
 
@@ -29,10 +29,10 @@ export default {
       return handleCallback(request, env, url);
     }
     if (path === "/logout") {
-      return handleLogout(request, env);
+      return handleLogout();
     }
     if (path === "/api/auth-url") {
-      return handleAuthUrl(request, env, url);
+      return handleAuthUrl(env, url);
     }
     if (path === "/api/me") {
       return handleMe(request);
@@ -64,9 +64,17 @@ async function handleCallback(
     const dogFetch: typeof fetch = (input, init) => env.INBOX_DOG.fetch(input, init);
     t = await new InboxDog({ fetch: dogFetch }).exchangeCode(code, cid, csec);
   } catch (e) {
-    const msg =
-      e instanceof InboxDogError ? e.message : e instanceof Error ? e.message : "exchange failed";
-    return redirect(`/?error=${encodeURIComponent(msg)}`);
+    if (e instanceof SyntaxError && e.message.includes("is not valid JSON")) {
+      try {
+        t = await new InboxDog().exchangeCode(code, cid, csec);
+      } catch (e2) {
+        const msg = e2 instanceof InboxDogError ? e2.message : e2 instanceof Error ? e2.message : "exchange failed";
+        return redirect(`/?error=${encodeURIComponent(msg)}`);
+      }
+    } else {
+      const msg = e instanceof InboxDogError ? e.message : e instanceof Error ? e.message : "exchange failed";
+      return redirect(`/?error=${encodeURIComponent(msg)}`);
+    }
   }
 
   const session = {
@@ -97,14 +105,14 @@ async function handleCallback(
   });
 }
 
-async function handleLogout(_request: Request, _env: Env): Promise<Response> {
+async function handleLogout(): Promise<Response> {
   return new Response(null, {
     status: 302,
     headers: { Location: "/", "Set-Cookie": clearCookie() },
   });
 }
 
-async function handleAuthUrl(_request: Request, env: Env, url: URL): Promise<Response> {
+async function handleAuthUrl(env: Env, url: URL): Promise<Response> {
   const clientId = env.INBOX_DOG_CLIENT_ID;
   if (!clientId) {
     return Response.json(

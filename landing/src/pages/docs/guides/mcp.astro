@@ -18,18 +18,18 @@ import Layout from '../../../layouts/Layout.astro';
         <li>Configure your MCP client with <code class="bg-primary-100 px-1 rounded font-mono">npx inbox.dog mcp</code> and env vars</li>
       </ol>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
-        <pre class="text-primary-100 font-mono"><code>{
-  "mcpServers": {
-    "inbox-dog": {
+        <pre class="text-primary-100 font-mono"><code>&#123;
+  "mcpServers": &#123;
+    "inbox-dog": &#123;
       "command": "npx",
       "args": ["-y", "inbox.dog", "mcp"],
-      "env": {
+      "env": &#123;
         "INBOX_DOG_CLIENT_ID": "your_client_id",
         "INBOX_DOG_CLIENT_SECRET": "your_client_secret"
-      }
-    }
-  }
-}</code></pre>
+      &#125;
+    &#125;
+  &#125;
+&#125;</code></pre>
       </div>
     </section>
 
