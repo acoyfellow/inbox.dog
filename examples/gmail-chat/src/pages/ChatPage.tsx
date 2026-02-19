@@ -86,6 +86,7 @@ export default function ChatPage({ userId }: { userId: string }) {
   const [sessionSyncing, setSessionSyncing] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [openConversationMenuId, setOpenConversationMenuId] = useState<string | null>(null);
+  const [isConversationDrawerOpen, setIsConversationDrawerOpen] = useState(false);
 
   const sortedConversations = useMemo(
     () => sortConversations(conversations),
@@ -112,7 +113,10 @@ export default function ChatPage({ userId }: { userId: string }) {
       setOpenConversationMenuId(null);
     };
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpenConversationMenuId(null);
+      if (event.key === "Escape") {
+        setOpenConversationMenuId(null);
+        setIsConversationDrawerOpen(false);
+      }
     };
     window.addEventListener("pointerdown", onPointerDown);
     window.addEventListener("keydown", onKeyDown);
@@ -199,11 +203,13 @@ export default function ChatPage({ userId }: { userId: string }) {
     );
     setActiveConversationId(id);
     setOpenConversationMenuId(null);
+    setIsConversationDrawerOpen(false);
   }, []);
 
   const markConversationActive = useCallback((conversationId: string) => {
     setActiveConversationId(conversationId);
     setOpenConversationMenuId(null);
+    setIsConversationDrawerOpen(false);
     setConversations((prev) =>
       prev.map((item) =>
         item.id === conversationId
@@ -265,19 +271,103 @@ export default function ChatPage({ userId }: { userId: string }) {
     setOpenConversationMenuId(null);
   }, [conversations, activeConversationId]);
 
+  const renderConversationList = () => (
+    <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-3 pb-3">
+      {sortedConversations.map((conversation) => {
+        const isActive = conversation.id === activeConversationId;
+        const isDefault = conversation.id === DEFAULT_CONVERSATION_ID;
+        return (
+          <div
+            key={conversation.id}
+            className={`relative flex items-start gap-1 rounded-md border p-1 ${
+              isActive
+                ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
+                : "border-neutral-300 bg-white text-neutral-800 dark:border-neutral-700 dark:bg-neutral-950/70 dark:text-neutral-200"
+            }`}
+          >
+            <button
+              type="button"
+              onClick={() => markConversationActive(conversation.id)}
+              className={`flex-1 rounded px-2 py-1 text-left transition-colors ${
+                isActive
+                  ? "hover:bg-white/10 dark:hover:bg-neutral-900/10"
+                  : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
+              }`}
+            >
+              <div className="truncate text-sm font-medium">{conversation.title}</div>
+              <div
+                className={`mt-1 truncate text-xs ${
+                  isActive
+                    ? "text-white/80 dark:text-neutral-700"
+                    : "text-neutral-500 dark:text-neutral-400"
+                }`}
+              >
+                {isDefault ? "Default conversation" : conversation.id}
+              </div>
+            </button>
+            <div className="relative" data-conversation-menu="true">
+              <button
+                type="button"
+                aria-label={`Conversation actions for ${conversation.title}`}
+                onClick={() =>
+                  setOpenConversationMenuId((prev) =>
+                    prev === conversation.id ? null : conversation.id,
+                  )
+                }
+                className={`rounded px-2 py-1 text-sm transition-colors ${
+                  isActive
+                    ? "text-white/80 hover:bg-white/10 hover:text-white dark:text-neutral-700 dark:hover:bg-neutral-900/10 dark:hover:text-neutral-900"
+                    : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                }`}
+              >
+                ...
+              </button>
+              {openConversationMenuId === conversation.id && (
+                <div className="absolute right-0 z-20 mt-1 w-28 rounded-md border border-neutral-300 bg-white p-1 shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
+                  <button
+                    type="button"
+                    onClick={() => renameConversation(conversation.id)}
+                    className="block w-full rounded px-2 py-1 text-left text-xs text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                  >
+                    Rename
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => deleteConversation(conversation.id)}
+                    disabled={isDefault}
+                    className="block w-full rounded px-2 py-1 text-left text-xs text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-950/40"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+
   return (
     <div className="flex h-screen flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
       <header className="flex flex-shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
         <h1 className="text-base font-medium">Gmail Chat</h1>
         <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => setIsConversationDrawerOpen(true)}
+            className="rounded-md px-2 py-1.5 text-sm text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-300 md:hidden"
+          >
+            Conversations
+          </button>
           <ThemeToggle />
           <a href="/logout" className="rounded-md px-2 py-1.5 text-sm text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-300">
             Log out
           </a>
         </div>
       </header>
-      <div className="flex min-h-0 flex-1 flex-col md:flex-row">
-        <aside className="flex w-full flex-shrink-0 flex-col border-b border-neutral-200 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-900/40 md:w-64 md:border-b-0 md:border-r">
+      <div className="flex min-h-0 flex-1">
+        <aside className="hidden w-64 flex-shrink-0 flex-col border-r border-neutral-200 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-900/40 md:flex">
           <div className="flex items-center justify-between px-3 py-2.5">
             <div className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
               Conversations
@@ -290,80 +380,7 @@ export default function ChatPage({ userId }: { userId: string }) {
               New
             </button>
           </div>
-          <div className="flex gap-2 overflow-x-auto px-3 pb-3 md:flex-1 md:flex-col md:overflow-y-auto md:overflow-x-hidden">
-            {sortedConversations.map((conversation) => {
-              const isActive = conversation.id === activeConversationId;
-              const isDefault = conversation.id === DEFAULT_CONVERSATION_ID;
-              return (
-                <div
-                  key={conversation.id}
-                  className={`relative flex min-w-[170px] items-start gap-1 rounded-md border p-1 md:min-w-0 ${
-                    isActive
-                      ? "border-neutral-900 bg-neutral-900 text-white dark:border-neutral-100 dark:bg-neutral-100 dark:text-neutral-900"
-                      : "border-neutral-300 bg-white text-neutral-800 dark:border-neutral-700 dark:bg-neutral-950/70 dark:text-neutral-200"
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => markConversationActive(conversation.id)}
-                    className={`flex-1 rounded px-2 py-1 text-left transition-colors ${
-                      isActive
-                        ? "hover:bg-white/10 dark:hover:bg-neutral-900/10"
-                        : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
-                    }`}
-                  >
-                    <div className="truncate text-sm font-medium">{conversation.title}</div>
-                    <div
-                      className={`mt-1 truncate text-xs ${
-                        isActive
-                          ? "text-white/80 dark:text-neutral-700"
-                          : "text-neutral-500 dark:text-neutral-400"
-                      }`}
-                    >
-                      {isDefault ? "Default conversation" : conversation.id}
-                    </div>
-                  </button>
-                  <div className="relative" data-conversation-menu="true">
-                    <button
-                      type="button"
-                      aria-label={`Conversation actions for ${conversation.title}`}
-                      onClick={() =>
-                        setOpenConversationMenuId((prev) =>
-                          prev === conversation.id ? null : conversation.id,
-                        )
-                      }
-                      className={`rounded px-2 py-1 text-sm transition-colors ${
-                        isActive
-                          ? "text-white/80 hover:bg-white/10 hover:text-white dark:text-neutral-700 dark:hover:bg-neutral-900/10 dark:hover:text-neutral-900"
-                          : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
-                      }`}
-                    >
-                      ...
-                    </button>
-                    {openConversationMenuId === conversation.id && (
-                      <div className="absolute right-0 z-20 mt-1 w-28 rounded-md border border-neutral-300 bg-white p-1 shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
-                        <button
-                          type="button"
-                          onClick={() => renameConversation(conversation.id)}
-                          className="block w-full rounded px-2 py-1 text-left text-xs text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
-                        >
-                          Rename
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => deleteConversation(conversation.id)}
-                          disabled={isDefault}
-                          className="block w-full rounded px-2 py-1 text-left text-xs text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-950/40"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+          {renderConversationList()}
         </aside>
         <div className="min-h-0 flex-1">
           {sessionError && (
@@ -379,6 +396,41 @@ export default function ChatPage({ userId }: { userId: string }) {
           />
         </div>
       </div>
+      {isConversationDrawerOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <button
+            type="button"
+            aria-label="Close conversations drawer"
+            onClick={() => setIsConversationDrawerOpen(false)}
+            className="absolute inset-0 bg-black/40"
+          />
+          <aside className="absolute left-0 top-0 flex h-full w-72 flex-col border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
+            <div className="flex items-center justify-between px-3 py-2.5">
+              <div className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+                Conversations
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={createConversation}
+                  className="rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-700 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                >
+                  New
+                </button>
+                <button
+                  type="button"
+                  aria-label="Close"
+                  onClick={() => setIsConversationDrawerOpen(false)}
+                  className="rounded-md px-2 py-1 text-sm text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                >
+                  x
+                </button>
+              </div>
+            </div>
+            {renderConversationList()}
+          </aside>
+        </div>
+      )}
     </div>
   );
 }

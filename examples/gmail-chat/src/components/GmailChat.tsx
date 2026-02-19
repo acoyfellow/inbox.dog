@@ -21,12 +21,7 @@ type ChatErrorView = {
 
 const MODEL_CONTEXT_WINDOW_TOKENS = 128_000;
 
-type ContextUsage = {
-  estimatedTokens: number;
-  percent: number;
-};
-
-function estimateContextUsage(messages: UIMessage[]): ContextUsage {
+function estimateContextPercent(messages: UIMessage[]): number {
   const estimatedChars = messages.reduce((total, message) => {
     return total + message.parts.reduce((partTotal, part) => {
       if (isTextUIPart(part)) {
@@ -41,8 +36,7 @@ function estimateContextUsage(messages: UIMessage[]): ContextUsage {
   }, 0);
 
   const estimatedTokens = Math.ceil(estimatedChars / 4);
-  const percent = Math.min(100, (estimatedTokens / MODEL_CONTEXT_WINDOW_TOKENS) * 100);
-  return { estimatedTokens, percent };
+  return Math.min(100, (estimatedTokens / MODEL_CONTEXT_WINDOW_TOKENS) * 100);
 }
 
 export function formatChatError(error: Error | undefined): ChatErrorView | null {
@@ -119,29 +113,6 @@ function MessageList({
   );
 }
 
-function ContextMeter({ usage }: { usage: ContextUsage }) {
-  return (
-    <div className="flex items-center gap-2 text-xs text-neutral-500 dark:text-neutral-400">
-      <span className="tabular-nums">{usage.percent.toFixed(1)}%</span>
-      <div className="h-1.5 w-20 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
-        <div
-          className={`h-full transition-all ${
-            usage.percent >= 85
-              ? "bg-amber-500"
-              : usage.percent >= 65
-              ? "bg-yellow-500"
-              : "bg-neutral-500 dark:bg-neutral-300"
-          }`}
-          style={{ width: `${Math.max(2, usage.percent)}%` }}
-        />
-      </div>
-      <span className="tabular-nums">
-        {usage.estimatedTokens.toLocaleString()} / {MODEL_CONTEXT_WINDOW_TOKENS.toLocaleString()}
-      </span>
-    </div>
-  );
-}
-
 export function GmailChat({
   userId,
   conversationId,
@@ -155,24 +126,14 @@ export function GmailChat({
     host,
   });
 
-  const { messages, sendMessage, status, error, clearError, clearHistory } = useAgentChat({
+  const { messages, sendMessage, status, error, clearError } = useAgentChat({
     agent,
   });
   const [input, setInput] = useState("");
   const isLoading = status === "submitted" || status === "streaming";
   const inputDisabled = isLoading || !conversationReady;
   const errorView = formatChatError(error);
-  const contextUsage = useMemo(() => estimateContextUsage(messages), [messages]);
-
-  const handleClearHistory = useCallback(() => {
-    if (messages.length === 0 || isLoading) return;
-    if (typeof window !== "undefined") {
-      const confirmed = window.confirm("Clear this conversation?");
-      if (!confirmed) return;
-    }
-    if (error) clearError();
-    clearHistory();
-  }, [messages.length, isLoading, error, clearError, clearHistory]);
+  const contextPercent = useMemo(() => estimateContextPercent(messages), [messages]);
 
   const handleSubmit = useCallback(
     (event: React.FormEvent<HTMLFormElement>) => {
@@ -189,17 +150,6 @@ export function GmailChat({
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b border-neutral-200 px-4 py-2 dark:border-neutral-800">
-        <ContextMeter usage={contextUsage} />
-        <button
-          type="button"
-          onClick={handleClearHistory}
-          disabled={messages.length === 0 || inputDisabled}
-          className="rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-700 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
-        >
-          Clear chat
-        </button>
-      </div>
       {!conversationReady && (
         <div className="border-b border-neutral-200 bg-neutral-50 px-4 py-2 text-xs text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-300">
           Preparing this conversation...
@@ -211,6 +161,7 @@ export function GmailChat({
         onChange={(e) => setInput(e.target.value)}
         onSubmit={handleSubmit}
         disabled={inputDisabled}
+        contextPercent={contextPercent}
       />
     </div>
   );
