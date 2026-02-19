@@ -1,13 +1,15 @@
 import { AIChatAgent } from "@cloudflare/ai-chat";
 import { convertToModelMessages, stepCountIs, streamText, tool } from "ai";
 import type { StreamTextOnFinishCallback, ToolSet } from "ai";
-import { createAnthropic } from "@ai-sdk/anthropic";
+import { createWorkersAI } from "workers-ai-provider";
 import { Effect, Schema } from "effect";
 import { ScriptExecutor } from "../services/ScriptExecutor";
 import { ScriptExecutorLive } from "../services/ScriptExecutor.live";
 import { GmailScriptArgs } from "../domain/script";
 import { SYSTEM_PROMPT } from "./system-prompt";
 import { runGmailScriptParams } from "./tools";
+
+const MODEL = "@cf/zai-org/glm-4.7-flash";
 
 interface GmailSession {
   access_token: string;
@@ -18,7 +20,7 @@ interface GmailSession {
 }
 
 interface AgentEnv {
-  ANTHROPIC_API_KEY: string;
+  AI: Ai;
   INBOX_DOG_CLIENT_ID: string;
   INBOX_DOG_CLIENT_SECRET: string;
   LOADER: WorkerLoader;
@@ -40,7 +42,7 @@ export class InboxAgent extends AIChatAgent<AgentEnv> {
     options?: { abortSignal: AbortSignal | undefined },
   ): Promise<Response | undefined> {
     const session = await this.ctx.storage.get<GmailSession>("gmail_session");
-    const anthropic = createAnthropic({ apiKey: this.env.ANTHROPIC_API_KEY });
+    const workersai = createWorkersAI({ binding: this.env.AI });
 
     const tools: ToolSet = {};
     let system = SYSTEM_PROMPT;
@@ -98,7 +100,7 @@ export class InboxAgent extends AIChatAgent<AgentEnv> {
 
     const modelMessages = await convertToModelMessages(this.messages);
     const result = streamText({
-      model: anthropic("claude-sonnet-4-20250514"),
+      model: workersai(MODEL as Parameters<typeof workersai>[0]),
       system,
       messages: modelMessages,
       tools,

@@ -10,6 +10,9 @@
     }
   },
   "main": "src/server.ts",
+  "ai": {
+    "binding": "AI"
+  },
   "assets": {
     "directory": "./dist",
     "binding": "ASSETS",
