@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { Button } from "@cloudflare/kumo/components/button";
 
 const THEME_CHANGE = "gmail-chat-theme-change";
 
@@ -28,10 +29,13 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
   };
 
   return (
-    <button
+    <Button
       type="button"
       onClick={toggle}
-      className={`rounded-md p-1.5 text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-300 ${className}`}
+      variant="ghost"
+      shape="square"
+      size="sm"
+      className={`text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:hover:bg-neutral-800 dark:hover:text-neutral-300 ${className}`}
       aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
     >
       {theme === "dark" ? (
@@ -44,6 +48,6 @@ export function ThemeToggle({ className = "" }: { className?: string }) {
           <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
         </svg>
       )}
-    </button>
+    </Button>
   );
 }

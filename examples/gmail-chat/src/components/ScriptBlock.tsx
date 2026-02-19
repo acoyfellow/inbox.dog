@@ -1,4 +1,5 @@
 import { Highlight, themes } from "prism-react-renderer";
+import { Button } from "@cloudflare/kumo/components/button";
 
 interface ScriptBlockProps {
   code: string;
@@ -8,13 +9,15 @@ interface ScriptBlockProps {
 function CopyButton({ text }: { text: string }) {
   const copy = () => navigator.clipboard.writeText(text);
   return (
-    <button
+    <Button
       type="button"
       onClick={copy}
-      className="text-xs text-neutral-500 hover:text-neutral-300"
+      variant="ghost"
+      size="xs"
+      className="h-auto px-1 py-0 text-xs text-neutral-500 hover:text-neutral-300"
     >
       Copy
-    </button>
+    </Button>
   );
 }
 

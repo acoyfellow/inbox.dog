@@ -17,6 +17,7 @@ export function ChatInput({
   contextPercent = 0,
 }: ChatInputProps) {
   const boundedPercent = Math.max(0, Math.min(100, contextPercent));
+  const marker = `${Math.max(2, boundedPercent).toFixed(2)}%`;
 
   return (
     <form className="chat-input-bar flex flex-shrink-0 gap-2 border-t border-neutral-200 p-4 dark:border-neutral-800" onSubmit={onSubmit}>
@@ -32,18 +33,17 @@ export function ChatInput({
         type="submit"
         variant="primary"
         disabled={disabled || !input.trim()}
-        className="relative overflow-hidden"
+        style={
+          {
+            backgroundImage:
+              `linear-gradient(to right, rgba(255,255,255,0.92) 0 ${marker}, rgba(255,255,255,0.28) ${marker} 100%)`,
+            backgroundRepeat: "no-repeat",
+            backgroundSize: "100% 2px",
+            backgroundPosition: "left bottom",
+          } as React.CSSProperties
+        }
       >
-        <span className="relative z-10">Send</span>
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 bg-white/25"
-        >
-          <span
-            className="block h-full bg-white/90 transition-all"
-            style={{ width: `${Math.max(2, boundedPercent)}%` }}
-          />
-        </span>
+        Send
       </Button>
     </form>
   );

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Button } from "@cloudflare/kumo/components/button";
 import GmailChat from "../components/GmailChat";
 import { ThemeToggle } from "../components/ThemeToggle";
 import {
@@ -285,10 +286,12 @@ export default function ChatPage({ userId }: { userId: string }) {
                 : "border-neutral-300 bg-white text-neutral-800 dark:border-neutral-700 dark:bg-neutral-950/70 dark:text-neutral-200"
             }`}
           >
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => markConversationActive(conversation.id)}
-              className={`flex-1 rounded px-2 py-1 text-left transition-colors ${
+              className={`h-auto w-full justify-start px-2 py-1 text-left ${
                 isActive
                   ? "hover:bg-white/10 dark:hover:bg-neutral-900/10"
                   : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
@@ -304,41 +307,48 @@ export default function ChatPage({ userId }: { userId: string }) {
               >
                 {isDefault ? "Default conversation" : conversation.id}
               </div>
-            </button>
+            </Button>
             <div className="relative" data-conversation-menu="true">
-              <button
+              <Button
                 type="button"
                 aria-label={`Conversation actions for ${conversation.title}`}
+                shape="square"
+                size="sm"
+                variant="ghost"
                 onClick={() =>
                   setOpenConversationMenuId((prev) =>
                     prev === conversation.id ? null : conversation.id,
                   )
                 }
-                className={`rounded px-2 py-1 text-sm transition-colors ${
+                className={`text-sm ${
                   isActive
                     ? "text-white/80 hover:bg-white/10 hover:text-white dark:text-neutral-700 dark:hover:bg-neutral-900/10 dark:hover:text-neutral-900"
                     : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                 }`}
               >
                 ...
-              </button>
+              </Button>
               {openConversationMenuId === conversation.id && (
                 <div className="absolute right-0 z-20 mt-1 w-28 rounded-md border border-neutral-300 bg-white p-1 shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => renameConversation(conversation.id)}
-                    className="block w-full rounded px-2 py-1 text-left text-xs text-neutral-700 transition-colors hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                    className="h-auto w-full justify-start px-2 py-1 text-left text-xs text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
                   >
                     Rename
-                  </button>
-                  <button
+                  </Button>
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => deleteConversation(conversation.id)}
                     disabled={isDefault}
-                    className="block w-full rounded px-2 py-1 text-left text-xs text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-950/40"
+                    className="h-auto w-full justify-start px-2 py-1 text-left text-xs text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-950/40"
                   >
                     Delete
-                  </button>
+                  </Button>
                 </div>
               )}
             </div>
@@ -353,13 +363,15 @@ export default function ChatPage({ userId }: { userId: string }) {
       <header className="flex flex-shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
         <h1 className="text-base font-medium">Gmail Chat</h1>
         <div className="flex items-center gap-1">
-          <button
+          <Button
             type="button"
+            variant="ghost"
+            size="sm"
             onClick={() => setIsConversationDrawerOpen(true)}
-            className="rounded-md px-2 py-1.5 text-sm text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-300 md:hidden"
+            className="text-sm text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-300 md:hidden"
           >
             Conversations
-          </button>
+          </Button>
           <ThemeToggle />
           <a href="/logout" className="rounded-md px-2 py-1.5 text-sm text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-300">
             Log out
@@ -372,13 +384,15 @@ export default function ChatPage({ userId }: { userId: string }) {
             <div className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
               Conversations
             </div>
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={createConversation}
-              className="rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-700 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+              className="text-xs"
             >
               New
-            </button>
+            </Button>
           </div>
           {renderConversationList()}
         </aside>
@@ -410,21 +424,26 @@ export default function ChatPage({ userId }: { userId: string }) {
                 Conversations
               </div>
               <div className="flex items-center gap-2">
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={createConversation}
-                  className="rounded-md border border-neutral-300 px-2 py-1 text-xs text-neutral-700 transition-colors hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                  className="text-xs"
                 >
                   New
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
+                  shape="square"
                   aria-label="Close"
                   onClick={() => setIsConversationDrawerOpen(false)}
-                  className="rounded-md px-2 py-1 text-sm text-neutral-500 transition-colors hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                  className="text-sm text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                 >
                   x
-                </button>
+                </Button>
               </div>
             </div>
             {renderConversationList()}
