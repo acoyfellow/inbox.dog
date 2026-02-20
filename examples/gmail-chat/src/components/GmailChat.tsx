@@ -137,9 +137,11 @@ export function GmailChat({
     agent,
   });
   const [input, setInput] = useState("");
+  const [hasAttemptedSend, setHasAttemptedSend] = useState(false);
   const isLoading = status === "submitted" || status === "streaming";
   const inputDisabled = isLoading || !conversationReady;
-  const errorView = formatChatError(error);
+  // Only show AI errors after user has tried to send a message
+  const errorView = hasAttemptedSend ? formatChatError(error) : null;
   const contextPercent = useMemo(() => estimateContextPercent(messages), [messages]);
 
   const handleSubmit = useCallback(
@@ -147,6 +149,7 @@ export function GmailChat({
       event.preventDefault();
       const text = input.trim();
       if (!text || inputDisabled) return;
+      setHasAttemptedSend(true);
       if (error) clearError();
       onUserMessage?.(text);
       void sendMessage({ text });
