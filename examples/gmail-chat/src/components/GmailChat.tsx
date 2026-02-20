@@ -125,6 +125,7 @@ export function GmailChat({
 }: GmailChatProps) {
   const host = typeof window !== "undefined" ? window.location.origin : "";
   const roomName = toConversationRoomName(userId, conversationId);
+  const [hasAttemptedSend, setHasAttemptedSend] = useState(false);
   
   const agent = useAgent({
     agent: "inbox-agent",
@@ -132,15 +133,9 @@ export function GmailChat({
     host,
   });
 
-  const [hasAttemptedSend, setHasAttemptedSend] = useState(false);
-  const chatState = hasAttemptedSend
-    ? useAgentChat({ agent })
-    : { messages: [], sendMessage: () => {}, status: "ready" as const, error: undefined, clearError: () => {} };
-  const messages = chatState.messages;
-  const sendMessage = chatState.sendMessage;
-  const status = chatState.status;
-  const error = chatState.error;
-  const clearError = chatState.clearError;
+  const { messages, sendMessage, status, error, clearError } = useAgentChat({
+    agent,
+  });
   const [input, setInput] = useState("");
   const isLoading = status === "submitted" || status === "streaming";
   const inputDisabled = isLoading || !conversationReady;
