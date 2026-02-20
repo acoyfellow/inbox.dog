@@ -61,14 +61,6 @@ export interface KVService {
   // Gmail tokens (web bind, per API key)
   readonly getGmailTokens: (clientId: string) => Effect.Effect<GmailTokens, NotFoundError | DecodeError>;
   readonly putGmailTokens: (clientId: string, data: GmailTokens, ttlSeconds?: number) => Effect.Effect<void, never>;
-
-  // Credit operations
-  // NOTE: These do read-modify-write on KV which is NOT truly atomic.
-  // KV is eventually consistent — concurrent writes can race.
-  // For production credit handling, migrate to D1 (SQL transactions)
-  // or Durable Objects (single-threaded actor model) for true atomicity.
-  readonly deductCredit: (clientId: string) => Effect.Effect<ApiKey, NotFoundError | DecodeError>;
-  readonly addCredits: (clientId: string, amount: number) => Effect.Effect<ApiKey, NotFoundError | DecodeError>;
 }
 
 export const KVService = Context.GenericTag<KVService>('KVService');
@@ -287,26 +279,6 @@ export const makeKVService = (kv: KVNamespace, encryptionSecret?: string): KVSer
       yield* Effect.promise(() =>
         kv.put(`gmail_tokens:${clientId}`, value, { expirationTtl: ttlSeconds })
       );
-    });
-  },
-
-  // -- Credit operations (read-modify-write, NOT truly atomic on KV) --------
-
-  deductCredit(clientId) {
-    return Effect.gen(function* () {
-      const apiKey = yield* getAndDecode(kv, `apikey:${clientId}`, ApiKeySchema, 'ApiKey', clientId);
-      const updated: ApiKey = { ...apiKey, credits: apiKey.credits - 1 };
-      yield* Effect.promise(() => kv.put(`apikey:${clientId}`, JSON.stringify(updated)));
-      return updated;
-    });
-  },
-
-  addCredits(clientId, amount) {
-    return Effect.gen(function* () {
-      const apiKey = yield* getAndDecode(kv, `apikey:${clientId}`, ApiKeySchema, 'ApiKey', clientId);
-      const updated: ApiKey = { ...apiKey, credits: apiKey.credits + amount };
-      yield* Effect.promise(() => kv.put(`apikey:${clientId}`, JSON.stringify(updated)));
-      return updated;
     });
   },
 });

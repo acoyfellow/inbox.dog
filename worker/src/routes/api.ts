@@ -37,7 +37,6 @@ apiRoutes.post('/keys', async (c) => {
       client_id: apiKey.clientId,
       client_secret: apiKey.clientSecret,
       name: apiKey.name,
-      credits: apiKey.credits,
       redirect_uris: apiKey.redirectUris ?? [],
     };
   });
@@ -79,7 +78,6 @@ apiRoutes.get('/keys/:clientId', async (c) => {
     return {
       client_id: apiKey.clientId,
       name: apiKey.name,
-      credits: apiKey.credits,
       created_at: apiKey.createdAt,
     };
   });

@@ -10,7 +10,6 @@ const mockApiKey = {
   clientSecret: 'sk_secret123',
   name: 'test',
   createdAt: 123,
-  credits: 10,
 };
 
 const getApiKey = vi.fn();
@@ -32,8 +31,6 @@ const mockKV: KVService = {
   deleteBindSession: vi.fn(),
   getGmailTokens: vi.fn(),
   putGmailTokens: vi.fn(),
-  deductCredit: vi.fn(),
-  addCredits: vi.fn(),
 };
 
 const KVLayer = Layer.succeed(KVService, mockKV);

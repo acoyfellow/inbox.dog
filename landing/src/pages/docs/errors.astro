@@ -14,10 +14,10 @@ import Layout from '../../layouts/Layout.astro';
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
         <pre class="text-primary-100 font-mono"><code class="language-json">{`{
   "error": {
-    "code": "INSUFFICIENT_CREDITS",
-    "message": "No credits remaining. Current balance: 0",
-    "action": "Purchase credits via POST /api/checkout",
-    "docs": "https://inbox.dog/docs/errors#INSUFFICIENT_CREDITS"
+    "code": "INVALID_CREDENTIALS",
+    "message": "Invalid client_id or client_secret",
+    "action": "Check your API credentials",
+    "docs": "https://inbox.dog/docs/errors#INVALID_CREDENTIALS"
   }
 }`}</code></pre>
       </div>
@@ -42,12 +42,6 @@ import Layout from '../../layouts/Layout.astro';
             <td class="p-2">401</td>
             <td class="p-2">Invalid client_id or client_secret</td>
             <td class="p-2">Check your API credentials</td>
-          </tr>
-          <tr id="INSUFFICIENT_CREDITS" class="border-b border-primary-200">
-            <td class="p-2 font-mono text-xs">INSUFFICIENT_CREDITS</td>
-            <td class="p-2">402</td>
-            <td class="p-2">No credits remaining</td>
-            <td class="p-2">Purchase credits via <code class="font-mono text-xs">POST /api/checkout</code></td>
           </tr>
           <tr id="VALIDATION_ERROR" class="border-b border-primary-200">
             <td class="p-2 font-mono text-xs">VALIDATION_ERROR</td>

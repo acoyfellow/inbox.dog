@@ -126,21 +126,24 @@ export function GmailChat({
   const host = typeof window !== "undefined" ? window.location.origin : "";
   const roomName = toConversationRoomName(userId, conversationId);
   
-  // Don't initialize agent when no conversation
   const agent = useAgent({
     agent: "inbox-agent",
     name: roomName,
     host,
   });
 
-  const { messages, sendMessage, status, error, clearError } = useAgentChat({
-    agent,
-  });
-  const [input, setInput] = useState("");
   const [hasAttemptedSend, setHasAttemptedSend] = useState(false);
+  const chatState = hasAttemptedSend
+    ? useAgentChat({ agent })
+    : { messages: [], sendMessage: () => {}, status: "ready" as const, error: undefined, clearError: () => {} };
+  const messages = chatState.messages;
+  const sendMessage = chatState.sendMessage;
+  const status = chatState.status;
+  const error = chatState.error;
+  const clearError = chatState.clearError;
+  const [input, setInput] = useState("");
   const isLoading = status === "submitted" || status === "streaming";
   const inputDisabled = isLoading || !conversationReady;
-  // Only show AI errors after user has tried to send a message
   const errorView = hasAttemptedSend ? formatChatError(error) : null;
   const contextPercent = useMemo(() => estimateContextPercent(messages), [messages]);
 

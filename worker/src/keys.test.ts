@@ -23,8 +23,6 @@ const mockKV: KVService = {
   deleteBindSession: vi.fn(),
   getGmailTokens: vi.fn(),
   putGmailTokens: vi.fn(),
-  deductCredit: vi.fn(),
-  addCredits: vi.fn(),
 };
 
 const KVLayer = Layer.succeed(KVService, mockKV);

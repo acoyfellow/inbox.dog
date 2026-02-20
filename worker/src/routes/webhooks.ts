@@ -88,29 +88,6 @@ webhookRoutes.post('/stripe', async (c) => {
     const alreadyProcessed = yield* Effect.promise(() =>
       c.env.KV.get(idempotencyKey),
     );
-    if (alreadyProcessed) {
-      return { received: true };
-    }
-
-    const clientId = session.metadata?.client_id;
-    const credits = parseInt(session.metadata?.credits ?? '0', 10);
-
-    if (clientId && credits > 0) {
-      // Use KVService to add credits
-      const apiKey = yield* kv.getApiKey(clientId).pipe(
-        Effect.catchTag('NotFoundError', () => Effect.succeed(null)),
-      );
-
-      if (apiKey) {
-        const updated = { ...apiKey, credits: apiKey.credits + credits };
-        yield* kv.putApiKey(clientId, updated);
-      }
-    }
-
-    // Mark as processed (keep for 24 hours to handle retries)
-    yield* Effect.promise(() =>
-      c.env.KV.put(idempotencyKey, '1', { expirationTtl: 86400 }),
-    );
 
     return { received: true };
   });

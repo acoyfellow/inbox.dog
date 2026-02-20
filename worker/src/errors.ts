@@ -5,11 +5,6 @@ export class InvalidCredentialsError extends Data.TaggedError('InvalidCredential
   readonly message: string;
 }> {}
 
-export class InsufficientCreditsError extends Data.TaggedError('InsufficientCreditsError')<{
-  readonly clientId: string;
-  readonly credits: number;
-}> {}
-
 export class OAuthError extends Data.TaggedError('OAuthError')<{
   readonly message: string;
   readonly code?: string;
@@ -42,7 +37,6 @@ export class StripeError extends Data.TaggedError('StripeError')<{
 // Union of all app errors
 export type AppError =
   | InvalidCredentialsError
-  | InsufficientCreditsError
   | OAuthError
   | TokenExchangeError
   | StateError

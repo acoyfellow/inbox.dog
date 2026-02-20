@@ -67,7 +67,6 @@ export const createApiKey = (
       clientSecret,
       name: opts.name ?? 'default',
       createdAt: Date.now(),
-      credits: 10,
       redirectUris: [...redirectUris],
     };
 

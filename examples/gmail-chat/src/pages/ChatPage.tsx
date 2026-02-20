@@ -23,7 +23,7 @@ const DEFAULT_CONVERSATION: ConversationSummary = {
 };
 
 function normalizeConversations(input: unknown): ConversationSummary[] {
-  if (!Array.isArray(input)) return [DEFAULT_CONVERSATION];
+  if (!Array.isArray(input)) return [];
   const next: ConversationSummary[] = [];
   for (const value of input) {
     const row = value as Partial<ConversationSummary>;
@@ -36,9 +36,6 @@ function normalizeConversations(input: unknown): ConversationSummary[] {
       : "New conversation";
     const updatedAt = typeof row.updatedAt === "number" ? row.updatedAt : 0;
     next.push({ id, title, updatedAt });
-  }
-  if (!next.some((x) => x.id === DEFAULT_CONVERSATION_ID)) {
-    next.push(DEFAULT_CONVERSATION);
   }
   return next;
 }

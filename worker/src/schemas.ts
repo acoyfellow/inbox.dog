@@ -10,8 +10,6 @@ export const ApiKeySchema = Schema.Struct({
   clientSecret: Schema.String,
   name: Schema.String,
   createdAt: Schema.Number,
-  credits: Schema.Number,
-  stripeCustomerId: Schema.optional(Schema.String),
   redirectUris: Schema.optional(Schema.Array(Schema.String)),
 });
 
@@ -166,7 +164,6 @@ export type RefreshTokenRequest = Schema.Schema.Type<typeof RefreshTokenRequestS
 export const CheckoutRequestSchema = Schema.Struct({
   client_id: Schema.String,
   client_secret: Schema.String,
-  credits: Schema.optional(Schema.Number),
 });
 
 export type CheckoutRequest = Schema.Schema.Type<typeof CheckoutRequestSchema>;
