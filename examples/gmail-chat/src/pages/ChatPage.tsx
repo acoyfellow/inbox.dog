@@ -96,7 +96,7 @@ export default function ChatPage({ userId }: { userId: string }) {
 
   useEffect(() => {
     if (!sortedConversations.some((x) => x.id === activeConversationId)) {
-      setActiveConversationId(DEFAULT_CONVERSATION_ID);
+      setActiveConversationId(sortedConversations[0]?.id ?? "");
     }
   }, [sortedConversations, activeConversationId]);
 
@@ -257,7 +257,7 @@ export default function ChatPage({ userId }: { userId: string }) {
   }, [conversations]);
 
   const deleteConversation = useCallback((conversationId: string) => {
-    if (conversationId === DEFAULT_CONVERSATION_ID || typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
     const conversation = conversations.find((x) => x.id === conversationId);
     if (!conversation) return;
     const confirmed = window.confirm(`Delete "${conversation.title}"?`);
@@ -267,101 +267,126 @@ export default function ChatPage({ userId }: { userId: string }) {
     );
     setConversations(remaining);
     if (activeConversationId === conversationId) {
-      setActiveConversationId(remaining[0]?.id ?? DEFAULT_CONVERSATION_ID);
+      setActiveConversationId(remaining[0]?.id ?? "");
     }
     setOpenConversationMenuId(null);
   }, [conversations, activeConversationId]);
 
-  const renderConversationList = () => (
-    <div className="flex flex-1 flex-col gap-2 overflow-y-auto px-3 pb-3">
-      {sortedConversations.map((conversation) => {
-        const isActive = conversation.id === activeConversationId;
-        const isDefault = conversation.id === DEFAULT_CONVERSATION_ID;
-        return (
-          <div
-            key={conversation.id}
-            className={`relative flex items-start gap-1 rounded-md border border-neutral-300 bg-white text-neutral-800 dark:border-neutral-700 dark:bg-neutral-950/70 dark:text-neutral-200`}
+  const renderConversationList = () => {
+    if (sortedConversations.length === 0) {
+      return (
+        <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 text-center">
+          <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
+            No conversations yet
+          </p>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={createConversation}
           >
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={() => markConversationActive(conversation.id)}
-              className={`h-auto w-auto justify-start p-3 text-left ${
-                isActive
-                  ? "hover:bg-white/10 dark:hover:bg-neutral-900/10"
-                  : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
-              }`}
+            Start new conversation
+          </Button>
+        </div>
+      );
+    }
+    return (
+      <div className="flex flex-1 flex-col gap-2.5 overflow-y-auto px-2 pb-3">
+        {sortedConversations.map((conversation) => {
+          const isActive = conversation.id === activeConversationId;
+          return (
+            <div
+              key={conversation.id}
+              className={`relative flex items-center rounded-md border border-neutral-300 bg-white text-neutral-800 dark:border-neutral-700 dark:bg-neutral-950/70 dark:text-neutral-200`}
             >
-              <div className="truncate text-sm font-medium">{conversation.title}</div>
-              
-            </Button>
-            <div className="relative" data-conversation-menu="true">
               <Button
                 type="button"
-                aria-label={`Conversation actions for ${conversation.title}`}
-                shape="square"
-                
                 variant="ghost"
-                onClick={() =>
-                  setOpenConversationMenuId((prev) =>
-                    prev === conversation.id ? null : conversation.id,
-                  )
-                }
-                className={`p-3 text-sm ${
+                size="sm"
+                onClick={() => markConversationActive(conversation.id)}
+                className={`h-auto flex-1 justify-start px-3 py-3 text-left ${
                   isActive
-                    ? "text-white/80 hover:bg-white/10 hover:text-white dark:text-neutral-700 dark:hover:bg-neutral-900/10 dark:hover:text-neutral-900"
-                    : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                    ? "hover:bg-white/10 dark:hover:bg-neutral-900/10"
+                    : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
                 }`}
               >
-                ...
+                <span className="truncate text-sm font-medium">{conversation.title}</span>
               </Button>
-              {openConversationMenuId === conversation.id && (
-                <div className="absolute right-0 z-20 mt-1 w-28 rounded-md border border-neutral-300 bg-white p-1 shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => renameConversation(conversation.id)}
-                    className="h-auto w-full justify-start px-2 py-1 text-left text-xs text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
-                  >
-                    Rename
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => deleteConversation(conversation.id)}
-                    disabled={isDefault}
-                    className="h-auto w-full justify-start px-2 py-1 text-left text-xs text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-950/40"
-                  >
-                    Delete
-                  </Button>
-                </div>
-              )}
+              <div className="relative shrink-0" data-conversation-menu="true">
+                <Button
+                  type="button"
+                  aria-label={`Conversation actions for ${conversation.title}`}
+                  shape="square"
+                  variant="ghost"
+                  onClick={() =>
+                    setOpenConversationMenuId((prev) =>
+                      prev === conversation.id ? null : conversation.id,
+                    )
+                  }
+                  className={`p-3 text-sm ${
+                    isActive
+                      ? "text-white/80 hover:bg-white/10 hover:text-white dark:text-neutral-700 dark:hover:bg-neutral-900/10 dark:hover:text-neutral-900"
+                      : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                  }`}
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <circle cx="12" cy="12" r="1.5"/>
+                    <circle cx="12" cy="5" r="1.5"/>
+                    <circle cx="12" cy="19" r="1.5"/>
+                  </svg>
+                </Button>
+                {openConversationMenuId === conversation.id && (
+                  <div className="absolute right-0 z-20 mt-1 w-32 rounded-md border border-neutral-300 bg-white p-1.5 shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => renameConversation(conversation.id)}
+                      className="h-auto w-full justify-start px-3 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                    >
+                      Rename
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => deleteConversation(conversation.id)}
+                      className="h-auto w-full justify-start px-3 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-950/40"
+                    >
+                      Delete
+                    </Button>
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        );
-      })}
-    </div>
-  );
+          );
+        })}
+      </div>
+    );
+  };
 
   return (
-    <div className="flex h-screen flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100">
+    <div className="flex h-[100dvh] flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 overflow-hidden">
       <header className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
-        <h1 className="text-base font-medium">Gmail Chat</h1>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-3">
           <Button
             type="button"
             variant="ghost"
             size="sm"
+            shape="square"
             onClick={() => setIsConversationDrawerOpen(true)}
-            className="text-sm text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-300 md:hidden"
+            aria-label="Open conversations"
+            className="text-neutral-500 hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-300 md:hidden -ml-2"
           >
-            Conversations
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+            </svg>
           </Button>
+          <h1 className="text-base font-medium">Gmail Chat</h1>
+        </div>
+        <div className="flex items-center gap-2">
           <ThemeToggle />
-          <a href="/logout" className="rounded-md px-2 py-1.5 text-sm text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-300">
+          <a href="/logout" className="rounded-md px-3 py-2 text-sm text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-300">
             Log out
           </a>
         </div>
@@ -394,7 +419,9 @@ export default function ChatPage({ userId }: { userId: string }) {
             userId={userId}
             conversationId={activeConversationId}
             conversationReady={!sessionSyncing}
+            hasConversation={!!activeConversationId}
             onUserMessage={handleConversationMessage}
+            onCreateConversation={createConversation}
           />
         </div>
       </div>
@@ -428,9 +455,12 @@ export default function ChatPage({ userId }: { userId: string }) {
                   shape="square"
                   aria-label="Close"
                   onClick={() => setIsConversationDrawerOpen(false)}
-                  className="text-sm text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                  className="p-2 text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                 >
-                  x
+                  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                  </svg>
                 </Button>
               </div>
             </div>

@@ -10,6 +10,7 @@ export function normalizeConversationId(value: unknown): string | null {
 }
 
 export function toConversationRoomName(userId: string, conversationId: string): string {
+  if (!conversationId) return "";
   if (conversationId === DEFAULT_CONVERSATION_ID) return userId;
   return `${userId}__${conversationId}`;
 }

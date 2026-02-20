@@ -11,7 +11,9 @@ interface GmailChatProps {
   userId: string;
   conversationId: string;
   conversationReady: boolean;
+  hasConversation: boolean;
   onUserMessage?: (text: string) => void;
+  onCreateConversation?: () => void;
 }
 
 type ChatErrorView = {
@@ -117,12 +119,17 @@ export function GmailChat({
   userId,
   conversationId,
   conversationReady,
+  hasConversation,
   onUserMessage,
+  onCreateConversation,
 }: GmailChatProps) {
   const host = typeof window !== "undefined" ? window.location.origin : "";
+  const roomName = toConversationRoomName(userId, conversationId);
+  
+  // Don't initialize agent when no conversation
   const agent = useAgent({
     agent: "inbox-agent",
-    name: toConversationRoomName(userId, conversationId),
+    name: roomName,
     host,
   });
 
@@ -147,6 +154,23 @@ export function GmailChat({
     },
     [input, inputDisabled, sendMessage, error, clearError, onUserMessage]
   );
+
+  if (!hasConversation || !roomName) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center px-4 py-8 text-center">
+        <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
+          No conversation selected
+        </p>
+        <button
+          type="button"
+          onClick={onCreateConversation}
+          className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+        >
+          Start new conversation
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col">
