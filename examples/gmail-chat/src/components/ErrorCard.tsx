@@ -90,10 +90,10 @@ function formatError(error: ErrorPayload): { title: string; detail: string; hint
 export function ErrorCard({ error }: { error: ErrorPayload }) {
   const view = formatError(error);
   return (
-    <div className="mx-4 my-2 rounded-md border border-red-500/40 bg-red-950/40 p-3 text-sm text-red-100">
+    <div className="mx-4 my-2 rounded-md border border-red-500/40 bg-red-950/40 p-3 text-base text-red-100">
       <div className="mb-1 font-medium">{view.title}</div>
       <div className="text-red-100/90">{view.detail}</div>
-      <div className="mt-2 text-xs text-red-200/90">{view.hint}</div>
+      <div className="mt-2 text-sm text-red-200/90">{view.hint}</div>
     </div>
   );
 }

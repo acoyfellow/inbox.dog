@@ -45,7 +45,7 @@ export function ResultCards({ result }: { result: unknown }) {
     return Match.valueTags(decoded.value, {
       EmailListResult: ({ emails }) => (
         <div className="space-y-1 px-4 py-2">
-          <div className="mb-2 text-xs text-neutral-500">
+          <div className="mb-2 text-sm text-neutral-500">
             {emails.length} email{emails.length !== 1 ? "s" : ""}
           </div>
           {emails.map((email) => (
@@ -54,7 +54,7 @@ export function ResultCards({ result }: { result: unknown }) {
         </div>
       ),
       ActionResult: ({ action, targetIds, detail }) => (
-        <div className="flex items-center gap-2 px-4 py-2 text-sm text-green-400">
+        <div className="flex items-center gap-2 px-4 py-2 text-base text-green-400">
           <span>
             {action} {targetIds.length} email{targetIds.length !== 1 ? "s" : ""}
           </span>
@@ -62,7 +62,7 @@ export function ResultCards({ result }: { result: unknown }) {
         </div>
       ),
       RawResult: ({ data }) => (
-        <pre className="overflow-x-auto px-4 py-2 font-mono text-xs text-neutral-400">
+        <pre className="overflow-x-auto px-4 py-2 font-mono text-sm text-neutral-400">
           {JSON.stringify(data, null, 2)}
         </pre>
       ),
@@ -70,7 +70,7 @@ export function ResultCards({ result }: { result: unknown }) {
   }
 
   return (
-    <pre className="overflow-x-auto px-4 py-2 font-mono text-xs text-neutral-400">
+    <pre className="overflow-x-auto px-4 py-2 font-mono text-sm text-neutral-400">
       {JSON.stringify(parsedResult, null, 2)}
     </pre>
   );

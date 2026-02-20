@@ -82,7 +82,7 @@ function MessageList({
       {messages.map((msg) => (
         <div
           key={msg.id}
-          className={`max-w-[85%] space-y-2 whitespace-pre-wrap rounded-lg px-4 py-2.5 text-sm ${
+          className={`max-w-[85%] space-y-2 whitespace-pre-wrap rounded-lg px-4 py-2.5 text-base ${
             msg.role === "user"
               ? "ml-auto bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100"
               : "bg-neutral-100 text-neutral-800 dark:bg-neutral-900 dark:text-neutral-200"
@@ -101,12 +101,12 @@ function MessageList({
         </div>
       ))}
       {isLoading && (
-        <div className="max-w-[85%] rounded-lg bg-neutral-100 px-4 py-2.5 text-sm text-neutral-500 dark:bg-neutral-900">
+        <div className="max-w-[85%] rounded-lg bg-neutral-100 px-4 py-2.5 text-base text-neutral-500 dark:bg-neutral-900">
           ...
         </div>
       )}
       {errorView && (
-        <div className="max-w-[85%] rounded-lg border border-red-400/50 bg-red-950/40 px-4 py-3 text-sm text-red-100">
+        <div className="max-w-[85%] rounded-lg border border-red-400/50 bg-red-950/40 px-4 py-3 text-base text-red-100">
           <div className="font-medium">{errorView.title}</div>
           <div className="mt-1 text-red-100/90">{errorView.detail}</div>
         </div>
@@ -158,13 +158,13 @@ export function GmailChat({
   if (!hasConversation || !roomName) {
     return (
       <div className="flex h-full flex-col items-center justify-center px-4 py-8 text-center">
-        <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
+        <p className="mb-4 text-base text-neutral-500 dark:text-neutral-400">
           No conversation selected
         </p>
         <button
           type="button"
           onClick={onCreateConversation}
-          className="rounded-md bg-neutral-900 px-4 py-2 text-sm text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+          className="rounded-md bg-neutral-900 px-4 py-2 text-base text-white hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
         >
           Start new conversation
         </button>
@@ -175,7 +175,7 @@ export function GmailChat({
   return (
     <div className="flex h-full flex-col">
       {!conversationReady && (
-        <div className="border-b border-neutral-200 bg-neutral-50 px-4 py-2 text-xs text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-300">
+        <div className="border-b border-neutral-200 bg-neutral-50 px-4 py-2 text-sm text-neutral-600 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-300">
           Preparing this conversation...
         </div>
       )}

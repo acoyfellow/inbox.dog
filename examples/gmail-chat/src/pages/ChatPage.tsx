@@ -276,7 +276,7 @@ export default function ChatPage({ userId }: { userId: string }) {
     if (sortedConversations.length === 0) {
       return (
         <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 text-center">
-          <p className="mb-4 text-sm text-neutral-500 dark:text-neutral-400">
+          <p className="mb-4 text-base text-neutral-500 dark:text-neutral-400">
             No conversations yet
           </p>
           <Button
@@ -310,7 +310,7 @@ export default function ChatPage({ userId }: { userId: string }) {
                     : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
                 }`}
               >
-                <span className="truncate text-sm font-medium">{conversation.title}</span>
+                <span className="truncate text-base font-medium">{conversation.title}</span>
               </Button>
               <div className="relative shrink-0" data-conversation-menu="true">
                 <Button
@@ -323,7 +323,7 @@ export default function ChatPage({ userId }: { userId: string }) {
                       prev === conversation.id ? null : conversation.id,
                     )
                   }
-                  className={`p-3 text-sm ${
+                  className={`p-3 text-base ${
                     isActive
                       ? "text-white/80 hover:bg-white/10 hover:text-white dark:text-neutral-700 dark:hover:bg-neutral-900/10 dark:hover:text-neutral-900"
                       : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
@@ -342,7 +342,7 @@ export default function ChatPage({ userId }: { userId: string }) {
                       variant="ghost"
                       size="sm"
                       onClick={() => renameConversation(conversation.id)}
-                      className="h-auto w-full justify-start px-3 py-2.5 text-left text-sm text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                      className="h-auto w-full justify-start px-3 py-2.5 text-left text-base text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800"
                     >
                       Rename
                     </Button>
@@ -351,7 +351,7 @@ export default function ChatPage({ userId }: { userId: string }) {
                       variant="ghost"
                       size="sm"
                       onClick={() => deleteConversation(conversation.id)}
-                      className="h-auto w-full justify-start px-3 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-950/40"
+                      className="h-auto w-full justify-start px-3 py-2.5 text-left text-base text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 dark:text-red-400 dark:hover:bg-red-950/40"
                     >
                       Delete
                     </Button>
@@ -382,11 +382,11 @@ export default function ChatPage({ userId }: { userId: string }) {
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </Button>
-          <h1 className="text-base font-medium">Gmail Chat</h1>
+          <h1 className="text-lg font-medium">Gmail Chat</h1>
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <a href="/logout" className="rounded-md px-3 py-2 text-sm text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-300">
+          <a href="/logout" className="rounded-md px-3 py-2 text-base text-neutral-500 transition-colors hover:bg-neutral-200 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-300">
             Log out
           </a>
         </div>
@@ -394,7 +394,7 @@ export default function ChatPage({ userId }: { userId: string }) {
       <div className="flex min-h-0 flex-1">
         <aside className="hidden w-64 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-900/40 md:flex">
           <div className="flex items-center justify-between px-3 py-2.5">
-            <div className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            <div className="text-sm font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
               Conversations
             </div>
             <Button
@@ -402,7 +402,7 @@ export default function ChatPage({ userId }: { userId: string }) {
               variant="secondary"
               size="sm"
               onClick={createConversation}
-              className="text-xs"
+              className="text-sm"
             >
               +
             </Button>
@@ -411,7 +411,7 @@ export default function ChatPage({ userId }: { userId: string }) {
         </aside>
         <div className="min-h-0 flex-1">
           {sessionError && (
-            <div className="border-b border-amber-300/70 bg-amber-50 px-4 py-2 text-sm text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
+            <div className="border-b border-amber-300/70 bg-amber-50 px-4 py-2 text-base text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
               {sessionError}
             </div>
           )}
@@ -435,7 +435,7 @@ export default function ChatPage({ userId }: { userId: string }) {
           />
           <aside className="absolute left-0 top-0 flex h-full w-72 flex-col border-r border-neutral-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
             <div className="flex items-center justify-between px-3 py-2.5">
-              <div className="text-xs font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
+            <div className="text-sm font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
                 Conversations
               </div>
               <div className="flex items-center gap-2">

@@ -140,7 +140,7 @@ async function handleAuthUrl(env: Env, url: URL): Promise<Response> {
   const authUrl = new InboxDog().getAuthUrl({
     clientId,
     redirectUri: `${origin}/callback`,
-    scope: "email:read",
+    scope: "email:full",
   });
   return Response.json({ authUrl });
 }

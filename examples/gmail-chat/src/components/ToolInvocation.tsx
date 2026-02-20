@@ -41,22 +41,22 @@ export function ToolInvocation({ invocation }: ToolInvocationProps) {
           : ""
       }`}
     >
-      <div className="flex items-center gap-2 px-4 py-2 text-sm text-neutral-400">
+      <div className="flex items-center gap-2 px-4 py-2 text-base text-neutral-400">
         <PlayIcon />
         <span>{input.intent ?? "Running script..."}</span>
       </div>
       <ScriptBlock code={input.code ?? ""} isStreaming={state === "input-streaming"} />
       {state === "input-streaming" && (
-        <div className="px-4 py-2 text-xs text-neutral-500">Writing script...</div>
+        <div className="px-4 py-2 text-sm text-neutral-500">Writing script...</div>
       )}
       {state === "input-available" && (
-        <div className="px-4 py-2 text-xs text-green-400">Executing...</div>
+        <div className="px-4 py-2 text-sm text-green-400">Executing...</div>
       )}
       {state === "output-available" && invocation.output !== undefined && (
         <ResultCards result={invocation.output} />
       )}
       {state === "output-error" && (
-        <div className="px-4 py-2 text-xs text-red-300">
+        <div className="px-4 py-2 text-sm text-red-300">
           {invocation.errorText ?? "Tool execution failed."}
         </div>
       )}
