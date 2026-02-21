@@ -13,6 +13,7 @@
   "dependencies": {
     "@ai-sdk/react": "^3.0.0",
     "@cloudflare/ai-chat": "^0.1.2",
+    "@cloudflare/codemode": "^0.1.0",
     "@cloudflare/kumo": "^1.6.0",
     "@phosphor-icons/react": "^2.1.5",
     "agents": "^0.5.0",
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.25.0",
+    "@cloudflare/workers-types": "^4.20260228.0",
     "@tailwindcss/vite": "^4.0.0",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",

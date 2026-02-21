@@ -5,6 +5,9 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react(), cloudflare(), tailwindcss()],
+  define: {
+    __filename: "'index.ts'",
+  },
   server: {
     allowedHosts: true,
   },

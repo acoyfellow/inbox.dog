@@ -4,7 +4,6 @@
 import { InboxDog, InboxDogError } from "inbox.dog";
 import { routeAgentRequest } from "agents";
 import { InboxAgent } from "./agent/index";
-import { GmailBridge } from "./services/GmailBridge";
 import { getCookie, setCookie, clearCookie } from "./lib/session";
 import {
   DEFAULT_CONVERSATION_ID,
@@ -28,7 +27,7 @@ interface GmailSession {
   email: string;
 }
 
-export { InboxAgent, GmailBridge };
+export { InboxAgent };
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
