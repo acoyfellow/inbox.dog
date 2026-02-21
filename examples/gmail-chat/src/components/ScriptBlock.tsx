@@ -1,5 +1,22 @@
+import { useSyncExternalStore } from "react";
 import { Highlight, themes } from "prism-react-renderer";
 import { Button } from "@cloudflare/kumo/components/button";
+
+const THEME_CHANGE = "gmail-chat-theme-change";
+
+function subscribeTheme(cb: () => void) {
+  const mql = window.matchMedia("(prefers-color-scheme: dark)");
+  mql.addEventListener("change", cb);
+  window.addEventListener(THEME_CHANGE, cb);
+  return () => {
+    mql.removeEventListener("change", cb);
+    window.removeEventListener(THEME_CHANGE, cb);
+  };
+}
+
+function getTheme() {
+  return document.documentElement?.dataset?.theme ?? document.documentElement?.dataset?.mode ?? "dark";
+}
 
 interface ScriptBlockProps {
   code: string;
@@ -14,7 +31,7 @@ function CopyButton({ text }: { text: string }) {
       onClick={copy}
       variant="ghost"
       size="xs"
-      className="h-auto px-1 py-0 text-sm text-neutral-500 hover:text-neutral-300"
+      className="h-auto px-1 py-0 text-sm text-neutral-500 hover:text-neutral-700 dark:hover:text-neutral-300"
     >
       Copy
     </Button>
@@ -22,13 +39,15 @@ function CopyButton({ text }: { text: string }) {
 }
 
 export function ScriptBlock({ code, isStreaming }: ScriptBlockProps) {
+  const theme = useSyncExternalStore(subscribeTheme, getTheme, getTheme);
+  const prismTheme = theme === "light" ? themes.github : themes.nightOwl;
   return (
-    <div className="border-t border-neutral-800 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-1.5 text-sm text-neutral-500">
+    <div className="border-t border-neutral-300 dark:border-neutral-800 overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-1.5 text-sm text-neutral-600 dark:text-neutral-500">
         <span className="font-mono">gmail-script.js</span>
         {!isStreaming && <CopyButton text={code} />}
       </div>
-      <Highlight theme={themes.nightOwl} code={code ?? ""} language="javascript">
+      <Highlight theme={prismTheme} code={code ?? ""} language="javascript">
         {({ style, tokens, getLineProps, getTokenProps }) => (
           <pre
             className="overflow-x-auto max-w-full px-4 py-2 text-sm leading-5 font-mono"

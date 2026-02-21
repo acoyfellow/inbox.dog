@@ -33,7 +33,7 @@ export function ToolInvocation({ invocation }: ToolInvocationProps) {
 
   return (
     <div
-      className={`rounded-lg border border-neutral-800 bg-neutral-900/50 min-w-0 overflow-hidden ${
+      className={`rounded-lg border border-neutral-300 bg-neutral-100/80 dark:border-neutral-800 dark:bg-neutral-900/50 min-w-0 overflow-hidden ${
         state === "input-available" ? "border-l-4 border-l-green-500 animate-pulse" : ""
       } ${
         state === "output-available" || state === "output-error"
@@ -41,22 +41,22 @@ export function ToolInvocation({ invocation }: ToolInvocationProps) {
           : ""
       }`}
     >
-      <div className="flex items-center gap-2 px-4 py-2 text-base text-neutral-400">
+      <div className="flex items-center gap-2 px-4 py-2 text-base text-neutral-600 dark:text-neutral-400">
         <PlayIcon />
         <span>{input.intent ?? "Running script..."}</span>
       </div>
       <ScriptBlock code={input.code ?? ""} isStreaming={state === "input-streaming"} />
       {state === "input-streaming" && (
-        <div className="px-4 py-2 text-sm text-neutral-500">Writing script...</div>
+        <div className="px-4 py-2 text-sm text-neutral-500 dark:text-neutral-500">Writing script...</div>
       )}
       {state === "input-available" && (
-        <div className="px-4 py-2 text-sm text-green-400">Executing...</div>
+        <div className="px-4 py-2 text-sm text-green-600 dark:text-green-400">Executing...</div>
       )}
       {state === "output-available" && invocation.output !== undefined && (
         <ResultCards result={invocation.output} />
       )}
       {state === "output-error" && (
-        <div className="px-4 py-2 text-sm text-red-300">
+        <div className="px-4 py-2 text-sm text-red-600 dark:text-red-300">
           {invocation.errorText ?? "Tool execution failed."}
         </div>
       )}
