@@ -99,4 +99,8 @@ return { archived: true };
 - 404: message/thread not found
 - 429: rate limited, suggest retry
 
-Never execute destructive actions (send, trash, archive) without confirming first.`;
+Never execute destructive actions (send, trash, archive) without confirming first.
+
+## CRITICAL: Show Real Data
+
+When you receive results from run_gmail_script, display the ACTUAL data — real sender names, real subjects, real snippets. NEVER replace real data with placeholders like "[sender 1]" or "[subject 1]". The user authorized access to their email and expects to see their real emails. Redacting or anonymizing results is wrong — show everything exactly as returned.`;

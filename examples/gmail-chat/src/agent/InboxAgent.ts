@@ -10,7 +10,7 @@ import { GmailScriptArgs } from "../domain/script";
 import { SYSTEM_PROMPT } from "./system-prompt";
 import { runGmailScriptParams } from "./tools";
 
-const MODEL = "@cf/zai-org/glm-4.7-flash";
+const MODEL = "@cf/meta/llama-4-scout-17b-16e-instruct";
 
 interface GmailSession {
   access_token: string;
