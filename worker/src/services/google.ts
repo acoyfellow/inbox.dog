@@ -17,6 +17,7 @@ export interface GoogleOAuthService {
     redirectUri: string;
     state: string;
     scope: string;
+    prompt?: string;
   }) => string;
 
   readonly exchangeCode: (params: {
@@ -44,7 +45,7 @@ export const GoogleOAuthService = Context.GenericTag<GoogleOAuthService>('Google
 // ---------------------------------------------------------------------------
 
 const makeGoogleOAuthService = (): GoogleOAuthService => ({
-  buildAuthUrl({ clientId, redirectUri, state, scope }) {
+  buildAuthUrl({ clientId, redirectUri, state, scope, prompt }) {
     const url = new URL('https://accounts.google.com/o/oauth2/v2/auth');
     url.searchParams.set('client_id', clientId);
     url.searchParams.set('redirect_uri', redirectUri);
@@ -52,7 +53,9 @@ const makeGoogleOAuthService = (): GoogleOAuthService => ({
     url.searchParams.set('scope', scope);
     url.searchParams.set('state', state);
     url.searchParams.set('access_type', 'offline');
-    url.searchParams.set('prompt', 'consent');
+    if (prompt) {
+      url.searchParams.set('prompt', prompt);
+    }
     return url.toString();
   },
 

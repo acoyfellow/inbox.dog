@@ -59,6 +59,7 @@ oauthRoutes.get('/authorize', async (c) => {
   const redirectUri = c.req.query('redirect_uri');
   const state = c.req.query('state') ?? '';
   const scope = c.req.query('scope') ?? 'email';
+  const prompt = c.req.query('prompt');
   const codeChallenge = c.req.query('code_challenge');
   const codeChallengeMethod = c.req.query('code_challenge_method');
 
@@ -123,6 +124,7 @@ oauthRoutes.get('/authorize', async (c) => {
       redirectUri: `${new URL(c.req.url).origin}/oauth/callback`,
       state: oauthStateId,
       scope: mapScope(scope),
+      prompt,
     });
   });
 
