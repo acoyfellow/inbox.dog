@@ -1,4 +1,3 @@
-import { Input } from "@cloudflare/kumo/components/input";
 import { Button } from "@cloudflare/kumo/components/button";
 
 interface ChatInputProps {
@@ -20,13 +19,14 @@ export function ChatInput({
 
   return (
     <form className="chat-input-bar flex shrink-0 gap-3 border-t border-neutral-200 p-4 dark:border-neutral-800" onSubmit={onSubmit}>
-      <Input
+      <input
+        type="text"
         value={input}
         onChange={onChange}
         placeholder="Ask about your inbox..."
         disabled={disabled}
         aria-label="Chat message"
-        className="flex-1 text-base"
+        className="flex-1 rounded-md border border-neutral-300 bg-transparent px-3 py-2 text-[16px] outline-none placeholder:text-neutral-500 focus:border-neutral-500 disabled:opacity-50 dark:border-neutral-700 dark:focus:border-neutral-400"
       />
       <div className="relative">
         <Button

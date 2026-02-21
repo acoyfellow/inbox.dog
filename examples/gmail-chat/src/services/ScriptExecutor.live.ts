@@ -2,8 +2,6 @@ import { Effect, Layer, Schema } from "effect";
 import { ScriptExecutor } from "./ScriptExecutor";
 import { GmailScriptArgs, ScriptResult, RawResult } from "../domain/script";
 import { ScriptExecutionError, ScriptTimeoutError } from "../domain/errors";
-// Vite ?raw import — gives us the SDK source as a string to bundle into loader isolates
-import GMAIL_SDK_SOURCE from "../../node_modules/inbox.dog/dist/index.js?raw";
 
 type GmailSessionProps = {
   sessionId: string;
@@ -28,52 +26,62 @@ type LoaderService = {
       compatibilityDate: string;
       mainModule: string;
       modules: Record<string, string>;
-      env: Record<string, unknown>;
-    } | Promise<{
-      compatibilityDate: string;
-      mainModule: string;
-      modules: Record<string, string>;
-      env: Record<string, unknown>;
-    }>,
+      env: Record<string, string>;
+    },
   ) => LoaderWorker;
 };
 
 /**
- * Build the runner module that executes inside the Worker Loader isolate.
+ * Build the runner module for the Worker Loader isolate.
  *
- * The isolate has:
- *   - Full network access (no globalOutbound restriction)
- *   - The inbox.dog SDK bundled as "inbox-dog.js"
- *   - OAuth tokens passed via env vars
- *
- * The generated code gets a real `gmail` object backed by the SDK.
+ * The isolate has full network access and an ACCESS_TOKEN env var.
+ * The LLM-generated code gets a `gmail` helper object that wraps
+ * fetch() calls to the Gmail REST API.
  */
 function buildRunnerModule(code: string): string {
-  return [
-    'import { Gmail } from "./inbox-dog.js";',
-    "",
-    "export default {",
-    "  async fetch(request, env) {",
-    "    const gmail = new Gmail(",
-    "      {",
-    "        access_token: env.ACCESS_TOKEN,",
-    "        refresh_token: env.REFRESH_TOKEN,",
-    "        client_id: env.CLIENT_ID,",
-    "        client_secret: env.CLIENT_SECRET,",
-    "      },",
-    '      { baseUrl: "https://inbox.dog", autoRefresh: true },',
-    "    );",
-    "    try {",
-    "      const result = await (async () => {",
-    code,
-    "      })();",
-    "      return Response.json({ ok: true, value: result });",
-    "    } catch (err) {",
-    "      return Response.json({ ok: false, error: err.message || String(err) });",
-    "    }",
-    "  }",
-    "};",
-  ].join("\n");
+  return `
+const BASE = "https://gmail.googleapis.com/gmail/v1/users/me";
+
+async function gmailFetch(path, opts = {}) {
+  const res = await fetch(BASE + path, {
+    ...opts,
+    headers: {
+      "Authorization": "Bearer " + env.ACCESS_TOKEN,
+      "Content-Type": "application/json",
+      ...(opts.headers || {}),
+    },
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error("Gmail API " + res.status + ": " + body);
+  }
+  const text = await res.text();
+  return text ? JSON.parse(text) : {};
+}
+
+const gmail = {
+  fetch: gmailFetch,
+  async get(path, opts) { return gmailFetch(path, opts); },
+  async post(path, body) {
+    return gmailFetch(path, { method: "POST", body: JSON.stringify(body) });
+  },
+};
+
+export default {
+  async fetch(request, env_) {
+    // Make env available to gmailFetch closure
+    globalThis.env = env_;
+    try {
+      const result = await (async () => {
+${code}
+      })();
+      return Response.json({ ok: true, value: result });
+    } catch (err) {
+      return Response.json({ ok: false, error: err.message || String(err) });
+    }
+  }
+};
+`;
 }
 
 export function ScriptExecutorLive(
@@ -96,13 +104,9 @@ export function ScriptExecutorLive(
               mainModule: "runner.js",
               modules: {
                 "runner.js": buildRunnerModule(code),
-                "inbox-dog.js": GMAIL_SDK_SOURCE as string,
               },
               env: {
                 ACCESS_TOKEN: session.access_token,
-                REFRESH_TOKEN: session.refresh_token,
-                CLIENT_ID: session.client_id,
-                CLIENT_SECRET: session.client_secret,
               },
             }));
 
