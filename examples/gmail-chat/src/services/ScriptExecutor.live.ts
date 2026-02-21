@@ -11,36 +11,20 @@ type GmailSessionProps = {
   client_secret: string;
 };
 
-type LoaderEntrypoint = {
-  fetch: (request: RequestInfo | URL) => Promise<Response>;
-};
-
-type LoaderWorker = {
-  getEntrypoint: () => LoaderEntrypoint;
-};
-
-type LoaderService = {
-  get: (
-    id: string,
-    init: () => {
-      compatibilityDate: string;
-      mainModule: string;
-      modules: Record<string, string>;
-      env: Record<string, string>;
-    },
-  ) => LoaderWorker;
-};
-
 /**
  * Build the runner module for the Worker Loader isolate.
  *
- * The isolate has full network access and an ACCESS_TOKEN env var.
+ * The token is baked directly into the module source because Worker Loader
+ * `env` passing may not work reliably from Durable Object contexts.
+ * The isolate has full network access (globalOutbound is not set).
  * Provides gmail.get/post/fetch helpers over the Gmail REST API.
  */
-function buildRunnerModule(code: string): string {
+function buildRunnerModule(code: string, accessToken: string): string {
+  // Escape the token for safe embedding in a JS string literal
+  const safeToken = accessToken.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/\n/g, '\\n');
   return `
 const BASE = "https://gmail.googleapis.com/gmail/v1/users/me";
-let _token = "";
+const ACCESS_TOKEN = '${safeToken}';
 
 async function gmailFetch(path, opts) {
   const o = opts || {};
@@ -48,7 +32,7 @@ async function gmailFetch(path, opts) {
     method: o.method || "GET",
     body: o.body || undefined,
     headers: {
-      "Authorization": "Bearer " + _token,
+      "Authorization": "Bearer " + ACCESS_TOKEN,
       "Content-Type": "application/json",
     },
   });
@@ -68,9 +52,11 @@ const gmail = {
   },
 };
 
+// Also expose as env.ACCESS_TOKEN for LLM code that tries to use it directly
+const env = { ACCESS_TOKEN };
+
 export default {
-  async fetch(request, env) {
-    _token = env.ACCESS_TOKEN;
+  async fetch(request) {
     try {
       const result = await (async () => {
 ${code}
@@ -86,7 +72,7 @@ ${code}
 
 export function ScriptExecutorLive(
   session: GmailSessionProps,
-  loaderEnv: { LOADER: LoaderService },
+  loaderEnv: { LOADER: { get: (id: string, init: () => unknown) => { getEntrypoint: () => { fetch: (req: RequestInfo | URL) => Promise<Response> } } } },
 ) {
   return Layer.succeed(ScriptExecutor, {
     execute: (args: GmailScriptArgs) =>
@@ -103,10 +89,7 @@ export function ScriptExecutorLive(
               compatibilityDate: "2025-06-01",
               mainModule: "runner.js",
               modules: {
-                "runner.js": buildRunnerModule(code),
-              },
-              env: {
-                ACCESS_TOKEN: session.access_token,
+                "runner.js": buildRunnerModule(code, session.access_token),
               },
             }));
 

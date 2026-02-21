@@ -3,6 +3,7 @@ import { convertToModelMessages, stepCountIs, streamText, tool } from "ai";
 import type { StreamTextOnFinishCallback, ToolSet } from "ai";
 import { createWorkersAI } from "workers-ai-provider";
 import { Effect, Schema } from "effect";
+import { InboxDog } from "inbox.dog";
 import { ScriptExecutor } from "../services/ScriptExecutor";
 import { ScriptExecutorLive } from "../services/ScriptExecutor.live";
 import { GmailScriptArgs } from "../domain/script";
@@ -55,11 +56,38 @@ export class InboxAgent extends AIChatAgent<AgentEnv> {
     let system = SYSTEM_PROMPT;
 
     if (session?.access_token) {
+      // Auto-refresh token if expired (test with a lightweight Gmail call)
+      let activeToken = session.access_token;
+      try {
+        const testRes = await fetch(
+          "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+          { headers: { Authorization: `Bearer ${activeToken}` } },
+        );
+        if (testRes.status === 401 && session.refresh_token) {
+          // Token expired — refresh it
+          const dog = new InboxDog();
+          const refreshed = await dog.refreshToken(
+            session.refresh_token,
+            session.client_id,
+            session.client_secret,
+          );
+          activeToken = refreshed.access_token;
+          // Persist the new token
+          await this.ctx.storage.put("gmail_session", {
+            ...session,
+            access_token: activeToken,
+          });
+        }
+      } catch {
+        // If refresh fails, continue with the existing token
+        // The sandbox will surface a clear error to the user
+      }
+
       const sessionId = session.email.replace(/[^a-zA-Z0-9._-]/g, "_");
       const executorLayer = ScriptExecutorLive(
         {
           sessionId,
-          access_token: session.access_token,
+          access_token: activeToken,
           refresh_token: session.refresh_token,
           client_id: session.client_id,
           client_secret: session.client_secret,

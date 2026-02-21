@@ -243,19 +243,53 @@ async function handleValidateTokens(request: Request, env: Env): Promise<Respons
     return Response.json({ valid: false, error: "No session found" });
   }
 
-  const session = (await sessionRes.json()) as { access_token: string };
+  const session = (await sessionRes.json()) as GmailSession;
   if (!session.access_token) {
     return Response.json({ valid: false, error: "No access token" });
   }
 
-  // Test the token against Gmail
+  // Test the token against Gmail, auto-refresh if expired
   try {
-    const gmailRes = await fetch(
+    let token = session.access_token;
+    let gmailRes = await fetch(
       "https://gmail.googleapis.com/gmail/v1/users/me/profile",
-      {
-        headers: { Authorization: `Bearer ${session.access_token}` },
-      },
+      { headers: { Authorization: `Bearer ${token}` } },
     );
+
+    // Auto-refresh on 401
+    if (gmailRes.status === 401 && session.refresh_token) {
+      try {
+        const dog = new InboxDog();
+        const refreshed = await dog.refreshToken(
+          session.refresh_token,
+          session.client_id,
+          session.client_secret,
+        );
+        token = refreshed.access_token;
+        // Persist refreshed token back to the DO
+        await stub.fetch(
+          new Request("http://localhost/session", {
+            method: "PUT",
+            body: JSON.stringify({ ...session, access_token: token }),
+            headers: {
+              "Content-Type": "application/json",
+              "x-partykit-room": userId,
+            },
+          }),
+        );
+        // Retry with new token
+        gmailRes = await fetch(
+          "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+      } catch {
+        return Response.json({
+          valid: false,
+          error: "Token expired and refresh failed. Please reconnect.",
+        });
+      }
+    }
+
     if (gmailRes.ok) {
       const profile = (await gmailRes.json()) as { emailAddress: string };
       return Response.json({ valid: true, email: profile.emailAddress });

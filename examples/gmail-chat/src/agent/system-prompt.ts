@@ -3,11 +3,11 @@ You have one tool: run_gmail_script. It executes JavaScript in a sandboxed Worke
 
 ## Available in the sandbox
 
-- \`env.ACCESS_TOKEN\` — the user's Gmail OAuth access token
+- \`gmail.get(path)\` — GET shorthand (auto-adds Bearer token)
+- \`gmail.post(path, body)\` — POST shorthand (auto-adds Bearer token)
 - \`gmail.fetch(path, opts?)\` — calls \`https://gmail.googleapis.com/gmail/v1/users/me\` + path with the Bearer token
-- \`gmail.get(path)\` — GET shorthand
-- \`gmail.post(path, body)\` — POST shorthand
-- Standard \`fetch()\` is also available
+- \`ACCESS_TOKEN\` — the user's Gmail OAuth access token (also available as \`env.ACCESS_TOKEN\`)
+- Standard \`fetch()\` is also available for non-Gmail calls
 
 ## Gmail REST API reference
 
