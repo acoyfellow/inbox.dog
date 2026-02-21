@@ -57,7 +57,7 @@ export class Gmail {
     list: {
       signature: "(opts?: { query?: string, max?: number, labelIds?: string[], pageToken?: string })",
       description: "List emails matching a query. max defaults to 10, capped at 100.",
-      returns: "{ messages: EmailSummary[], total: number, nextPageToken?: string }",
+      returns: "{ messages: EmailSummary[], total: number, length: number, nextPageToken?: string }",
     },
     get: {
       signature: "(id: string)",
@@ -67,7 +67,7 @@ export class Gmail {
     search: {
       signature: "(query: string, opts?: { max?: number, pageToken?: string })",
       description: "Search emails. Shorthand for list({ query, ...opts }).",
-      returns: "{ messages: EmailSummary[], total: number, nextPageToken?: string }",
+      returns: "{ messages: EmailSummary[], total: number, length: number, nextPageToken?: string }",
     },
     send: {
       signature: "(opts: { to: string | string[], subject: string, body: string, cc?: string | string[], bcc?: string | string[], replyTo?: string, threadId?: string })",
@@ -184,14 +184,20 @@ export class Gmail {
   async list(
     opts: {
       query?: string;
+      q?: string;
       max?: number;
+      maxResults?: number;
       labelIds?: string[];
       pageToken?: string;
     } = {},
   ): Promise<EmailListResult> {
-    const max = Math.min(opts.max ?? 10, 100);
+    const query = opts.query ?? opts.q;
+    const max = Math.min(
+      opts.max ?? (opts.maxResults != null ? opts.maxResults : 10),
+      100,
+    );
     const params = new URLSearchParams({ maxResults: String(max) });
-    if (opts.query) params.set("q", opts.query);
+    if (query) params.set("q", query);
     if (opts.pageToken) params.set("pageToken", opts.pageToken);
     if (opts.labelIds) {
       for (const l of opts.labelIds) params.append("labelIds", l);
@@ -202,7 +208,7 @@ export class Gmail {
     )) as GmailListResponse;
 
     if (!list.messages || list.messages.length === 0) {
-      return { messages: [], total: 0 };
+      return { messages: [], total: 0, length: 0 };
     }
 
     const summaries = await Promise.all(
@@ -214,9 +220,11 @@ export class Gmail {
       }),
     );
 
+    const total = list.resultSizeEstimate ?? summaries.length;
     return {
       messages: summaries,
-      total: list.resultSizeEstimate ?? summaries.length,
+      total,
+      length: total,
       nextPageToken: list.nextPageToken,
     };
   }
@@ -277,16 +285,24 @@ export class Gmail {
 
   /**
    * Search emails. Shorthand for `list({ query })`.
+   * Accepts query string or object with `q` (raw Gmail API style).
    *
    * ```ts
    * const invoices = await gmail.search("subject:invoice has:attachment")
+   * const inbox = await gmail.search({ q: "label:INBOX" })  // also works
    * ```
    */
   async search(
-    query: string,
-    opts: { max?: number; pageToken?: string } = {},
+    queryOrOpts:
+      | string
+      | { q?: string; max?: number; maxResults?: number; pageToken?: string },
+    opts?: { max?: number; pageToken?: string },
   ): Promise<EmailListResult> {
-    return this.list({ query, ...opts });
+    if (typeof queryOrOpts === "string") {
+      return this.list({ query: queryOrOpts, ...opts });
+    }
+    const { q, ...rest } = queryOrOpts ?? {};
+    return this.list({ query: q ?? "", ...rest, ...opts });
   }
 
   // ── Labels ────────────────────────────────────────────────────────────

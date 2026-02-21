@@ -68,10 +68,12 @@ export function formatChatError(error: Error | undefined): ChatErrorView | null 
 function MessageList({
   messages,
   isLoading,
+  showThinkingIndicator,
   errorView,
 }: {
   messages: UIMessage[];
   isLoading: boolean;
+  showThinkingIndicator: boolean;
   errorView: ChatErrorView | null;
 }) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -100,7 +102,7 @@ function MessageList({
           })}
         </div>
       ))}
-      {isLoading && (
+      {showThinkingIndicator && (
         <div className="max-w-[85%] rounded-lg bg-neutral-100 px-4 py-2.5 text-base text-neutral-500 dark:bg-neutral-900">
           ...
         </div>
@@ -180,7 +182,7 @@ export function GmailChat({
           Preparing this conversation...
         </div>
       )}
-      <MessageList messages={messages} isLoading={isLoading} errorView={errorView} />
+      <MessageList messages={messages} isLoading={isLoading} showThinkingIndicator={status === "submitted"} errorView={errorView} />
       <ChatInput
         input={input}
         onChange={(e) => setInput(e.target.value)}

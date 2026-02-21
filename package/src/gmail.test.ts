@@ -93,6 +93,7 @@ describe("Gmail", () => {
 
       expect(result.messages).toHaveLength(2);
       expect(result.total).toBe(2);
+      expect(result.length).toBe(2);
       expect(result.messages[0].id).toBe("msg_001");
       expect(result.messages[0].from).toBe("alice@example.com");
       expect(result.messages[0].subject).toBe("Hello");
@@ -117,6 +118,40 @@ describe("Gmail", () => {
 
       expect(result.messages).toHaveLength(0);
       expect(result.total).toBe(0);
+      expect(result.length).toBe(0);
+    });
+
+    it("accepts q and maxResults (raw Gmail API style)", async () => {
+      const { fn, calls } = mockFetch([
+        { body: { messages: [], resultSizeEstimate: 0 } },
+      ]);
+
+      const gmail = makeGmail(fn);
+      await gmail.list({ q: "label:INBOX", maxResults: 500 });
+
+      expect(calls[0].url).toContain("q=label%3AINBOX");
+      expect(calls[0].url).toContain("maxResults=100"); // capped
+    });
+
+    it("agent-style: list({ maxResults, q }) returns result.length", async () => {
+      const { fn } = mockFetch([
+        {
+          body: {
+            messages: [{ id: "m1", threadId: "t1" }],
+            resultSizeEstimate: 42,
+          },
+        },
+        { body: rawMessage({ id: "m1" }) },
+      ]);
+
+      const gmail = makeGmail(fn);
+      const result = await gmail.list({
+        maxResults: 500,
+        q: "label:INBOX",
+      });
+
+      expect(result.length).toBe(42);
+      expect(result.total).toBe(42);
     });
 
     it("passes pageToken", async () => {
@@ -268,7 +303,7 @@ describe("Gmail", () => {
   });
 
   describe("search()", () => {
-    it("delegates to list with query", async () => {
+    it("delegates to list with query string", async () => {
       const { fn, calls } = mockFetch([
         { body: { messages: [], resultSizeEstimate: 0 } },
       ]);
@@ -278,6 +313,43 @@ describe("Gmail", () => {
 
       expect(calls[0].url).toContain("q=subject%3Ainvoice+has%3Aattachment");
       expect(calls[0].url).toContain("maxResults=20");
+    });
+
+    it("accepts object with q (raw Gmail API style)", async () => {
+      const { fn, calls } = mockFetch([
+        { body: { messages: [], resultSizeEstimate: 0 } },
+      ]);
+
+      const gmail = makeGmail(fn);
+      await gmail.search({ q: "label:INBOX" });
+
+      expect(calls[0].url).toContain("q=label%3AINBOX");
+    });
+
+    it("agent-style inbox count: search({ q }) and result.length both work", async () => {
+      const { fn } = mockFetch([
+        {
+          body: {
+            messages: [
+              { id: "m1", threadId: "t1" },
+              { id: "m2", threadId: "t2" },
+              { id: "m3", threadId: "t3" },
+            ],
+            resultSizeEstimate: 15,
+          },
+        },
+        { body: rawMessage({ id: "m1" }) },
+        { body: rawMessage({ id: "m2" }) },
+        { body: rawMessage({ id: "m3" }) },
+      ]);
+
+      const gmail = makeGmail(fn);
+      const result = await (gmail as { search: (q: { q: string }) => Promise<{ length: number; total: number }> }).search({
+        q: "label:INBOX",
+      });
+
+      expect(result.length).toBe(15);
+      expect(result.total).toBe(15);
     });
   });
 

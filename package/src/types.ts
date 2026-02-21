@@ -85,6 +85,8 @@ export interface EmailSummary {
 export interface EmailListResult {
   messages: EmailSummary[];
   total: number;
+  /** Alias for total — use for counts (e.g. result.length) */
+  length: number;
   nextPageToken?: string;
 }
 
