@@ -406,7 +406,7 @@ export default function ChatPage({ userId }: { userId: string }) {
           </div>
           {renderConversationList()}
         </aside>
-        <div className="min-h-0 flex-1">
+        <div className="min-h-0 min-w-0 flex-1">
           {sessionError && (
             <div className="border-b border-amber-300/70 bg-amber-50 px-4 py-2 text-base text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
               {sessionError}

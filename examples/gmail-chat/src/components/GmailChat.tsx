@@ -80,11 +80,11 @@ function MessageList({
   useAutoScroll(scrollRef, [messages, isLoading, errorView?.detail]);
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4" ref={scrollRef}>
+    <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-4" ref={scrollRef}>
       {messages.map((msg) => (
         <div
           key={msg.id}
-          className={`max-w-[85%] space-y-2 whitespace-pre-wrap rounded-lg px-4 py-2.5 text-base ${
+          className={`max-w-[85%] min-w-0 space-y-2 whitespace-pre-wrap break-words rounded-lg px-4 py-2.5 text-base ${
             msg.role === "user"
               ? "ml-auto bg-neutral-200 text-neutral-900 dark:bg-neutral-700 dark:text-neutral-100"
               : "bg-neutral-100 text-neutral-800 dark:bg-neutral-900 dark:text-neutral-200"
@@ -93,7 +93,7 @@ function MessageList({
           {msg.parts.map((part, index) => {
             const key = `${msg.id}-part-${index}`;
             if (isTextUIPart(part)) {
-              return <div key={key}>{part.text}</div>;
+              return <div key={key} className="overflow-hidden break-words">{part.text}</div>;
             }
             if (isToolOrDynamicToolUIPart(part)) {
               return <ToolInvocation key={key} invocation={part} />;

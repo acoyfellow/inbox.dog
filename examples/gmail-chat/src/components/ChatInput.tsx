@@ -26,7 +26,7 @@ export function ChatInput({
         placeholder="Ask about your inbox..."
         disabled={disabled}
         aria-label="Chat message"
-        className="flex-1"
+        className="flex-1 text-base"
       />
       <div className="relative">
         <Button

@@ -33,7 +33,7 @@ export function ToolInvocation({ invocation }: ToolInvocationProps) {
 
   return (
     <div
-      className={`rounded-lg border border-neutral-800 bg-neutral-900/50 ${
+      className={`rounded-lg border border-neutral-800 bg-neutral-900/50 min-w-0 overflow-hidden ${
         state === "input-available" ? "border-l-4 border-l-green-500 animate-pulse" : ""
       } ${
         state === "output-available" || state === "output-error"

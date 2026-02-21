@@ -64,18 +64,7 @@ export class InboxAgent extends AIChatAgent<AgentEnv> {
           client_id: session.client_id,
           client_secret: session.client_secret,
         },
-        { LOADER: this.env.LOADER },
-        this.ctx as unknown as {
-          exports: {
-            GmailBridge: (opts?: { props?: {
-              sessionId: string;
-              access_token: string;
-              refresh_token: string;
-              client_id: string;
-              client_secret: string;
-            } }) => unknown;
-          };
-        },
+        { LOADER: this.env.LOADER as unknown as { get: (id: string, init: () => unknown) => { getEntrypoint: () => { fetch: (req: RequestInfo | URL) => Promise<Response> } } } },
       );
       tools.run_gmail_script = tool({
         description: "Execute JavaScript against sandboxed Gmail API. The script has access to a `gmail` object. Return a useful summary.",

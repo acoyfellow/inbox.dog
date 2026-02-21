@@ -23,7 +23,7 @@ function CopyButton({ text }: { text: string }) {
 
 export function ScriptBlock({ code, isStreaming }: ScriptBlockProps) {
   return (
-    <div className="border-t border-neutral-800">
+    <div className="border-t border-neutral-800 overflow-hidden">
       <div className="flex items-center justify-between px-4 py-1.5 text-sm text-neutral-500">
         <span className="font-mono">gmail-script.js</span>
         {!isStreaming && <CopyButton text={code} />}
@@ -31,7 +31,7 @@ export function ScriptBlock({ code, isStreaming }: ScriptBlockProps) {
       <Highlight theme={themes.nightOwl} code={code ?? ""} language="javascript">
         {({ style, tokens, getLineProps, getTokenProps }) => (
           <pre
-            className="overflow-x-auto px-4 py-2 text-sm leading-5 font-mono"
+            className="overflow-x-auto max-w-full px-4 py-2 text-sm leading-5 font-mono"
             style={{ ...style, background: "transparent" }}
           >
             {tokens.map((line, i) => (
