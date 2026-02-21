@@ -1,5 +1,5 @@
 import { Context, Effect } from "effect";
-import type { GmailScriptArgs, ScriptResult } from "../domain/script";
+import type { GmailScriptArgs } from "../domain/script";
 import type {
   ScriptExecutionError,
   ScriptTimeoutError,
@@ -10,7 +10,7 @@ export interface ScriptExecutorService {
   readonly execute: (
     args: GmailScriptArgs
   ) => Effect.Effect<
-    ScriptResult,
+    unknown,
     ScriptExecutionError | ScriptTimeoutError | GmailApiError
   >;
 }

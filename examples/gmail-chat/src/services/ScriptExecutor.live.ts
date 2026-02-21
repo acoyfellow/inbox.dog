@@ -1,6 +1,6 @@
-import { Effect, Layer, Schema } from "effect";
+import { Effect, Layer } from "effect";
 import { ScriptExecutor } from "./ScriptExecutor";
-import { GmailScriptArgs, ScriptResult, RawResult } from "../domain/script";
+import type { GmailScriptArgs } from "../domain/script";
 import { ScriptExecutionError, ScriptTimeoutError } from "../domain/errors";
 
 type GmailSessionProps = {
@@ -35,20 +35,21 @@ type LoaderService = {
  * Build the runner module for the Worker Loader isolate.
  *
  * The isolate has full network access and an ACCESS_TOKEN env var.
- * The LLM-generated code gets a `gmail` helper object that wraps
- * fetch() calls to the Gmail REST API.
+ * Provides gmail.get/post/fetch helpers over the Gmail REST API.
  */
 function buildRunnerModule(code: string): string {
   return `
 const BASE = "https://gmail.googleapis.com/gmail/v1/users/me";
+let _token = "";
 
-async function gmailFetch(path, opts = {}) {
+async function gmailFetch(path, opts) {
+  const o = opts || {};
   const res = await fetch(BASE + path, {
-    ...opts,
+    method: o.method || "GET",
+    body: o.body || undefined,
     headers: {
-      "Authorization": "Bearer " + env.ACCESS_TOKEN,
+      "Authorization": "Bearer " + _token,
       "Content-Type": "application/json",
-      ...(opts.headers || {}),
     },
   });
   if (!res.ok) {
@@ -61,16 +62,15 @@ async function gmailFetch(path, opts = {}) {
 
 const gmail = {
   fetch: gmailFetch,
-  async get(path, opts) { return gmailFetch(path, opts); },
-  async post(path, body) {
+  get: function(path) { return gmailFetch(path); },
+  post: function(path, body) {
     return gmailFetch(path, { method: "POST", body: JSON.stringify(body) });
   },
 };
 
 export default {
-  async fetch(request, env_) {
-    // Make env available to gmailFetch closure
-    globalThis.env = env_;
+  async fetch(request, env) {
+    _token = env.ACCESS_TOKEN;
     try {
       const result = await (async () => {
 ${code}
@@ -128,17 +128,12 @@ export function ScriptExecutorLive(
             }),
         });
 
-        const result = yield* run.pipe(
+        return yield* run.pipe(
           Effect.timeoutFail({
             duration: "30 seconds",
             onTimeout: () => new ScriptTimeoutError({ durationMs: 30_000 }),
           }),
         );
-
-        const decoded = yield* Schema.decodeUnknown(ScriptResult)(result).pipe(
-          Effect.catchAll(() => Effect.succeed(new RawResult({ data: result }))),
-        );
-        return decoded;
       }),
   });
 }
