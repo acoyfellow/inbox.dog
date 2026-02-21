@@ -85,6 +85,26 @@ export default function ChatPage({ userId }: { userId: string }) {
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [openConversationMenuId, setOpenConversationMenuId] = useState<string | null>(null);
   const [isConversationDrawerOpen, setIsConversationDrawerOpen] = useState(false);
+  const [tokenStatus, setTokenStatus] = useState<{ valid: boolean; email?: string; error?: string } | null>(null);
+
+  // Validate Gmail tokens on mount
+  useEffect(() => {
+    let cancelled = false;
+    fetch("/api/validate-tokens")
+      .then((r) => r.json() as Promise<{ valid: boolean; email?: string; error?: string; status?: number }>)
+      .then((data) => {
+        if (!cancelled) {
+          setTokenStatus(data);
+          if (!data.valid && data.status === 401) {
+            setSessionError("Gmail token expired. Please log out and reconnect.");
+          }
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setTokenStatus({ valid: false, error: "Could not validate tokens" });
+      });
+    return () => { cancelled = true; };
+  }, []);
 
   const sortedConversations = useMemo(
     () => sortConversations(conversations),
@@ -409,7 +429,12 @@ export default function ChatPage({ userId }: { userId: string }) {
         <div className="min-h-0 min-w-0 flex-1">
           {sessionError && (
             <div className="border-b border-amber-300/70 bg-amber-50 px-4 py-2 text-base text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
-              {sessionError}
+              {sessionError}{" "}
+              {tokenStatus && !tokenStatus.valid && (
+                <a href="/logout" className="underline font-semibold">
+                  Reconnect Gmail →
+                </a>
+              )}
             </div>
           )}
           <GmailChat

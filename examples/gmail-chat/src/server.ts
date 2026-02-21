@@ -50,6 +50,9 @@ export default {
     if (path === "/api/me") {
       return handleMe(request);
     }
+    if (path === "/api/validate-tokens") {
+      return handleValidateTokens(request, env);
+    }
     if (path === "/api/chat/session" && request.method === "POST") {
       return handleEnsureConversationSession(request, env);
     }
@@ -219,6 +222,55 @@ async function handleEnsureConversationSession(
   }
 
   return Response.json({ ok: true });
+}
+
+async function handleValidateTokens(request: Request, env: Env): Promise<Response> {
+  const userId = getCookie(request);
+  if (!userId) {
+    return Response.json({ valid: false, error: "Not logged in" }, { status: 401 });
+  }
+
+  const id = env.INBOX_AGENT.idFromName(userId);
+  const stub = env.INBOX_AGENT.get(id);
+  const sessionRes = await stub.fetch(
+    new Request("http://localhost/session", {
+      method: "GET",
+      headers: { "x-partykit-room": userId },
+    }),
+  );
+
+  if (!sessionRes.ok) {
+    return Response.json({ valid: false, error: "No session found" });
+  }
+
+  const session = (await sessionRes.json()) as { access_token: string };
+  if (!session.access_token) {
+    return Response.json({ valid: false, error: "No access token" });
+  }
+
+  // Test the token against Gmail
+  try {
+    const gmailRes = await fetch(
+      "https://gmail.googleapis.com/gmail/v1/users/me/profile",
+      {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      },
+    );
+    if (gmailRes.ok) {
+      const profile = (await gmailRes.json()) as { emailAddress: string };
+      return Response.json({ valid: true, email: profile.emailAddress });
+    }
+    return Response.json({
+      valid: false,
+      error: `Gmail API returned ${gmailRes.status}`,
+      status: gmailRes.status,
+    });
+  } catch (e) {
+    return Response.json({
+      valid: false,
+      error: e instanceof Error ? e.message : "Token validation failed",
+    });
+  }
 }
 
 function handleMe(request: Request): Response {

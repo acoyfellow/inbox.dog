@@ -1,5 +1,3 @@
-import { Button } from "@cloudflare/kumo/components/button";
-
 interface ChatInputProps {
   input: string;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
@@ -16,6 +14,7 @@ export function ChatInput({
   contextPercent = 0,
 }: ChatInputProps) {
   const boundedPercent = Math.max(0, Math.min(100, contextPercent));
+  const canSend = !disabled && input.trim().length > 0;
 
   return (
     <form className="chat-input-bar flex shrink-0 gap-3 border-t border-neutral-200 p-4 dark:border-neutral-800" onSubmit={onSubmit}>
@@ -29,14 +28,13 @@ export function ChatInput({
         className="flex-1 rounded-md border border-neutral-300 bg-transparent px-3 py-2 text-[16px] outline-none placeholder:text-neutral-500 focus:border-neutral-500 disabled:opacity-50 dark:border-neutral-700 dark:focus:border-neutral-400"
       />
       <div className="relative">
-        <Button
+        <button
           type="submit"
-          variant="primary"
-          disabled={disabled || !input.trim()}
-          className="bg-neutral-900 text-white hover:bg-neutral-800 disabled:bg-neutral-400 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
+          disabled={!canSend}
+          className="rounded-md px-5 py-2 text-[16px] font-semibold transition-colors bg-blue-600 text-white hover:bg-blue-500 active:bg-blue-700 disabled:bg-neutral-600 disabled:text-neutral-400 disabled:cursor-not-allowed"
         >
           Send
-        </Button>
+        </button>
         <span
           aria-hidden
           className="pointer-events-none absolute inset-x-1.5 bottom-1 h-0.5 rounded-full bg-white/25"
