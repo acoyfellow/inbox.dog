@@ -14,12 +14,18 @@ export type AppServices = GoogleOAuthService | KVService | ConfigService;
 // Layer builder — creates a fresh layer from the request's Env bindings
 // ---------------------------------------------------------------------------
 
-export const makeAppLayer = (env: Env) =>
-  Layer.mergeAll(
+export const makeAppLayer = (env: Env) => {
+  if (!env.ENCRYPTION_SECRET || env.ENCRYPTION_SECRET.length < 32) {
+    throw new Error(
+      'ENCRYPTION_SECRET must be set and at least 32 characters. Tokens would be stored as plaintext without it.',
+    );
+  }
+  return Layer.mergeAll(
     GoogleOAuthServiceLive,
     KVServiceLive(env.KV, env.ENCRYPTION_SECRET),
-    ConfigServiceLive(env)
+    ConfigServiceLive(env),
   );
+};
 
 // ---------------------------------------------------------------------------
 // Runners — thin wrappers that provide the layer and run the Effect

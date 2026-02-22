@@ -225,13 +225,45 @@ export const makeKVService = (kv: KVNamespace, encryptionSecret?: string): KVSer
   // -- Bind sessions (web flow) ----------------------------------------------
 
   getBindSession(token) {
-    return getAndDecode(kv, `bind_session:${token}`, BindSessionSchema, 'BindSession', token);
+    return Effect.gen(function* () {
+      const raw = yield* Effect.tryPromise({
+        try: () => kv.get(`bind_session:${token}`, 'text'),
+        catch: () => new NotFoundError({ resource: 'BindSession', id: token }),
+      });
+
+      if (raw === null) {
+        return yield* Effect.fail(new NotFoundError({ resource: 'BindSession', id: token }));
+      }
+
+      const jsonStr = encryptionSecret
+        ? yield* Effect.tryPromise({
+            try: () => decrypt(raw, encryptionSecret),
+            catch: () =>
+              new DecodeError({ resource: 'BindSession', id: token, cause: 'decryption failed' }),
+          })
+        : raw;
+
+      const parsed = yield* Effect.try({
+        try: () => JSON.parse(jsonStr) as unknown,
+        catch: () => new DecodeError({ resource: 'BindSession', id: token, cause: 'invalid JSON' }),
+      });
+
+      return yield* Schema.decodeUnknown(BindSessionSchema)(parsed).pipe(
+        Effect.mapError((cause) => new DecodeError({ resource: 'BindSession', id: token, cause }))
+      );
+    });
   },
 
   putBindSession(token, data, ttlSeconds) {
-    return Effect.promise(() =>
-      kv.put(`bind_session:${token}`, JSON.stringify(data), { expirationTtl: ttlSeconds })
-    );
+    return Effect.gen(function* () {
+      const json = JSON.stringify(data);
+      const value = encryptionSecret
+        ? yield* Effect.promise(() => encrypt(json, encryptionSecret))
+        : json;
+      yield* Effect.promise(() =>
+        kv.put(`bind_session:${token}`, value, { expirationTtl: ttlSeconds })
+      );
+    });
   },
 
   deleteBindSession(token) {

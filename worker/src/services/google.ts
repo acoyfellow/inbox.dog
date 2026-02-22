@@ -53,9 +53,7 @@ const makeGoogleOAuthService = (): GoogleOAuthService => ({
     url.searchParams.set('scope', scope);
     url.searchParams.set('state', state);
     url.searchParams.set('access_type', 'offline');
-    if (prompt) {
-      url.searchParams.set('prompt', prompt);
-    }
+    url.searchParams.set('prompt', prompt ?? 'consent');
     return url.toString();
   },
 
