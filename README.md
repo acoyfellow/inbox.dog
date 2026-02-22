@@ -12,7 +12,11 @@ Most Gmail automations are read-only. Not by choice — Google requires a **CASA
 
 inbox.dog already passed the audit. Your agents get full read + write + search access today.
 
-## Two ways to connect
+## Three ways to connect
+
+### Connect (browser)
+
+Users link Gmail at [inbox.dog/connect](https://inbox.dog/connect). No OAuth redirect in your app. Fetch tokens with `getGmailTokens(clientId, clientSecret)`.
 
 ### MCP Server (zero-code)
 
@@ -98,7 +102,7 @@ Index by intent: [docs/README.md](docs/README.md).
 
 ```
 ├── landing/          # Astro landing page + docs
-│   ├── src/pages/    # index, docs, pricing, demo, blog
+│   ├── src/pages/    # index, docs, pricing, connect, blog
 │   └── public/       # fonts, logo, llms.txt
 ├── worker/           # Cloudflare Worker (Effect-TS)
 │   ├── src/

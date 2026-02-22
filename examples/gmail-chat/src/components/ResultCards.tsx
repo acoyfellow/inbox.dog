@@ -44,7 +44,7 @@ export function ResultCards({ result }: { result: unknown }) {
   if (decoded._tag === "Some") {
     return Match.valueTags(decoded.value, {
       EmailListResult: ({ emails }) => (
-        <div className="space-y-1 px-4 py-2">
+        <div className="min-w-0 space-y-1 px-4 py-2">
           <div className="mb-2 text-sm text-neutral-600 dark:text-neutral-500">
             {emails.length} email{emails.length !== 1 ? "s" : ""}
           </div>
@@ -62,16 +62,20 @@ export function ResultCards({ result }: { result: unknown }) {
         </div>
       ),
       RawResult: ({ data }) => (
-        <pre className="overflow-x-auto px-4 py-2 font-mono text-sm text-neutral-700 dark:text-neutral-400">
-          {JSON.stringify(data, null, 2)}
-        </pre>
+        <div className="w-full min-w-0 overflow-x-auto">
+          <pre className="inline-block min-w-full px-4 py-2 font-mono text-sm text-neutral-700 dark:text-neutral-400 break-all">
+            {JSON.stringify(data, null, 2)}
+          </pre>
+        </div>
       ),
     });
   }
 
   return (
-    <pre className="overflow-x-auto px-4 py-2 font-mono text-sm text-neutral-700 dark:text-neutral-400">
-      {JSON.stringify(parsedResult, null, 2)}
-    </pre>
+    <div className="w-full min-w-0 overflow-x-auto">
+      <pre className="inline-block min-w-full px-4 py-2 font-mono text-sm text-neutral-700 dark:text-neutral-400 break-all">
+        {JSON.stringify(parsedResult, null, 2)}
+      </pre>
+    </div>
   );
 }

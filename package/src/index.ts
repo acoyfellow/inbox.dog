@@ -45,8 +45,11 @@ export class InboxDog {
 
   constructor(opts: InboxDogOptions = {}) {
     this.baseUrl = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
-    // Wrap so fetch is never stored by reference (Cloudflare Workers "Illegal invocation" otherwise)
-    this.fetchFn = opts.fetch ?? ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init));
+    // Call fetch with correct receiver (Cloudflare Workers "Illegal invocation" otherwise)
+    this.fetchFn =
+      opts.fetch ??
+      ((input: RequestInfo | URL, init?: RequestInit) =>
+        (globalThis.fetch as typeof fetch).call(globalThis, input, init));
   }
 
   // ── API Keys ─────────────────────────────────────────────────────────
@@ -247,7 +250,10 @@ export class InboxDog {
       },
     });
 
-    const body = (await res.json()) as
+    // Avoid res.json()/res.text() - can trigger "Illegal invocation" when res is from a service binding.
+    // Copy body into a new Response in this context so .text() is safe to call.
+    const raw = await new Response(res.body).text();
+    const body = JSON.parse(raw) as
       | T
       | { error: { code: string; message: string; action?: string; docs?: string } };
 

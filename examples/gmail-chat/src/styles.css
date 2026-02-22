@@ -93,3 +93,9 @@ body,
   background: #fff !important;
   border-color: #d4d4d8 !important;
 }
+
+/* Code block: scrollable area; pre wraps and grows vertically */
+.script-block pre {
+  box-sizing: border-box;
+  min-height: min-content;
+}

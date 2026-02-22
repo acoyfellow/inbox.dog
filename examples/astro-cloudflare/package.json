@@ -8,9 +8,9 @@
     "preview": "wrangler pages dev dist"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.76.0",
-    "@astrojs/cloudflare": "^12.0.0",
-    "astro": "^4.16.0",
-    "inbox.dog": "^0.1.0"
+    "@anthropic-ai/sdk": "^0.78.0",
+    "@astrojs/cloudflare": "^12.6.12",
+    "astro": "^5.17.3",
+    "inbox.dog": "^0.2.0"
   }
 }

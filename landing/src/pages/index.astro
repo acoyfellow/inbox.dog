@@ -1,6 +1,6 @@
 ---
-import Layout from '../layouts/Layout.astro';
-import AnimatedAgentBackground from '../components/AnimatedAgentBackground.astro';
+import Layout from "../layouts/Layout.astro";
+import AnimatedAgentBackground from "../components/AnimatedAgentBackground.astro";
 
 const mcpCode = `{
   "mcpServers": {
@@ -14,6 +14,15 @@ const mcpCode = `{
     }
   }
 }`;
+
+const connectCode = `// User links Gmail at inbox.dog/connect (no redirect in your app)
+// Then fetch tokens with client_id + client_secret:
+const dog = new InboxDog();
+const { 
+  access_token, 
+  refresh_token, 
+  email 
+} = await dog.getGmailTokens(clientId, clientSecret);`;
 
 const npmCode = `import InboxDog from 'inbox.dog';
 const dog = new InboxDog();
@@ -39,44 +48,77 @@ const response = await fetch(
 );`;
 ---
 
-<Layout title="Gmail for Agents" description="Give your AI agents full Gmail autonomy — read, write, and search. CASA Tier 2 verified. MCP-native.">
+<Layout
+  title="Gmail for Agents"
+  description="Give your AI agents full Gmail autonomy — read, write, and search. CASA Tier 2 verified. MCP-native."
+>
   <AnimatedAgentBackground />
 
   <!-- Hero -->
-  <section class="min-h-[85vh] flex items-center justify-center relative overflow-hidden">
+  <section
+    class="min-h-[85vh] flex items-center justify-center relative overflow-hidden"
+  >
     <div class="max-w-4xl mx-auto px-4 text-center hero-content">
-      <div class="overflow-hidden mb-2">
-        <p class="text-sm tracking-[0.3em] uppercase text-primary-400 font-medium reveal-up">Gmail OAuth for AI agents</p>
+      <div class="reveal-up delay-3">
+        <img
+          src="/woof.png"
+          alt="inbox.dog mascot"
+          class="mx-auto w-28 h-28 object-contain"
+        />
+      </div>
+      <div class="overflow-hidden my-2">
+        <p
+          class="text-sm tracking-[0.3em] uppercase text-primary-400 font-medium reveal-up"
+        >
+          Gmail OAuth for AI agents
+        </p>
       </div>
       <div class="overflow-hidden pb-2">
-        <h1 class="text-5xl sm:text-6xl md:text-7xl font-bold text-primary-900 leading-[0.95] tracking-tight reveal-up delay-1">
+        <h1
+          class="text-5xl sm:text-6xl md:text-7xl font-bold text-primary-900 leading-[0.95] tracking-tight reveal-up delay-1"
+        >
           Give your agents
         </h1>
       </div>
       <div class="overflow-hidden pb-2 -mt-1">
-        <h1 class="text-5xl sm:text-6xl md:text-7xl font-bold text-primary-400 leading-[0.95] tracking-tight reveal-up delay-2">
+        <h1
+          class="text-5xl sm:text-6xl md:text-7xl font-bold text-primary-400 leading-[0.95] tracking-tight reveal-up delay-2"
+        >
           full Gmail autonomy
         </h1>
       </div>
       <div class="overflow-hidden mt-8">
-        <p class="text-xl text-primary-500 max-w-2xl mx-auto reveal-up delay-3 text-balance">
-          Read, write, search, and send — not just read-only. One integration gives your agent every Gmail scope it needs.
+        <p
+          class="text-xl text-primary-500 max-w-2xl mx-auto reveal-up delay-3 text-balance"
+        >
+          Read, write, search, and send — not just read-only. One integration
+          gives your agent every Gmail scope it needs.
         </p>
       </div>
 
-      <div class="mt-8 reveal-up delay-3">
-        <img src="/woof.png" alt="inbox.dog mascot" class="mx-auto w-28 h-28 object-contain" />
-      </div>
-
-      <div class="flex flex-col sm:flex-row gap-4 justify-center mt-10 reveal-up delay-4">
-        <a href="/connect" class="group relative px-8 py-4 bg-primary-900 text-white font-medium rounded-full overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,0,0,0.2)]">
+      <div
+        class="flex flex-col sm:flex-row gap-4 justify-center mt-10 reveal-up delay-4"
+      >
+        <a
+          href="/connect"
+          class="group relative px-8 py-4 bg-primary-900 text-white font-medium rounded-full overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,0,0,0.2)]"
+        >
           <span class="relative z-10">Connect Gmail</span>
-          <div class="absolute inset-0 bg-primary-800 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"></div>
+          <div
+            class="absolute inset-0 bg-primary-800 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"
+          >
+          </div>
         </a>
-        <a href="/docs" class="group px-8 py-4 border-2 border-primary-200 text-primary-700 font-medium rounded-full transition-all duration-300 hover:border-primary-400 hover:shadow-[0_0_30px_rgba(0,0,0,0.08)]">
+        <a
+          href="/docs"
+          class="group px-8 py-4 border-2 border-primary-200 text-primary-700 font-medium rounded-full transition-all duration-300 hover:border-primary-400 hover:shadow-[0_0_30px_rgba(0,0,0,0.08)]"
+        >
           Docs
         </a>
-        <a href="https://github.com/acoyfellow/inbox.dog" class="group px-8 py-4 border-2 border-primary-200 text-primary-700 font-medium rounded-full transition-all duration-300 hover:border-primary-400 hover:shadow-[0_0_30px_rgba(0,0,0,0.08)]">
+        <a
+          href="https://github.com/acoyfellow/inbox.dog"
+          class="group px-8 py-4 border-2 border-primary-200 text-primary-700 font-medium rounded-full transition-all duration-300 hover:border-primary-400 hover:shadow-[0_0_30px_rgba(0,0,0,0.08)]"
+        >
           View source
         </a>
       </div>
@@ -84,8 +126,11 @@ const response = await fetch(
 
     <!-- Scroll indicator -->
     <div class="absolute bottom-8 left-1/2 -translate-x-1/2 scroll-indicator">
-      <div class="w-6 h-10 border-2 border-primary-300 rounded-full flex justify-center pt-2">
-        <div class="w-1 h-2 bg-primary-400 rounded-full animate-scroll-down"></div>
+      <div
+        class="w-6 h-10 border-2 border-primary-300 rounded-full flex justify-center pt-2"
+      >
+        <div class="w-1 h-2 bg-primary-400 rounded-full animate-scroll-down">
+        </div>
       </div>
     </div>
   </section>
@@ -94,105 +139,255 @@ const response = await fetch(
   <section class="py-24 md:py-32 relative">
     <div class="max-w-4xl mx-auto px-4">
       <div class="text-center mb-16">
-        <p class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4 reveal-up">The problem</p>
-        <h2 class="text-4xl md:text-5xl font-bold text-primary-900 tracking-tight text-balance reveal-up">Your agent can read Gmail.<br/>It can't <em class="not-italic text-primary-400">write</em> to it.</h2>
+        <p
+          class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4 reveal-up"
+        >
+          The problem
+        </p>
+        <h2
+          class="text-4xl md:text-5xl font-bold text-primary-900 tracking-tight text-balance reveal-up"
+        >
+          Your agent can read Gmail.<br />It can't <em
+            class="not-italic text-primary-400">write</em
+          > to it.
+        </h2>
       </div>
 
       <div class="grid md:grid-cols-3 gap-6 mt-12">
-        <div class="problem-card p-6 bg-white rounded-2xl border border-primary-100">
-          <div class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center mb-4">
-            <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        <div
+          class="problem-card p-6 bg-white rounded-2xl border border-primary-100"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-red-50 flex items-center justify-center mb-4"
+          >
+            <svg
+              class="w-5 h-5 text-red-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+              ></path>
             </svg>
           </div>
-          <h3 class="text-lg font-semibold text-primary-900 mb-2">Write scopes are gated</h3>
-          <p class="text-sm text-primary-500 leading-relaxed">Google requires a <strong class="text-primary-700">CASA Tier 2 security audit</strong> before any app can access Gmail write scopes. Read-only isn't enough for real agent work.</p>
+          <h3 class="text-lg font-semibold text-primary-900 mb-2">
+            Write scopes are gated
+          </h3>
+          <p class="text-sm text-primary-500 leading-relaxed">
+            Google requires a <strong class="text-primary-700"
+              >CASA Tier 2 security audit</strong
+            > before any app can access Gmail write scopes. Read-only isn't enough
+            for real agent work.
+          </p>
         </div>
 
-        <div class="problem-card p-6 bg-white rounded-2xl border border-primary-100">
-          <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center mb-4">
-            <svg class="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <div
+          class="problem-card p-6 bg-white rounded-2xl border border-primary-100"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center mb-4"
+          >
+            <svg
+              class="w-5 h-5 text-amber-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
             </svg>
           </div>
-          <h3 class="text-lg font-semibold text-primary-900 mb-2">Months of process</h3>
-          <p class="text-sm text-primary-500 leading-relaxed">The audit costs <strong class="text-primary-700">$550+</strong>, requires multiple rounds of review, and takes weeks to months. Most projects never ship.</p>
+          <h3 class="text-lg font-semibold text-primary-900 mb-2">
+            Months of process
+          </h3>
+          <p class="text-sm text-primary-500 leading-relaxed">
+            The audit costs <strong class="text-primary-700">$550+</strong>,
+            requires multiple rounds of review, and takes weeks to months. Most
+            projects never ship.
+          </p>
         </div>
 
-        <div class="problem-card p-6 bg-white rounded-2xl border border-primary-100">
-          <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mb-4">
-            <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        <div
+          class="problem-card p-6 bg-white rounded-2xl border border-primary-100"
+        >
+          <div
+            class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center mb-4"
+          >
+            <svg
+              class="w-5 h-5 text-emerald-500"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M5 13l4 4L19 7"></path>
             </svg>
           </div>
-          <h3 class="text-lg font-semibold text-primary-900 mb-2">We already passed</h3>
-          <p class="text-sm text-primary-500 leading-relaxed"><strong class="text-primary-700">inbox.dog is CASA Tier 2 verified.</strong> Use our OAuth credentials and skip the audit entirely. Your agents get full write access today.</p>
+          <h3 class="text-lg font-semibold text-primary-900 mb-2">
+            We already passed
+          </h3>
+          <p class="text-sm text-primary-500 leading-relaxed">
+            <strong class="text-primary-700"
+              >inbox.dog is CASA Tier 2 verified.</strong
+            > Use our OAuth credentials and skip the audit entirely. Your agents
+            get full write access today.
+          </p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Two Ways to Integrate -->
-  <section class="py-24 md:py-32 bg-gradient-to-b from-transparent via-primary-50/50 to-transparent">
+  <!-- Three Ways to Integrate -->
+  <section
+    class="py-24 md:py-32 bg-gradient-to-b from-transparent via-primary-50/50 to-transparent"
+  >
     <div class="max-w-5xl mx-auto px-4">
-      <div class="text-center mb-16">
-        <p class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4">Integration</p>
-        <h2 class="text-4xl md:text-5xl font-bold text-primary-900 tracking-tight text-balance">Two ways to connect</h2>
-        <p class="text-lg text-primary-500 mt-4 max-w-2xl mx-auto text-balance">Drop in as an MCP server for Claude, Cursor, and friends — or use the npm package for full control.</p>
+      <div class="text-center mb-14">
+        <p
+          class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4"
+        >
+          Integration
+        </p>
+        <h2
+          class="text-4xl md:text-5xl font-bold text-primary-900 tracking-tight text-balance"
+        >
+          Three ways to connect
+        </h2>
+        <p class="text-lg text-primary-500 mt-4 max-w-xl mx-auto text-balance">
+          Use our /connect browser flow, drop in as an MCP server, or use the
+          npm package for full control.
+        </p>
       </div>
 
-      <div class="grid md:grid-cols-2 gap-6">
+      <div class="space-y-4">
+        <!-- Connect (browser) -->
+        <div
+          class="bg-white rounded-2xl border border-primary-100 shadow-sm hover:border-primary-200 transition-shadow overflow-hidden"
+        >
+          <div class="p-4 flex items-start gap-3 border-b border-primary-100">
+            <div
+              class="w-10 h-10 rounded-xl bg-primary-900 flex items-center justify-center shrink-0"
+            >
+              <svg
+                class="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9a9 9 0 009 9m-9-9a9 9 0 009-9"
+                ></path>
+              </svg>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold text-primary-900">
+                Connect (browser)
+              </h3>
+              <p class="text-sm text-primary-500 mt-0.5">
+                Send users to inbox.dog/connect to link Gmail. Fetch tokens with
+                client_id and client_secret.
+              </p>
+            </div>
+          </div>
+          <div class="p-4 bg-[#0d1117] overflow-x-auto">
+            <pre
+              class="text-sm whitespace-pre m-0"><code class="language-javascript">{connectCode}</code></pre>
+          </div>
+        </div>
+
         <!-- MCP -->
-        <div class="relative">
-          <div class="absolute -inset-1 bg-gradient-to-r from-primary-200/30 to-primary-100/30 rounded-2xl blur-lg opacity-0 hover-glow"></div>
-          <div class="relative bg-white rounded-2xl border border-primary-100 overflow-hidden transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1">
-            <div class="p-6 pb-4 border-b border-primary-100">
-              <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 rounded-xl bg-primary-900 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 class="text-xl font-semibold text-primary-900">MCP Server</h3>
-                  <p class="text-sm text-primary-400">Zero-code for Claude, Cursor & more</p>
-                </div>
-              </div>
-              <p class="text-sm text-primary-500">Add inbox.dog as a tool server. Your agent gets Gmail read, write, and search as callable tools.</p>
+        <div
+          class="bg-white rounded-2xl border border-primary-100 shadow-sm hover:border-primary-200 transition-shadow overflow-hidden"
+        >
+          <div class="p-4 flex items-start gap-3 border-b border-primary-100">
+            <div
+              class="w-10 h-10 rounded-xl bg-primary-900 flex items-center justify-center shrink-0"
+            >
+              <svg
+                class="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              </svg>
             </div>
-            <div class="bg-[#0d1117] p-5 overflow-x-auto">
-              <pre class="text-sm"><code class="language-json">{mcpCode}</code></pre>
+            <div>
+              <h3 class="text-lg font-semibold text-primary-900">MCP Server</h3>
+              <p class="text-sm text-primary-500 mt-0.5">
+                Zero-code for Claude, Cursor and more. Your agent gets Gmail as
+                callable tools.
+              </p>
             </div>
+          </div>
+          <div class="p-4 bg-[#0d1117] overflow-x-auto">
+            <pre
+              class="text-sm whitespace-pre m-0"><code class="language-json">{mcpCode}</code></pre>
           </div>
         </div>
 
         <!-- npm -->
-        <div class="relative">
-          <div class="absolute -inset-1 bg-gradient-to-r from-primary-200/30 to-primary-100/30 rounded-2xl blur-lg opacity-0 hover-glow"></div>
-          <div class="relative bg-white rounded-2xl border border-primary-100 overflow-hidden transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1">
-            <div class="p-6 pb-4 border-b border-primary-100">
-              <div class="flex items-center gap-3 mb-3">
-                <div class="w-10 h-10 rounded-xl bg-primary-900 flex items-center justify-center">
-                  <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <h3 class="text-xl font-semibold text-primary-900">npm Package</h3>
-                  <p class="text-sm text-primary-400">Full control in 3 lines</p>
-                </div>
-              </div>
-              <p class="text-sm text-primary-500">Install the SDK and authenticate users programmatically. You get raw tokens for the Gmail API.</p>
+        <div
+          class="bg-white rounded-2xl border border-primary-100 shadow-sm hover:border-primary-200 transition-shadow overflow-hidden"
+        >
+          <div class="p-4 flex items-start gap-3 border-b border-primary-100">
+            <div
+              class="w-10 h-10 rounded-xl bg-primary-900 flex items-center justify-center shrink-0"
+            >
+              <svg
+                class="w-5 h-5 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="1.5"
+                  d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                ></path>
+              </svg>
             </div>
-            <div class="bg-[#0d1117] p-5 overflow-x-auto">
-              <pre class="text-sm"><code class="language-javascript">{npmCode}</code></pre>
+            <div>
+              <h3 class="text-lg font-semibold text-primary-900">
+                npm Package
+              </h3>
+              <p class="text-sm text-primary-500 mt-0.5">
+                Full control. Install the SDK, redirect to authenticate,
+                exchange code for tokens.
+              </p>
             </div>
+          </div>
+          <div class="p-4 bg-[#0d1117] overflow-x-auto">
+            <pre
+              class="text-sm whitespace-pre m-0"><code class="language-javascript">{npmCode}</code></pre>
           </div>
         </div>
       </div>
 
-      <p class="text-center mt-8">
-        <a href="/docs/tutorial" class="text-primary-500 hover:text-primary-700 text-sm underline underline-offset-4">Follow the step-by-step tutorial &rarr;</a>
+      <p class="text-center mt-10">
+        <a
+          href="/docs/tutorial"
+          class="text-primary-500 hover:text-primary-700 text-sm underline underline-offset-4"
+          >Follow the step-by-step tutorial &rarr;</a
+        >
       </p>
     </div>
   </section>
@@ -201,75 +396,196 @@ const response = await fetch(
   <section class="py-24 md:py-32">
     <div class="max-w-6xl mx-auto px-4">
       <div class="text-center mb-20">
-        <p class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4">Built for agents</p>
-        <h2 class="text-4xl md:text-5xl font-bold text-primary-900 tracking-tight text-balance">Everything your agent needs</h2>
+        <p
+          class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4"
+        >
+          Built for agents
+        </p>
+        <h2
+          class="text-4xl md:text-5xl font-bold text-primary-900 tracking-tight text-balance"
+        >
+          Everything your agent needs
+        </h2>
       </div>
 
       <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Full Read + Write + Search -->
-        <div class="feature-card group p-8 bg-white rounded-2xl border border-primary-100 transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1">
-          <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-900 transition-colors duration-300">
-            <svg class="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        <div
+          class="feature-card group p-8 bg-white rounded-2xl border border-primary-100 transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1"
+        >
+          <div
+            class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-900 transition-colors duration-300"
+          >
+            <svg
+              class="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+              ></path>
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-primary-900 mb-3">Full Read + Write + Search</h3>
-          <p class="text-primary-500 leading-relaxed">Not just read-only. Your agent can send emails, create drafts, manage labels, and search across entire inboxes.</p>
+          <h3 class="text-xl font-semibold text-primary-900 mb-3">
+            Full Read + Write + Search
+          </h3>
+          <p class="text-primary-500 leading-relaxed">
+            Not just read-only. Your agent can send emails, create drafts,
+            manage labels, and search across entire inboxes.
+          </p>
         </div>
 
         <!-- MCP Native -->
-        <div class="feature-card group p-8 bg-white rounded-2xl border border-primary-100 transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1">
-          <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-900 transition-colors duration-300">
-            <svg class="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        <div
+          class="feature-card group p-8 bg-white rounded-2xl border border-primary-100 transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1"
+        >
+          <div
+            class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-900 transition-colors duration-300"
+          >
+            <svg
+              class="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-primary-900 mb-3">MCP Native</h3>
-          <p class="text-primary-500 leading-relaxed">Ships as an MCP server out of the box. Claude, Cursor, Windsurf, and any MCP-compatible agent can use it directly as a tool.</p>
+          <h3 class="text-xl font-semibold text-primary-900 mb-3">
+            MCP Native
+          </h3>
+          <p class="text-primary-500 leading-relaxed">
+            Ships as an MCP server out of the box. Claude, Cursor, Windsurf, and
+            any MCP-compatible agent can use it directly as a tool.
+          </p>
         </div>
 
         <!-- Audit Verified -->
-        <div class="feature-card group p-8 bg-white rounded-2xl border border-primary-100 transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1">
-          <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-900 transition-colors duration-300">
-            <svg class="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        <div
+          class="feature-card group p-8 bg-white rounded-2xl border border-primary-100 transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1"
+        >
+          <div
+            class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-900 transition-colors duration-300"
+          >
+            <svg
+              class="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+              ></path>
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-primary-900 mb-3">CASA Tier 2 Verified</h3>
-          <p class="text-primary-500 leading-relaxed">We passed Google's security audit so you don't have to. Skip the $550+ cost, months of paperwork, and get write access now.</p>
+          <h3 class="text-xl font-semibold text-primary-900 mb-3">
+            CASA Tier 2 Verified
+          </h3>
+          <p class="text-primary-500 leading-relaxed">
+            We passed Google's security audit so you don't have to. Skip the
+            $550+ cost, months of paperwork, and get write access now.
+          </p>
         </div>
 
         <!-- Auto-Refresh Tokens -->
-        <div class="feature-card group p-8 bg-white rounded-2xl border border-primary-100 transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1">
-          <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-900 transition-colors duration-300">
-            <svg class="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        <div
+          class="feature-card group p-8 bg-white rounded-2xl border border-primary-100 transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1"
+        >
+          <div
+            class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-900 transition-colors duration-300"
+          >
+            <svg
+              class="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+              ></path>
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-primary-900 mb-3">Auto-Refresh Tokens</h3>
-          <p class="text-primary-500 leading-relaxed">Tokens expire. inbox.dog handles refresh automatically so your agent never loses access mid-task. Refresh is free.</p>
+          <h3 class="text-xl font-semibold text-primary-900 mb-3">
+            Auto-Refresh Tokens
+          </h3>
+          <p class="text-primary-500 leading-relaxed">
+            Tokens expire. inbox.dog handles refresh automatically so your agent
+            never loses access mid-task. Refresh is free.
+          </p>
         </div>
 
         <!-- Free to use -->
-        <div class="feature-card group p-8 bg-white rounded-2xl border border-primary-100 transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1">
-          <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-900 transition-colors duration-300">
-            <svg class="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+        <div
+          class="feature-card group p-8 bg-white rounded-2xl border border-primary-100 transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1"
+        >
+          <div
+            class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-900 transition-colors duration-300"
+          >
+            <svg
+              class="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+              ></path>
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-primary-900 mb-3">Free to Use</h3>
-          <p class="text-primary-500 leading-relaxed">Authenticate once, make unlimited Gmail requests. No paywall. Create an API key and start building.</p>
+          <h3 class="text-xl font-semibold text-primary-900 mb-3">
+            Free to Use
+          </h3>
+          <p class="text-primary-500 leading-relaxed">
+            Authenticate once, make unlimited Gmail requests. No paywall. Create
+            an API key and start building.
+          </p>
         </div>
 
         <!-- Open Source -->
-        <div class="feature-card group p-8 bg-white rounded-2xl border border-primary-100 transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1">
-          <div class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-900 transition-colors duration-300">
-            <svg class="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+        <div
+          class="feature-card group p-8 bg-white rounded-2xl border border-primary-100 transition-all duration-500 hover:border-primary-200 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] hover:-translate-y-1"
+        >
+          <div
+            class="w-12 h-12 rounded-xl bg-primary-100 flex items-center justify-center mb-6 group-hover:bg-primary-900 transition-colors duration-300"
+          >
+            <svg
+              class="w-6 h-6 text-primary-600 group-hover:text-white transition-colors duration-300"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="1.5"
+                d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              ></path>
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-primary-900 mb-3">Open Source</h3>
-          <p class="text-primary-500 leading-relaxed">MIT licensed. Inspect every line, self-host on your own Cloudflare account, or use the hosted service. Your call.</p>
+          <h3 class="text-xl font-semibold text-primary-900 mb-3">
+            Open Source
+          </h3>
+          <p class="text-primary-500 leading-relaxed">
+            MIT licensed. Inspect every line, self-host on your own Cloudflare
+            account, or use the hosted service. Your call.
+          </p>
         </div>
       </div>
     </div>
@@ -279,25 +595,45 @@ const response = await fetch(
   <section class="py-24 md:py-32 relative overflow-hidden">
     <div class="max-w-4xl mx-auto px-4 text-center relative z-10">
       <div class="inline-block mb-8">
-        <div class="px-4 py-2 bg-primary-100 rounded-full text-sm font-medium text-primary-600">
+        <div
+          class="px-4 py-2 bg-primary-100 rounded-full text-sm font-medium text-primary-600"
+        >
           Free — no card required
         </div>
       </div>
-      <h2 class="text-5xl md:text-6xl font-bold text-primary-900 tracking-tight mb-6 text-balance">
+      <h2
+        class="text-5xl md:text-6xl font-bold text-primary-900 tracking-tight mb-6 text-balance"
+      >
         Give your agents Gmail
       </h2>
       <p class="text-xl text-primary-500 mb-12 max-w-xl mx-auto text-balance">
-        Create an API key and your agent can read, write, and search Gmail in minutes.
+        Create an API key and your agent can read, write, and search Gmail in
+        minutes.
       </p>
       <div class="flex flex-col sm:flex-row gap-4 justify-center">
-        <a href="/docs" class="group inline-flex items-center justify-center gap-3 px-10 py-5 bg-primary-900 text-white text-lg font-medium rounded-full transition-all duration-300 hover:shadow-[0_0_60px_rgba(0,0,0,0.3)] hover:scale-105">
+        <a
+          href="/docs"
+          class="group inline-flex items-center justify-center gap-3 px-10 py-5 bg-primary-900 text-white text-lg font-medium rounded-full transition-all duration-300 hover:shadow-[0_0_60px_rgba(0,0,0,0.3)] hover:scale-105"
+        >
           <span>Start building</span>
-          <svg class="w-5 h-5 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+          <svg
+            class="w-5 h-5 transform group-hover:translate-x-1 transition-transform"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
           </svg>
         </a>
-        <a href="/demo" class="group inline-flex items-center justify-center gap-3 px-10 py-5 border-2 border-primary-200 text-primary-700 text-lg font-medium rounded-full transition-all duration-300 hover:border-primary-400 hover:shadow-[0_0_30px_rgba(0,0,0,0.08)]">
-          Try the demo
+        <a
+          href="/connect"
+          class="group inline-flex items-center justify-center gap-3 px-10 py-5 border-2 border-primary-200 text-primary-700 text-lg font-medium rounded-full transition-all duration-300 hover:border-primary-400 hover:shadow-[0_0_30px_rgba(0,0,0,0.08)]"
+        >
+          Connect Gmail
         </a>
       </div>
     </div>
@@ -312,10 +648,18 @@ const response = await fetch(
     transform: translateY(40px);
   }
 
-  .delay-1 { animation-delay: 0.1s; }
-  .delay-2 { animation-delay: 0.2s; }
-  .delay-3 { animation-delay: 0.4s; }
-  .delay-4 { animation-delay: 0.6s; }
+  .delay-1 {
+    animation-delay: 0.1s;
+  }
+  .delay-2 {
+    animation-delay: 0.2s;
+  }
+  .delay-3 {
+    animation-delay: 0.4s;
+  }
+  .delay-4 {
+    animation-delay: 0.6s;
+  }
 
   @keyframes revealUp {
     to {
@@ -326,8 +670,15 @@ const response = await fetch(
 
   /* Scroll indicator */
   @keyframes scrollDown {
-    0%, 100% { transform: translateY(0); opacity: 1; }
-    50% { transform: translateY(4px); opacity: 0.5; }
+    0%,
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    50% {
+      transform: translateY(4px);
+      opacity: 0.5;
+    }
   }
 
   .animate-scroll-down {
@@ -340,7 +691,9 @@ const response = await fetch(
   }
 
   @keyframes fadeIn {
-    to { opacity: 1; }
+    to {
+      opacity: 1;
+    }
   }
 
   /* Problem cards */
@@ -350,9 +703,15 @@ const response = await fetch(
     animation: cardReveal 0.6s ease-out forwards;
   }
 
-  .problem-card:nth-child(1) { animation-delay: 0.1s; }
-  .problem-card:nth-child(2) { animation-delay: 0.2s; }
-  .problem-card:nth-child(3) { animation-delay: 0.3s; }
+  .problem-card:nth-child(1) {
+    animation-delay: 0.1s;
+  }
+  .problem-card:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .problem-card:nth-child(3) {
+    animation-delay: 0.3s;
+  }
 
   /* Code block glow on hover */
   .relative:hover .hover-glow {
@@ -367,12 +726,24 @@ const response = await fetch(
     animation: cardReveal 0.6s ease-out forwards;
   }
 
-  .feature-card:nth-child(1) { animation-delay: 0.1s; }
-  .feature-card:nth-child(2) { animation-delay: 0.2s; }
-  .feature-card:nth-child(3) { animation-delay: 0.3s; }
-  .feature-card:nth-child(4) { animation-delay: 0.4s; }
-  .feature-card:nth-child(5) { animation-delay: 0.5s; }
-  .feature-card:nth-child(6) { animation-delay: 0.6s; }
+  .feature-card:nth-child(1) {
+    animation-delay: 0.1s;
+  }
+  .feature-card:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .feature-card:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+  .feature-card:nth-child(4) {
+    animation-delay: 0.4s;
+  }
+  .feature-card:nth-child(5) {
+    animation-delay: 0.5s;
+  }
+  .feature-card:nth-child(6) {
+    animation-delay: 0.6s;
+  }
 
   @keyframes cardReveal {
     to {

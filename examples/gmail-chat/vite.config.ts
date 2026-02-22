@@ -5,6 +5,10 @@ import { defineConfig } from "vite";
 
 export default defineConfig({
   plugins: [react(), cloudflare(), tailwindcss()],
+  optimizeDeps: {
+    // Workaround for Vite 7.1.3+ with Cloudflare plugin (cloudflare/workers-sdk#10702)
+    ignoreOutdatedRequests: true,
+  },
   define: {
     __filename: "'index.ts'",
   },

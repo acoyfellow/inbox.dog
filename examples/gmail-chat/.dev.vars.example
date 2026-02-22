@@ -1,0 +1,2 @@
+# Copy to .dev.vars and set values. Required for E2E (test inject session).
+TEST_INJECT_SECRET=dev-secret

@@ -42,27 +42,35 @@ export function ScriptBlock({ code, isStreaming }: ScriptBlockProps) {
   const theme = useSyncExternalStore(subscribeTheme, getTheme, getTheme);
   const prismTheme = theme === "light" ? themes.github : themes.nightOwl;
   return (
-    <div className="border-t border-neutral-300 dark:border-neutral-800 overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-1.5 text-sm text-neutral-600 dark:text-neutral-500">
-        <span className="font-mono">gmail-script.js</span>
+    <div className="script-block w-full max-w-full min-w-0 border-t border-neutral-300 dark:border-neutral-800">
+      <div className="flex min-w-0 items-center justify-between gap-2 px-4 py-1.5 text-sm text-neutral-600 dark:text-neutral-500">
+        <span className="font-mono truncate">gmail-script.js</span>
         {!isStreaming && <CopyButton text={code} />}
       </div>
-      <Highlight theme={prismTheme} code={code ?? ""} language="javascript">
-        {({ style, tokens, getLineProps, getTokenProps }) => (
-          <pre
-            className="overflow-x-auto max-w-full px-4 py-2 text-sm leading-5 font-mono"
-            style={{ ...style, background: "transparent" }}
-          >
-            {tokens.map((line, i) => (
-              <div key={i} {...getLineProps({ line })}>
-                {line.map((token, key) => (
-                  <span key={key} {...getTokenProps({ token })} />
-                ))}
-              </div>
-            ))}
-          </pre>
-        )}
-      </Highlight>
+      <div className="max-h-80 w-full min-w-0 overflow-auto">
+        <Highlight theme={prismTheme} code={code ?? ""} language="javascript">
+          {({ style, tokens, getLineProps, getTokenProps }) => {
+            const wrapStyle = { whiteSpace: "pre-wrap" as const, wordBreak: "break-word" as const };
+            return (
+              <pre
+                className="max-w-full px-4 py-2 text-sm leading-5 font-mono"
+                style={{ background: "transparent", ...wrapStyle }}
+              >
+                {tokens.map((line, i) => {
+                  const lineProps = getLineProps({ line });
+                  return (
+                    <div key={i} {...lineProps} style={{ ...lineProps.style, ...wrapStyle }}>
+                      {line.map((token, key) => (
+                        <span key={key} {...getTokenProps({ token })} />
+                      ))}
+                    </div>
+                  );
+                })}
+              </pre>
+            );
+          }}
+        </Highlight>
+      </div>
     </div>
   );
 }

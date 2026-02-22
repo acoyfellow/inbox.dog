@@ -16,7 +16,11 @@ Google blocks Gmail write scopes behind a CASA Tier 2 security audit:
 
 Without this audit, your agent can read emails but can't send, draft, label, or modify them. inbox.dog removes this barrier.
 
-## Two ways to connect
+## Three ways to connect
+
+### Connect (browser)
+
+Users link Gmail at inbox.dog/connect. No OAuth redirect in your app. Then fetch tokens with client_id and client_secret via the API (getGmailTokens).
 
 ### MCP Server (zero-code)
 

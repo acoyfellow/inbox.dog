@@ -2,6 +2,14 @@ import { useState, useEffect } from "react";
 import { Button } from "@cloudflare/kumo/components/button";
 import { ThemeToggle } from "../components/ThemeToggle";
 
+function GitHubIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" width={20} height={20} aria-hidden>
+      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z" />
+    </svg>
+  );
+}
+
 const ERROR_MAP: Record<string, string> = {
   "OAuthState not found": "Your sign-in link expired. Please try again.",
   "INVALID_CREDENTIALS": "Invalid credentials. Check your inbox.dog client ID and secret.",
@@ -17,24 +25,24 @@ function friendlyError(raw: string): string {
   return decoded;
 }
 
+const GITHUB_EXAMPLE_URL = "https://github.com/acoyfellow/inbox.dog/tree/main/examples/gmail-chat";
+
 const STACK = [
-  { label: "ai sdk", desc: "LLM orchestration" },
-  { label: "agents", desc: "Durable Objects" },
-  { label: "inbox.dog", desc: "Gmail OAuth" },
-  { label: "worker loaders", desc: "Sandboxed V8" },
+  { label: "ai sdk", desc: "LLM orchestration", href: "https://sdk.vercel.ai" },
+  { label: "agents", desc: "Durable Objects", href: "https://developers.cloudflare.com/agents/" },
+  { label: "inbox.dog", desc: "Gmail OAuth", href: "https://inbox.dog" },
+  { label: "worker loaders", desc: "Sandboxed V8", href: "https://developers.cloudflare.com/workers/platform/worker-loaders/" },
 ];
 
+const USER_QUESTION = "Hi, can you read my inbox?";
 const CODE_LINES = [
-  { indent: 0, text: "const result = await gmail.list({" },
-  { indent: 1, text: 'query: "is:unread",' },
-  { indent: 1, text: "max: 10," },
+  { indent: 0, text: "const res = await gmail_get({" },
+  { indent: 1, text: "  path: '/messages?q=in:inbox'," },
   { indent: 0, text: "});" },
   { indent: 0, text: "" },
-  { indent: 0, text: "return result.messages.map(m => ({" },
-  { indent: 1, text: "from: m.from," },
-  { indent: 1, text: "subject: m.subject," },
-  { indent: 0, text: "}));" },
+  { indent: 0, text: "return res.resultSizeEstimate;" },
 ];
+const SAMPLE_RESPONSE = "You have 12 emails in your inbox.";
 
 export default function Landing({
   authUrl,
@@ -55,7 +63,12 @@ export default function Landing({
 
   return (
     <div className="landing-root">
-      <ThemeToggle className="fixed top-4 right-4 z-10" />
+      <div className="landing-top-right">
+        <a href={GITHUB_EXAMPLE_URL} className="landing-github" aria-label="View example on GitHub">
+          <GitHubIcon />
+        </a>
+        <ThemeToggle />
+      </div>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600;700&display=swap');
 
@@ -108,6 +121,59 @@ export default function Landing({
           padding: 2rem;
         }
 
+        .landing-top-right {
+          position: fixed;
+          top: 1rem;
+          right: 1rem;
+          z-index: 10;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .landing-github {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--page-text);
+          opacity: 0.75;
+          transition: opacity 0.2s;
+        }
+        .landing-github:hover {
+          opacity: 1;
+        }
+
+        .landing-header {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin-bottom: 2rem;
+          opacity: 0;
+          transform: translateY(8px);
+          transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        .landing-header.show {
+          opacity: 1;
+          transform: translateY(0);
+        }
+        .landing-logo {
+          display: inline-block;
+          opacity: 0.7;
+          transition: opacity 0.2s;
+        }
+        .landing-logo:hover {
+          opacity: 1;
+        }
+        .landing-logo-img {
+          height: 28px;
+          width: auto;
+          display: block;
+          vertical-align: middle;
+        }
+        [data-theme="dark"] .landing-logo-img,
+        [data-mode="dark"] .landing-logo-img {
+          filter: invert(1);
+        }
+
         .landing-badge {
           display: inline-flex;
           align-items: center;
@@ -121,15 +187,6 @@ export default function Landing({
           letter-spacing: 0.05em;
           color: var(--page-muted);
           font-family: 'JetBrains Mono', monospace;
-          margin-bottom: 2rem;
-          opacity: 0;
-          transform: translateY(8px);
-          transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-
-        .landing-badge.show {
-          opacity: 1;
-          transform: translateY(0);
         }
 
         .landing-badge-dot {
@@ -182,58 +239,67 @@ export default function Landing({
           transform: translateY(0);
         }
 
-        .landing-code {
-          background: var(--card-bg);
-          border: 1px solid var(--card-border);
-          border-radius: 12px;
-          padding: 1.25rem 1.5rem;
+        .landing-steps {
+          display: flex;
+          flex-direction: column;
+          gap: 1.25rem;
           margin-bottom: 2rem;
-          font-family: 'JetBrains Mono', monospace;
-          font-size: 13px;
-          line-height: 1.7;
-          overflow-x: auto;
           opacity: 0;
           transform: translateY(12px);
           transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1) 0.3s;
         }
-
-        .landing-code.show {
+        .landing-steps.show {
           opacity: 1;
           transform: translateY(0);
         }
-
-        .landing-code-header {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          margin-bottom: 1rem;
-          padding-bottom: 0.75rem;
-          border-bottom: 1px solid var(--card-border);
-        }
-
-        .landing-code-dot {
-          width: 8px;
-          height: 8px;
-          border-radius: 50%;
-          background: var(--page-border);
-        }
-
-        .landing-code-label {
+        .landing-step-label {
+          display: block;
           font-size: 11px;
-          color: var(--page-muted-2);
+          font-weight: 600;
           letter-spacing: 0.05em;
-          margin-left: auto;
-        }
-
-        .landing-code-line {
           color: var(--page-muted-2);
+          margin-bottom: 0.35rem;
         }
-
-        .landing-code-line .kw { color: #c084fc; }
-        .landing-code-line .fn { color: #60a5fa; }
-        .landing-code-line .str { color: #4ade80; }
-        .landing-code-line .prop { color: var(--page-text); }
-        .landing-code-line .num { color: #fb923c; }
+        .landing-step-bubble {
+          padding: 0.75rem 1rem;
+          border-radius: 10px;
+          font-size: 14px;
+          line-height: 1.5;
+        }
+        .landing-step-you {
+          background: var(--card-bg);
+          border: 1px solid var(--card-border);
+          color: var(--page-text);
+          margin-left: 0;
+          margin-right: auto;
+          max-width: 85%;
+        }
+        .landing-step-response {
+          background: rgba(74, 222, 128, 0.12);
+          border: 1px solid rgba(74, 222, 128, 0.35);
+          color: var(--page-text);
+          margin-left: 0;
+          margin-right: auto;
+          max-width: 85%;
+        }
+        .landing-code {
+          background: var(--card-bg);
+          border: 1px solid var(--card-border);
+          border-radius: 10px;
+          padding: 1rem 1.25rem;
+          font-family: 'JetBrains Mono', monospace;
+          font-size: 13px;
+          line-height: 1.7;
+          overflow-x: auto;
+        }
+        .landing-code-line {
+          color: #334155;
+        }
+        .landing-code-line .kw { color: #7c3aed; }
+        .landing-code-line .fn { color: #0284c7; }
+        .landing-code-line .str { color: #059669; }
+        .landing-code-line .prop { color: #1e40af; }
+        .landing-code-line .num { color: #c2410c; }
 
         .landing-cta-wrapper {
           opacity: 0;
@@ -277,6 +343,7 @@ export default function Landing({
           color: var(--page-muted-2);
           font-family: 'JetBrains Mono', monospace;
           transition: all 0.2s ease;
+          text-decoration: none;
         }
 
         .landing-chip:hover {
@@ -334,9 +401,14 @@ export default function Landing({
       <div className="landing-grain" />
 
       <div className="landing-content">
-        <div className={`landing-badge ${mounted ? "show" : ""}`}>
-          <span className="landing-badge-dot" />
-          open source demo
+        <div className={`landing-header ${mounted ? "show" : ""}`}>
+          <a href="https://inbox.dog" className="landing-logo" aria-label="inbox.dog">
+            <img src="https://inbox.dog/logo.svg" alt="" className="landing-logo-img" />
+          </a>
+          <div className="landing-badge">
+            <span className="landing-badge-dot" />
+            open source demo
+          </div>
         </div>
 
         <h1 className={`landing-title ${mounted ? "show" : ""}`}>
@@ -350,18 +422,25 @@ export default function Landing({
           and your Gmail responds.
         </p>
 
-        <div className={`landing-code ${mounted ? "show" : ""}`}>
-          <div className="landing-code-header">
-            <span className="landing-code-dot" />
-            <span className="landing-code-dot" />
-            <span className="landing-code-dot" />
-            <span className="landing-code-label">run_gmail_script</span>
+        <div className={`landing-steps ${mounted ? "show" : ""}`}>
+          <div className="landing-step">
+            <span className="landing-step-label">You</span>
+            <div className="landing-step-bubble landing-step-you">{USER_QUESTION}</div>
           </div>
-          {CODE_LINES.map((line, i) => (
-            <div key={i} className="landing-code-line" style={{ paddingLeft: line.indent * 20 }}>
-              {line.text ? colorize(line.text) : "\u00A0"}
+          <div className="landing-step">
+            <span className="landing-step-label">Code the agent generates (runs in sandbox)</span>
+            <div className="landing-code">
+              {CODE_LINES.map((line, i) => (
+                <div key={i} className="landing-code-line" style={{ paddingLeft: line.indent * 20 }}>
+                  {line.text ? colorize(line.text) : "\u00A0"}
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
+          <div className="landing-step">
+            <span className="landing-step-label">Response</span>
+            <div className="landing-step-bubble landing-step-response">{SAMPLE_RESPONSE}</div>
+          </div>
         </div>
 
         {displayError && (
@@ -401,10 +480,10 @@ export default function Landing({
 
         <div className={`landing-stack ${mounted ? "show" : ""}`}>
           {STACK.map((s) => (
-            <div key={s.label} className="landing-chip">
+            <a key={s.label} href={s.href} className="landing-chip">
               <span className="landing-chip-name">{s.label}</span>
               {s.desc}
-            </div>
+            </a>
           ))}
         </div>
       </div>
@@ -419,14 +498,13 @@ function colorize(text: string) {
 
   const rules: [RegExp, string][] = [
     [/\b(const|return|await)\b/g, "kw"],
-    [/\b(gmail\.list|gmail\.search|gmail\.get)\b/g, "fn"],
-    [/("[^"]*")/g, "str"],
+    [/\b(gmail_get|gmail_post)\b/g, "fn"],
+    [/(["'][^"']*["'])/g, "str"],
     [/\b(\d+)\b/g, "num"],
-    [/\b(query|max|messages|map|from|subject)\b(?=[:,)])/g, "prop"],
+    [/\b(path|resultSizeEstimate)\b/g, "prop"],
   ];
 
-  // Simple single-pass: just return colored spans
-  const tokens = remaining.split(/(\b(?:const|return|await)\b|\b(?:gmail\.list|gmail\.search|gmail\.get)\b|"[^"]*"|\b\d+\b|\b(?:query|max|messages|map|from|subject)\b(?=[:,)]))/g);
+  const tokens = remaining.split(/(\b(?:const|return|await)\b|\b(?:gmail_get|gmail_post)\b|["'][^"']*["']|\b\d+\b|\b(?:path|resultSizeEstimate)\b)/g);
 
   for (const token of tokens) {
     if (!token) continue;

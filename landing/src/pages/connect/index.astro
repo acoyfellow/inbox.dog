@@ -49,14 +49,17 @@ import Layout from '../../layouts/Layout.astro';
       </div>
 
       <p class="text-center text-primary-400 text-sm mt-8">
-        <a href="/docs" class="hover:text-primary-600">Docs</a> · <a href="/demo" class="hover:text-primary-600">Demo</a>
+        <a href="/docs" class="hover:text-primary-600">Docs</a>
       </p>
     </div>
   </div>
 
   <script>
-    const API_URL = typeof window !== 'undefined' ? window.location.origin : 'https://inbox.dog';
-    const CONNECT_CALLBACK = `${API_URL}/connect/callback`;
+    // Use production API when landing is served from localhost (dev) or other host
+    const API_URL = typeof window !== 'undefined' && window.location.origin === 'https://inbox.dog'
+      ? window.location.origin
+      : 'https://inbox.dog';
+    const CONNECT_CALLBACK = typeof window !== 'undefined' ? `${window.location.origin}/connect/callback` : `${API_URL}/connect/callback`;
 
     let clientId = '';
     let clientSecret = '';
@@ -84,9 +87,17 @@ import Layout from '../../layouts/Layout.astro';
         }),
       });
 
-      const data = await res.json();
-      if (data.error) {
-        alert(data.error?.message || 'Failed to create key');
+      let data: { client_id?: string; client_secret?: string; error?: { message?: string } };
+      try {
+        data = await res.json();
+      } catch {
+        alert(res.ok ? 'Invalid response' : `Request failed (${res.status}). If you're on localhost, the Connect page calls the production API at inbox.dog.`);
+        btn.textContent = 'Create API Key';
+        btn.disabled = false;
+        return;
+      }
+      if (!res.ok || data.error) {
+        alert(data.error?.message || `Failed to create key (${res.status})`);
         btn.textContent = 'Create API Key';
         btn.disabled = false;
         return;
@@ -125,9 +136,19 @@ import Layout from '../../layouts/Layout.astro';
         body: JSON.stringify({ client_id: clientId, client_secret: clientSecret }),
       });
 
-      const data = await res.json();
+      let data: { state?: string; error?: { message?: string } };
+      try {
+        data = await res.json();
+      } catch {
+        alert(res.ok ? 'Invalid response' : `Request failed (${res.status})`);
+        return;
+      }
       if (data.error) {
         alert(data.error?.message || 'Failed to prepare');
+        return;
+      }
+      if (!data.state) {
+        alert('Missing state from server');
         return;
       }
 

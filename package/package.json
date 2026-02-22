@@ -1,6 +1,6 @@
 {
   "name": "inbox.dog",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Gmail OAuth + typed Gmail client. No Google Cloud console required.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -49,9 +49,9 @@
   },
   "homepage": "https://inbox.dog",
   "devDependencies": {
-    "tsup": "^8.0.0",
-    "typescript": "^5.5.0",
-    "vitest": "^3.0.0"
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   },
   "bin": {
     "inbox.dog": "./dist/cli.js"

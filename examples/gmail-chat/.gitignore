@@ -1,6 +1,9 @@
 node_modules/
 dist/
 .env
+.dev.vars
 .wrangler/
 .astro/
 package-lock.json
+test-results/
+playwright-report/

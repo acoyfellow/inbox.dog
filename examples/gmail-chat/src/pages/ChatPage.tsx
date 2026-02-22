@@ -84,27 +84,8 @@ export default function ChatPage({ userId }: { userId: string }) {
   const [sessionSyncing, setSessionSyncing] = useState(false);
   const [sessionError, setSessionError] = useState<string | null>(null);
   const [openConversationMenuId, setOpenConversationMenuId] = useState<string | null>(null);
+  const [openGlobalSidebarMenu, setOpenGlobalSidebarMenu] = useState(false);
   const [isConversationDrawerOpen, setIsConversationDrawerOpen] = useState(false);
-  const [tokenStatus, setTokenStatus] = useState<{ valid: boolean; email?: string; error?: string } | null>(null);
-
-  // Validate Gmail tokens on mount
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/validate-tokens")
-      .then((r) => r.json() as Promise<{ valid: boolean; email?: string; error?: string; status?: number }>)
-      .then((data) => {
-        if (!cancelled) {
-          setTokenStatus(data);
-          if (!data.valid && data.status === 401) {
-            setSessionError("Gmail token expired. Please log out and reconnect.");
-          }
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setTokenStatus({ valid: false, error: "Could not validate tokens" });
-      });
-    return () => { cancelled = true; };
-  }, []);
 
   const sortedConversations = useMemo(
     () => sortConversations(conversations),
@@ -127,12 +108,14 @@ export default function ChatPage({ userId }: { userId: string }) {
   useEffect(() => {
     const onPointerDown = (event: PointerEvent) => {
       const target = event.target as HTMLElement | null;
-      if (target?.closest("[data-conversation-menu='true']")) return;
+      if (target?.closest("[data-conversation-menu='true']") || target?.closest("[data-global-sidebar-menu='true']")) return;
       setOpenConversationMenuId(null);
+      setOpenGlobalSidebarMenu(false);
     };
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setOpenConversationMenuId(null);
+        setOpenGlobalSidebarMenu(false);
         setIsConversationDrawerOpen(false);
       }
     };
@@ -171,7 +154,8 @@ export default function ChatPage({ userId }: { userId: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    if (activeConversationId === DEFAULT_CONVERSATION_ID) {
+    const validId = activeConversationId && normalizeConversationId(activeConversationId);
+    if (!validId || activeConversationId === DEFAULT_CONVERSATION_ID) {
       setSessionError(null);
       setSessionSyncing(false);
       return;
@@ -188,6 +172,10 @@ export default function ChatPage({ userId }: { userId: string }) {
           body: JSON.stringify({ conversationId: activeConversationId }),
         });
         if (!response.ok) {
+          if (response.status === 409) {
+            if (!cancelled) window.location.assign("/logout");
+            return;
+          }
           const payload = await response.json().catch(
             () => ({ error: "Conversation setup failed" } as { error?: string }),
           ) as { error?: string };
@@ -289,6 +277,17 @@ export default function ChatPage({ userId }: { userId: string }) {
     setOpenConversationMenuId(null);
   }, [conversations, activeConversationId]);
 
+  const deleteAllConversations = useCallback(() => {
+    if (typeof window === "undefined") return;
+    const confirmed = window.confirm("Delete all conversations? This cannot be undone.");
+    if (!confirmed) return;
+    setConversations([]);
+    setActiveConversationId("");
+    setOpenConversationMenuId(null);
+    setOpenGlobalSidebarMenu(false);
+    setIsConversationDrawerOpen(false);
+  }, []);
+
   const renderConversationList = () => {
     if (sortedConversations.length === 0) {
       return (
@@ -314,17 +313,17 @@ export default function ChatPage({ userId }: { userId: string }) {
           return (
             <div
               key={conversation.id}
-              className={`relative flex items-center rounded-md border border-neutral-300 bg-white text-neutral-800 dark:border-neutral-700 dark:bg-neutral-950/70 dark:text-neutral-200`}
+              className={`relative flex items-center rounded-md border border-neutral-300 bg-white text-neutral-800 dark:border-neutral-700 dark:bg-neutral-950/70 dark:text-neutral-200 p-1`}
             >
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={() => markConversationActive(conversation.id)}
-                className={`h-auto flex-1 justify-start px-3 py-3 text-left ${
+                className={`h-auto flex-1 justify-start px-3 py-3 text-left overflow-hidden hover:bg-neutral-100 dark:hover:bg-neutral-800 ${
                   isActive
-                    ? "hover:bg-white/10 dark:hover:bg-neutral-900/10"
-                    : "hover:bg-neutral-100 dark:hover:bg-neutral-800"
+                    ? ""
+                    : ""
                 }`}
               >
                 <span className="truncate text-base font-medium">{conversation.title}</span>
@@ -340,10 +339,10 @@ export default function ChatPage({ userId }: { userId: string }) {
                       prev === conversation.id ? null : conversation.id,
                     )
                   }
-                  className={`p-3 text-base ${
+                  className={`p-3 text-base hover:bg-neutral-100 dark:hover:bg-neutral-800 ${
                     isActive
-                      ? "text-white/80 hover:bg-white/10 hover:text-white dark:text-neutral-700 dark:hover:bg-neutral-900/10 dark:hover:text-neutral-900"
-                      : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-700 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
+                      ? ""
+                      : ""
                   }`}
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -386,6 +385,7 @@ export default function ChatPage({ userId }: { userId: string }) {
     <div className="flex h-[100dvh] flex-col bg-white text-neutral-900 dark:bg-neutral-950 dark:text-neutral-100 overflow-hidden">
       <header className="flex shrink-0 items-center justify-between border-b border-neutral-200 px-4 py-3 dark:border-neutral-800">
         <div className="flex items-center gap-3">
+          {sortedConversations.length > 0 && (
           <Button
             type="button"
             variant="ghost"
@@ -399,7 +399,52 @@ export default function ChatPage({ userId }: { userId: string }) {
               <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
             </svg>
           </Button>
-          <h1 className="text-lg font-medium">Gmail Chat</h1>
+          )}
+          <h1 className="text-lg font-medium">
+            <span className="sr-only">chat.inbox.dog</span>
+            <img src="https://inbox.dog/logo.svg" alt="chat.inbox.dog" className="h-6 w-auto dark:invert" />
+          </h1>
+          <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              onClick={createConversation}
+              className="text-sm"
+            >
+              +
+            </Button>
+          {sortedConversations.length >= 1 && (
+            <div className="relative" data-global-sidebar-menu="true">
+              <Button
+                type="button"
+                aria-label="Sidebar actions"
+                shape="square"
+                variant="ghost"
+                size="sm"
+                onClick={() => setOpenGlobalSidebarMenu((prev) => !prev)}
+                className="p-2 text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 dark:text-neutral-400"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="12" r="1.5"/>
+                  <circle cx="12" cy="5" r="1.5"/>
+                  <circle cx="12" cy="19" r="1.5"/>
+                </svg>
+              </Button>
+              {openGlobalSidebarMenu && (
+                <div className="absolute left-0 top-full z-20 mt-1 w-36 rounded-md border border-neutral-300 bg-white p-1.5 shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={deleteAllConversations}
+                    className="h-auto w-full justify-start px-3 py-2.5 text-left text-base text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-950/40"
+                  >
+                    Delete All
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
@@ -409,34 +454,18 @@ export default function ChatPage({ userId }: { userId: string }) {
         </div>
       </header>
       <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-64 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-900/40 md:flex">
-          <div className="flex items-center justify-between px-3 py-2.5">
-            <div className="text-sm font-medium uppercase tracking-wide text-neutral-500 dark:text-neutral-400">
-              Conversations
-            </div>
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              onClick={createConversation}
-              className="text-sm"
-            >
-              +
-            </Button>
-          </div>
+        {sortedConversations.length > 0 && (
+        <aside className="hidden w-64 shrink-0 flex-col border-r border-neutral-200 bg-neutral-50/80 dark:border-neutral-800 dark:bg-neutral-900/40 md:flex pt-3">
           {renderConversationList()}
         </aside>
-        <div className="min-h-0 min-w-0 flex-1">
+        )}
+        <div className="flex min-h-0 flex-1 flex-col">
           {sessionError && (
-            <div className="border-b border-amber-300/70 bg-amber-50 px-4 py-2 text-base text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
-              {sessionError}{" "}
-              {tokenStatus && !tokenStatus.valid && (
-                <a href="/logout" className="underline font-semibold">
-                  Reconnect Gmail →
-                </a>
-              )}
+            <div className="shrink-0 border-b border-amber-300/70 bg-amber-50 px-4 py-2 text-base text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/40 dark:text-amber-200">
+              {sessionError}
             </div>
           )}
+          <div className="min-h-0 min-w-0 flex-1">
           <GmailChat
             userId={userId}
             conversationId={activeConversationId}
@@ -445,6 +474,7 @@ export default function ChatPage({ userId }: { userId: string }) {
             onUserMessage={handleConversationMessage}
             onCreateConversation={createConversation}
           />
+          </div>
         </div>
       </div>
       {isConversationDrawerOpen && (

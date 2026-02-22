@@ -1,10 +1,11 @@
 /**
  * Single Worker: routeAgentRequest for /agents/*, auth routes, then ASSETS.
  */
-import { InboxDog, InboxDogError } from "inbox.dog";
+import { InboxDog } from "inbox.dog";
 import { routeAgentRequest } from "agents";
 import { InboxAgent } from "./agent/index";
 import { getCookie, setCookie, clearCookie } from "./lib/session";
+import { createGmailTools } from "./agent/gmail-tools";
 import {
   DEFAULT_CONVERSATION_ID,
   normalizeConversationId,
@@ -17,6 +18,8 @@ interface Env {
   INBOX_DOG: Fetcher;
   INBOX_DOG_CLIENT_ID: string;
   INBOX_DOG_CLIENT_SECRET: string;
+  /** Set in dev/.dev.vars for E2E; required for POST /api/test/inject-session */
+  TEST_INJECT_SECRET?: string;
 }
 
 interface GmailSession {
@@ -31,12 +34,10 @@ export { InboxAgent };
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
-    const agentRes = await routeAgentRequest(request, env, { cors: true });
-    if (agentRes) return agentRes;
-
     const url = new URL(request.url);
     const path = url.pathname;
 
+    // Handle auth and API routes first so our code runs and we can log
     if (path === "/callback") {
       return handleCallback(request, env, url);
     }
@@ -49,13 +50,54 @@ export default {
     if (path === "/api/me") {
       return handleMe(request);
     }
+    
+    // DEV BACKDOOR for testing endpoints directly against active session (guarded so prod without TEST_INJECT_SECRET has no access)
+    if (path === "/api/dev/exec" && request.method === "POST" && env.TEST_INJECT_SECRET) {
+      try {
+        const body = await request.json() as { userId: string, code: string };
+        const id = env.INBOX_AGENT.idFromName(body.userId);
+        const stub = env.INBOX_AGENT.get(id);
+        const sessionRes = await stub.fetch(
+          new Request("http://localhost/session", {
+            method: "GET",
+            headers: { "x-partykit-room": body.userId },
+          })
+        );
+        if (!sessionRes.ok) return new Response("No session", { status: 404 });
+        const session = await sessionRes.json() as GmailSession;
+        if (!session.access_token) return new Response("No token", { status: 401 });
+        
+        let token = session.access_token;
+        const testRes = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/profile", { headers: { Authorization: `Bearer ${token}` } });
+        if (testRes.status === 401 && session.refresh_token) {
+          const dog = new InboxDog();
+          const refreshed = await dog.refreshToken(session.refresh_token, session.client_id, session.client_secret);
+          token = refreshed.access_token;
+        }
+
+        const gmailTools = createGmailTools(token);
+        const { DynamicWorkerExecutor } = await import("@cloudflare/codemode");
+        const { createCodeTool } = await import("@cloudflare/codemode/ai");
+        const executor = new DynamicWorkerExecutor({ loader: env.LOADER });
+        const codemodeInner = createCodeTool({ tools: gmailTools, executor }) as unknown as { execute: (x: { code: string }) => Promise<unknown> };
+        const res = await codemodeInner.execute({ code: body.code });
+        return Response.json({ success: true, result: res });
+      } catch (err) {
+        return Response.json({ error: String(err) }, { status: 500 });
+      }
+    }
     if (path === "/api/validate-tokens") {
       return handleValidateTokens(request, env);
     }
     if (path === "/api/chat/session" && request.method === "POST") {
       return handleEnsureConversationSession(request, env);
     }
+    if (path === "/api/test/inject-session" && request.method === "POST" && env.TEST_INJECT_SECRET) {
+      return handleTestInjectSession(request, env);
+    }
 
+    const agentRes = await routeAgentRequest(request, env, { cors: true });
+    if (agentRes) return agentRes;
     return env.ASSETS.fetch(request);
   },
 } satisfies ExportedHandler<Env>;
@@ -77,35 +119,54 @@ async function handleCallback(
     return redirect(`/?error=${encodeURIComponent("missing credentials")}`);
   }
 
-  let t: { access_token: string; refresh_token: string; email: string };
+  // Token exchange: use global fetch so we never touch a service binding Response
+  // (reading .body or calling .json()/.text() on a binding Response can cause "Illegal invocation").
+  const tokenRes = await fetch("https://inbox.dog/oauth/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      code,
+      client_id: cid,
+      client_secret: csec,
+    }),
+  });
+  const rawBody = await tokenRes.text();
+  if (!tokenRes.ok) {
+    const errBody = rawBody ? (JSON.parse(rawBody) as { error?: { message?: string } }) : {};
+    return redirect(`/?error=${encodeURIComponent(errBody.error?.message ?? `HTTP ${tokenRes.status}`)}`);
+  }
+  const t = JSON.parse(rawBody) as { access_token: string; refresh_token: string; email: string };
+
+  const userId = t.email.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const id = env.INBOX_AGENT.idFromName(userId);
+  const stub = env.INBOX_AGENT.get(id);
+
+  // Preserve existing refresh token if Google didn't issue a new one
+  let existingRefreshToken: string | undefined;
   try {
-    const dogFetch: typeof fetch = (input, init) => env.INBOX_DOG.fetch(input, init);
-    t = await new InboxDog({ fetch: dogFetch }).exchangeCode(code, cid, csec);
-  } catch (e) {
-    if (e instanceof SyntaxError && e.message.includes("is not valid JSON")) {
-      try {
-        t = await new InboxDog().exchangeCode(code, cid, csec);
-      } catch (e2) {
-        const msg = e2 instanceof InboxDogError ? e2.message : e2 instanceof Error ? e2.message : "exchange failed";
-        return redirect(`/?error=${encodeURIComponent(msg)}`);
-      }
-    } else {
-      const msg = e instanceof InboxDogError ? e.message : e instanceof Error ? e.message : "exchange failed";
-      return redirect(`/?error=${encodeURIComponent(msg)}`);
+    const existingRes = await stub.fetch(
+      new Request("http://localhost/session", {
+        method: "GET",
+        headers: { "x-partykit-room": userId },
+      })
+    );
+    if (existingRes.ok) {
+      const existingSession = await existingRes.json() as GmailSession;
+      existingRefreshToken = existingSession.refresh_token;
     }
+  } catch (e) {
+    console.error("[auth] Failed to read existing session", e);
+    throw e; // Do not swallow the error per user rules
   }
 
   const session = {
     access_token: t.access_token,
-    refresh_token: t.refresh_token,
+    refresh_token: t.refresh_token || existingRefreshToken,
     client_id: cid,
     client_secret: csec,
     email: t.email,
   };
 
-  const userId = t.email.replace(/[^a-zA-Z0-9._-]/g, "_");
-  const id = env.INBOX_AGENT.idFromName(userId);
-  const stub = env.INBOX_AGENT.get(id);
   await stub.fetch(
     new Request("http://localhost/session", {
       method: "PUT",
@@ -130,21 +191,72 @@ async function handleLogout(): Promise<Response> {
   });
 }
 
+const E2E_TEST_USER_ID = "test-e2e";
+
+async function handleTestInjectSession(request: Request, env: Env): Promise<Response> {
+  if (request.headers.get("x-test-secret") !== env.TEST_INJECT_SECRET) {
+    return new Response(null, { status: 401 });
+  }
+  let session: GmailSession;
+  try {
+    session = (await request.json()) as GmailSession;
+  } catch {
+    return Response.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+  const stub = env.INBOX_AGENT.get(env.INBOX_AGENT.idFromName(E2E_TEST_USER_ID));
+  const putRes = await stub.fetch(
+    new Request("http://localhost/session", {
+      method: "PUT",
+      body: JSON.stringify(session),
+      headers: {
+        "Content-Type": "application/json",
+        "x-partykit-room": E2E_TEST_USER_ID,
+      },
+    }),
+  );
+  if (!putRes.ok) {
+    return Response.json({ error: "Failed to put session" }, { status: 500 });
+  }
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: {
+      "Content-Type": "application/json",
+      "Set-Cookie": setCookie(E2E_TEST_USER_ID),
+    },
+  });
+}
+
 async function handleAuthUrl(env: Env, url: URL): Promise<Response> {
-  const clientId = env.INBOX_DOG_CLIENT_ID;
-  if (!clientId) {
+  try {
+    const clientId = env.INBOX_DOG_CLIENT_ID;
+    if (!clientId) {
+      const msg = "INBOX_DOG_CLIENT_ID not set (add to .dev.vars or wrangler secret)";
+      console.warn("[auth-url] 500:", msg);
+      return Response.json(
+        { error: msg },
+        { status: 500, headers: { "Content-Type": "application/json" } }
+      );
+    }
+    const origin = url.origin;
+    const authUrl = new InboxDog().getAuthUrl({
+      clientId,
+      redirectUri: `${origin}/callback`,
+      scope: "email:full",
+    });
+    // Append prompt=consent and access_type=offline to force Google to issue a new refresh_token
+    // even if the user previously authorized. This prevents "no refresh token available" errors
+    // when local DO storage is cleared.
+    const finalAuthUrl = authUrl.includes("?") 
+      ? `${authUrl}&prompt=consent&access_type=offline` 
+      : `${authUrl}?prompt=consent&access_type=offline`;
+    return Response.json({ authUrl: finalAuthUrl });
+  } catch (e) {
+    console.warn("[auth-url] 500:", e);
     return Response.json(
-      { error: "INBOX_DOG_CLIENT_ID not set" },
+      { error: e instanceof Error ? e.message : "Failed to build auth URL" },
       { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
-  const origin = url.origin;
-  const authUrl = new InboxDog().getAuthUrl({
-    clientId,
-    redirectUri: `${origin}/callback`,
-    scope: "email:full",
-  });
-  return Response.json({ authUrl });
 }
 
 async function handleEnsureConversationSession(
@@ -176,16 +288,9 @@ async function handleEnsureConversationSession(
   }
 
   const targetStub = env.INBOX_AGENT.get(env.INBOX_AGENT.idFromName(targetRoom));
-  const existingRes = await targetStub.fetch(
-    new Request("http://localhost/session", {
-      method: "GET",
-      headers: { "x-partykit-room": targetRoom },
-    }),
-  );
-  if (existingRes.ok) {
-    return Response.json({ ok: true });
-  }
-
+  
+  // We should ALWAYS sync the latest session from the source room 
+  // because the source room gets its tokens refreshed by /api/validate-tokens
   const sourceStub = env.INBOX_AGENT.get(env.INBOX_AGENT.idFromName(sourceRoom));
   const sourceRes = await sourceStub.fetch(
     new Request("http://localhost/session", {
