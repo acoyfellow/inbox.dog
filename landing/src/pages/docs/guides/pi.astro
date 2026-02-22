@@ -1,0 +1,204 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="Pi — inbox.dog" description="Give Pi access to Gmail with inbox.dog.">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">inbox.dog with Pi</h1>
+    <p class="text-primary-600 mb-8"><a href="https://pi.ai" class="text-primary-900 underline">Pi</a> is Inflection AI's conversational assistant. While Pi doesn't support MCP natively, you can build Gmail-powered workflows that work alongside Pi using the inbox.dog SDK.</p>
+
+    <!-- At a glance -->
+    <section class="mb-10 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-3">How it works</h2>
+      <p class="text-primary-600 text-sm mb-3">Pi doesn't have a plugin or tool-use system, so the integration pattern is different from MCP-based agents. Instead, you:</p>
+      <ol class="list-decimal list-inside text-primary-600 text-sm space-y-2">
+        <li><strong>Get credentials</strong> from <a href="/connect" class="text-primary-900 underline">inbox.dog/connect</a></li>
+        <li><strong>Install the inbox.dog SDK</strong> in a Node.js project</li>
+        <li><strong>Build a bridge script</strong> that reads/sends Gmail and formats context for Pi via the Inflection API</li>
+      </ol>
+    </section>
+
+    <!-- Step 1: Credentials -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">1. Get your credentials</h2>
+      <p class="text-primary-600 mb-4">Head to <a href="/connect" class="text-primary-900 underline">inbox.dog/connect</a> and sign in with Google. You'll get a <code class="bg-primary-100 px-1 rounded font-mono">client_id</code> and <code class="bg-primary-100 px-1 rounded font-mono">client_secret</code>.</p>
+      <p class="text-primary-600 mb-4">Add them to your environment:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`export INBOX_DOG_CLIENT_ID=your_client_id
+export INBOX_DOG_CLIENT_SECRET=your_client_secret`}</code></pre>
+      </div>
+    </section>
+
+    <!-- Step 2: Install SDK -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">2. Install the SDK</h2>
+      <p class="text-primary-600 mb-4">Create a new project and install the inbox.dog SDK:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`mkdir pi-gmail-bridge && cd pi-gmail-bridge
+npm init -y
+npm install inbox.dog`}</code></pre>
+      </div>
+    </section>
+
+    <!-- Step 3: Auth -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">3. Authenticate with Gmail</h2>
+      <p class="text-primary-600 mb-4">Use the SDK to complete the OAuth flow and get your tokens. Create <code class="bg-primary-100 px-1 rounded font-mono">auth.js</code>:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-javascript">{`import InboxDog from 'inbox.dog';
+
+const client = new InboxDog({
+  clientId: process.env.INBOX_DOG_CLIENT_ID,
+  clientSecret: process.env.INBOX_DOG_CLIENT_SECRET,
+});
+
+// Start the OAuth flow — opens a browser window
+const tokens = await client.authenticate();
+console.log('Authenticated as:', tokens.email);
+console.log('Save your access token securely.');`}</code></pre>
+      </div>
+    </section>
+
+    <!-- Step 4: Build the bridge -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">4. Build the bridge</h2>
+      <p class="text-primary-600 mb-4">This script reads your recent emails via inbox.dog, formats them as context, and sends them to Pi via the Inflection API. Create <code class="bg-primary-100 px-1 rounded font-mono">bridge.js</code>:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-javascript">{`import InboxDog from 'inbox.dog';
+
+const mail = new InboxDog({
+  clientId: process.env.INBOX_DOG_CLIENT_ID,
+  clientSecret: process.env.INBOX_DOG_CLIENT_SECRET,
+  accessToken: process.env.INBOX_DOG_ACCESS_TOKEN,
+});
+
+// Fetch recent emails
+const emails = await mail.readEmails({ maxResults: 5 });
+
+// Format emails as context for Pi
+const emailSummary = emails
+  .map((e) => \`From: \${e.from}\nSubject: \${e.subject}\nSnippet: \${e.snippet}\`)
+  .join('\\n---\\n');
+
+// Send to Pi via the Inflection API
+const response = await fetch('https://api.pi.ai/v1/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: \`Bearer \${process.env.PI_API_KEY}\`,
+  },
+  body: JSON.stringify({
+    messages: [
+      {
+        role: 'user',
+        content: \`Here are my recent emails:\\n\\n\${emailSummary}\\n\\nSummarize them and flag anything urgent.\`,
+      },
+    ],
+  }),
+});
+
+const data = await response.json();
+console.log('Pi says:', data.text);`}</code></pre>
+      </div>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-bash">{`node bridge.js`}</code></pre>
+      </div>
+    </section>
+
+    <!-- Step 5: Send emails from Pi -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">5. Send emails based on Pi's response</h2>
+      <p class="text-primary-600 mb-4">You can close the loop by having your script parse Pi's output and send replies. Create <code class="bg-primary-100 px-1 rounded font-mono">reply.js</code>:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-javascript">{`import InboxDog from 'inbox.dog';
+
+const mail = new InboxDog({
+  clientId: process.env.INBOX_DOG_CLIENT_ID,
+  clientSecret: process.env.INBOX_DOG_CLIENT_SECRET,
+  accessToken: process.env.INBOX_DOG_ACCESS_TOKEN,
+});
+
+// After Pi drafts a reply, send it via inbox.dog
+await mail.sendEmail({
+  to: 'colleague@example.com',
+  subject: 'Re: Q3 Report',
+  body: 'Thanks for sending this over — looks good. I\'ll review in detail tomorrow.',
+});
+
+console.log('Email sent.');`}</code></pre>
+      </div>
+    </section>
+
+    <!-- Example: Scheduled digest -->
+    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-3">Example: daily email digest with Pi</h2>
+      <p class="text-primary-600 text-sm mb-3">Combine the above into a cron job that runs every morning:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code class="language-javascript">{`import InboxDog from 'inbox.dog';
+
+const mail = new InboxDog({
+  clientId: process.env.INBOX_DOG_CLIENT_ID,
+  clientSecret: process.env.INBOX_DOG_CLIENT_SECRET,
+  accessToken: process.env.INBOX_DOG_ACCESS_TOKEN,
+});
+
+// Search for unread emails from the last 24 hours
+const unread = await mail.searchEmails({
+  query: 'is:unread newer_than:1d',
+});
+
+if (unread.length === 0) {
+  console.log('Inbox zero — nothing to summarize.');
+  process.exit(0);
+}
+
+const digest = unread
+  .map((e) => \`• \${e.from}: \${e.subject}\`)
+  .join('\\n');
+
+// Ask Pi to prioritize
+const res = await fetch('https://api.pi.ai/v1/chat', {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    Authorization: \`Bearer \${process.env.PI_API_KEY}\`,
+  },
+  body: JSON.stringify({
+    messages: [
+      {
+        role: 'user',
+        content: \`I have \${unread.length} unread emails:\\n\\n\${digest}\\n\\nRank them by urgency and suggest which to reply to first.\`,
+      },
+    ],
+  }),
+});
+
+const data = await res.json();
+console.log(data.text);`}</code></pre>
+      </div>
+      <p class="text-primary-600 text-sm">Run with <code class="bg-primary-100 px-1 rounded font-mono">node digest.js</code> or add to crontab: <code class="bg-primary-100 px-1 rounded font-mono">0 8 * * * node /path/to/digest.js</code></p>
+    </section>
+
+    <!-- Trust notes -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Trust &amp; security</h2>
+      <ul class="list-disc list-inside text-primary-600 space-y-2 text-sm">
+        <li>OAuth flow with PKCE — inbox.dog never sees your Gmail password</li>
+        <li>CASA Tier 2 certified for restricted Gmail scopes</li>
+        <li>Your bridge script controls exactly what context is shared with Pi</li>
+        <li><a href="https://github.com/acoyfellow/inbox.dog" class="text-primary-900 underline">Self-host available</a> if you want full control</li>
+      </ul>
+    </section>
+
+    <!-- Next steps -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Next steps</h2>
+      <ul class="space-y-3">
+        <li><a href="/docs/guides/refresh" class="text-primary-900 underline hover:text-primary-600">Handle token refresh</a> — access tokens expire after 1 hour</li>
+        <li><a href="/docs/api" class="text-primary-900 underline hover:text-primary-600">API reference</a> — full documentation of all endpoints</li>
+        <li><a href="https://pi.ai" class="text-primary-900 underline hover:text-primary-600">Pi by Inflection AI</a> — Pi's official site</li>
+      </ul>
+    </section>
+  </div>
+</Layout>

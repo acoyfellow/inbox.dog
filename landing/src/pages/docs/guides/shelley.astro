@@ -1,0 +1,64 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="Shelley — inbox.dog" description="Add Gmail to Shelley on exe.dev via MCP.">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">inbox.dog in Shelley</h1>
+    <p class="text-primary-600 mb-8">Shelley is an AI coding agent on <a href="https://exe.dev" class="text-primary-900 underline">exe.dev</a>. It runs in a full Linux VM and supports MCP servers, so you can give it Gmail access via inbox.dog.</p>
+
+    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-2">Official docs</h2>
+      <a href="https://exe.dev/docs.md" class="text-primary-900 font-medium underline">Shelley documentation</a>
+      <p class="text-primary-600 text-sm mt-2">Shelley supports MCP servers configured with environment variables. See the exe.dev docs for full details on MCP configuration.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">1. Get credentials</h2>
+      <p class="text-primary-600 mb-4">Create an API key and connect Gmail at <a href="/connect" class="text-primary-900 underline">inbox.dog/connect</a>.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">2. Add MCP config</h2>
+      <p class="text-primary-600 mb-4">Add the inbox.dog MCP server to your Shelley configuration:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
+        <pre class="text-primary-100 font-mono"><code>{`{
+  "mcpServers": {
+    "inbox-dog": {
+      "command": "npx",
+      "args": ["-y", "inbox.dog", "mcp"],
+      "env": {
+        "INBOX_DOG_CLIENT_ID": "your_client_id",
+        "INBOX_DOG_CLIENT_SECRET": "your_client_secret"
+      }
+    }
+  }
+}`}</code></pre>
+      </div>
+      <p class="text-primary-600 text-sm mt-3">Replace <code class="bg-primary-100 px-1 rounded font-mono">your_client_id</code> and <code class="bg-primary-100 px-1 rounded font-mono">your_client_secret</code> with the values from inbox.dog/connect.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Alternative: use the SDK directly</h2>
+      <p class="text-primary-600 mb-4">Since Shelley runs in a full Node.js environment, you can also use the inbox.dog npm package directly in a script:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
+        <pre class="text-primary-100 font-mono"><code>{`import InboxDog from 'inbox.dog';
+
+const client = new InboxDog({
+  clientId: process.env.INBOX_DOG_CLIENT_ID,
+  clientSecret: process.env.INBOX_DOG_CLIENT_SECRET,
+});
+
+const messages = await client.listMessages({ maxResults: 5 });
+console.log(messages);`}</code></pre>
+      </div>
+      <p class="text-primary-600 text-sm mt-3">Install with <code class="bg-primary-100 px-1 rounded font-mono">npm install inbox.dog</code> and set the environment variables in your session.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">3. Start using it</h2>
+      <p class="text-primary-600">The MCP server will be available in your next Shelley session. You can then ask Shelley to read, search, and send emails through Gmail.</p>
+    </section>
+  </div>
+</Layout>

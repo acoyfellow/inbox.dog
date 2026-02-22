@@ -1,0 +1,46 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="Amp — inbox.dog" description="Add Gmail to Amp via MCP.">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">inbox.dog in Amp</h1>
+    <p class="text-primary-600 mb-8">Add the inbox.dog MCP server to Amp, Sourcegraph's terminal-based coding agent.</p>
+
+    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-2">Official docs</h2>
+      <a href="https://ampcode.com/docs/mcp-servers" class="text-primary-900 font-medium underline">Amp — MCP Servers</a>
+      <p class="text-primary-600 text-sm mt-2">Amp supports MCP servers configured globally in <code class="bg-primary-100 px-1 rounded">~/.ampcode/settings.json</code> or per-project in <code class="bg-primary-100 px-1 rounded">.ampcode/settings.json</code>.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">1. Get credentials</h2>
+      <p class="text-primary-600 mb-4">Create an API key and connect Gmail at <a href="/connect" class="text-primary-900 underline">inbox.dog/connect</a>.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">2. Add MCP config</h2>
+      <p class="text-primary-600 mb-4">Open <code class="bg-primary-100 px-1 rounded">~/.ampcode/settings.json</code> (global) or <code class="bg-primary-100 px-1 rounded">.ampcode/settings.json</code> (per-project) and add the inbox.dog server under <code class="bg-primary-100 px-1 rounded">mcpServers</code>:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
+        <pre class="text-primary-100 font-mono"><code>{`{
+  "mcpServers": {
+    "inbox-dog": {
+      "command": "npx",
+      "args": ["-y", "inbox.dog", "mcp"],
+      "env": {
+        "INBOX_DOG_CLIENT_ID": "your_client_id",
+        "INBOX_DOG_CLIENT_SECRET": "your_client_secret"
+      }
+    }
+  }
+}`}</code></pre>
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">3. Restart Amp</h2>
+      <p class="text-primary-600">Restart Amp or open a new session. The inbox.dog tools will be available automatically.</p>
+    </section>
+  </div>
+</Layout>
