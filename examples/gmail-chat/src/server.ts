@@ -16,6 +16,7 @@ interface Env {
   INBOX_AGENT: DurableObjectNamespace;
   ASSETS: Fetcher;
   INBOX_DOG: Fetcher;
+  LOADER: WorkerLoader;
   INBOX_DOG_CLIENT_ID: string;
   INBOX_DOG_CLIENT_SECRET: string;
   /** Set in dev/.dev.vars for E2E; required for POST /api/test/inject-session */

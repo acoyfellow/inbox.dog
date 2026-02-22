@@ -24,17 +24,18 @@ function sanitizePayload(obj: unknown): unknown {
     return obj.map(sanitizePayload);
   }
   if (obj !== null && typeof obj === "object") {
+    const rec = obj as Record<string, unknown>;
     const newObj: Record<string, unknown> = {};
-    for (const key of Object.keys(obj)) {
-      if (key === "headers" && Array.isArray(obj[key])) {
+    for (const key of Object.keys(rec)) {
+      if (key === "headers" && Array.isArray(rec[key])) {
         // Drop useless massive headers (ARC, DKIM, etc) to save thousands of tokens
         const keep = ["subject", "from", "to", "cc", "bcc", "date", "message-id", "in-reply-to", "references"];
-        const filtered = (obj[key] as { name?: string }[]).filter((h) => h?.name && keep.includes(h.name.toLowerCase()));
+        const filtered = (rec[key] as { name?: string }[]).filter((h) => h?.name && keep.includes(h.name.toLowerCase()));
         newObj[key] = sanitizePayload(filtered);
-      } else if (key === "data" && typeof obj[key] === "string") {
+      } else if (key === "data" && typeof rec[key] === "string") {
         // Gmail API returns email body data as base64url. Decode it for the LLM.
         try {
-          const base64 = obj[key].replace(/-/g, '+').replace(/_/g, '/');
+          const base64 = (rec[key] as string).replace(/-/g, '+').replace(/_/g, '/');
           const binString = atob(base64);
           const bytes = new Uint8Array(binString.length);
           for (let i = 0; i < binString.length; i++) {
@@ -46,10 +47,10 @@ function sanitizePayload(obj: unknown): unknown {
           }
           newObj[key] = decoded;
         } catch {
-          newObj[key] = sanitizePayload(obj[key]);
+          newObj[key] = sanitizePayload(rec[key]);
         }
       } else {
-        newObj[key] = sanitizePayload(obj[key]);
+        newObj[key] = sanitizePayload(rec[key]);
       }
     }
     return newObj;
