@@ -10,18 +10,14 @@ import Layout from '../../layouts/Layout.astro';
     <!-- Get Started -->
     <section class="mb-12">
       <h2 class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-4">Get Started</h2>
-      <div class="grid md:grid-cols-3 gap-4">
+      <div class="grid md:grid-cols-2 gap-4">
         <a href="/connect" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
-          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Connect Gmail</h3>
-          <p class="text-primary-500 text-sm">Create a key, connect Gmail in the browser. Use MCP with API key—no code.</p>
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">No code: Connect Gmail</h3>
+          <p class="text-primary-500 text-sm">Create a key at inbox.dog/connect, link your Gmail in the browser. Then use MCP or the API with your key—no code.</p>
         </a>
         <a href="/docs/tutorial" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
-          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Tutorial</h3>
-          <p class="text-primary-500 text-sm">Build a working Gmail OAuth integration from scratch in 5 minutes.</p>
-        </a>
-        <a href="/connect" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
-          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Connect Gmail</h3>
-          <p class="text-primary-500 text-sm">Link your Gmail at inbox.dog/connect — no code required.</p>
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">With code: Tutorial</h3>
+          <p class="text-primary-500 text-sm">Build a Gmail OAuth integration from scratch in 5 minutes.</p>
         </a>
       </div>
     </section>
@@ -47,8 +43,20 @@ import Layout from '../../layouts/Layout.astro';
           <p class="text-primary-500 text-sm">Give any AI agent Gmail access via the Model Context Protocol.</p>
         </a>
         <a href="/docs/guides/openclaw" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
-          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Open Claw</h3>
-          <p class="text-primary-500 text-sm">60-second MCP setup for production Gmail access. OAuth-native, CASA certified.</p>
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">OpenClaw</h3>
+          <p class="text-primary-500 text-sm">MCP or Workspace Skill. Link to official OpenClaw setup.</p>
+        </a>
+        <a href="/docs/guides/cursor" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Cursor</h3>
+          <p class="text-primary-500 text-sm">One-click install via Cursor's MCP deeplink. Link to Cursor docs.</p>
+        </a>
+        <a href="/docs/guides/claude" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Claude Desktop</h3>
+          <p class="text-primary-500 text-sm">Add to claude_desktop_config.json. Link to Anthropic's MCP guide.</p>
+        </a>
+        <a href="/docs/guides/windsurf" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
+          <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">Windsurf</h3>
+          <p class="text-primary-500 text-sm">Add to mcp_config.json. Link to Windsurf MCP docs.</p>
         </a>
         <a href="/docs/guides/device-auth" class="group p-6 bg-white rounded-xl border border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all duration-300">
           <h3 class="text-lg font-semibold text-primary-900 mb-2 group-hover:text-primary-700">CLI &amp; Agent Auth</h3>

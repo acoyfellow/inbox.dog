@@ -1,0 +1,48 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="Windsurf — inbox.dog" description="Add Gmail to Windsurf via MCP.">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">inbox.dog in Windsurf</h1>
+    <p class="text-primary-600 mb-8">Add the inbox.dog MCP server in Windsurf by editing the MCP config file. See <strong>Windsurf's docs</strong> for the recommended flow.</p>
+
+    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-2">Official docs</h2>
+      <a href="https://windsurf.com/university/tutorials/configuring-first-mcp-server" class="text-primary-900 font-medium underline block mb-1">Configuring your first MCP server</a>
+      <a href="https://docs.windsurf.com/windsurf/cascade/mcp" class="text-primary-900 font-medium underline block">Cascade MCP integration</a>
+      <p class="text-primary-600 text-sm mt-2">Config file: <code class="bg-primary-100 px-1 rounded font-mono">~/.codeium/windsurf/mcp_config.json</code>. In Windsurf: Cascade → hammer icon (Plugins) → Configure.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">1. Get credentials</h2>
+      <p class="text-primary-600 mb-4">Create an API key and connect Gmail at <a href="/connect" class="text-primary-900 underline">inbox.dog/connect</a>.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">2. Add to <code class="bg-primary-100 px-1 rounded font-mono">mcp_config.json</code></h2>
+      <p class="text-primary-600 mb-4">Add this to your Windsurf MCP config (merge into existing <code class="bg-primary-100 px-1 rounded font-mono">mcpServers</code> if you have other servers):</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto">
+        <pre class="text-primary-100 font-mono"><code>{`{
+  "mcpServers": {
+    "inbox-dog": {
+      "command": "npx",
+      "args": ["-y", "inbox.dog", "mcp"],
+      "env": {
+        "INBOX_DOG_CLIENT_ID": "your_client_id",
+        "INBOX_DOG_CLIENT_SECRET": "your_client_secret"
+      }
+    }
+  }
+}`}</code></pre>
+      </div>
+      <p class="text-primary-600 text-sm mt-3">Replace the env values with your credentials from inbox.dog/connect. Save, then click Refresh in Cascade.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">3. Refresh MCP</h2>
+      <p class="text-primary-600">In Windsurf, Cascade → Plugins → Refresh. When you use Gmail tools, you'll be prompted to connect Gmail if needed.</p>
+    </section>
+  </div>
+</Layout>

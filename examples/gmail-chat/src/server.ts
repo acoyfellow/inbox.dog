@@ -239,7 +239,7 @@ async function handleAuthUrl(env: Env, url: URL): Promise<Response> {
       );
     }
     const origin = url.origin;
-    const authUrl = new InboxDog().getAuthUrl({
+    const authUrl = new InboxDog({ fetch: globalThis.fetch.bind(globalThis) }).getAuthUrl({
       clientId,
       redirectUri: `${origin}/callback`,
       scope: "email:full",
@@ -364,7 +364,7 @@ async function handleValidateTokens(request: Request, env: Env): Promise<Respons
     // Auto-refresh on 401
     if (gmailRes.status === 401 && session.refresh_token) {
       try {
-        const dog = new InboxDog();
+        const dog = new InboxDog({ fetch: globalThis.fetch.bind(globalThis) });
         const refreshed = await dog.refreshToken(
           session.refresh_token,
           session.client_id,

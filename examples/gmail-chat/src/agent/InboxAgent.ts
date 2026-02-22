@@ -133,7 +133,7 @@ export class InboxAgent extends AIChatAgent<AgentEnv> {
         if (!session.refresh_token) {
           throw new Error("Gmail token expired and no refresh token available. Please reconnect.");
         }
-        const dog = new InboxDog();
+        const dog = new InboxDog({ fetch: globalThis.fetch.bind(globalThis) });
         const refreshed = await dog.refreshToken(
           session.refresh_token,
           session.client_id,

@@ -2,6 +2,16 @@
 import Layout from "../layouts/Layout.astro";
 import AnimatedAgentBackground from "../components/AnimatedAgentBackground.astro";
 
+const CHAT_APP_URL = "https://chat.inbox.dog";
+
+const AGENTS = [
+  { name: "OpenClaw", slug: "openclaw", href: "/docs/guides/openclaw" },
+  { name: "Cursor", slug: "cursor", href: "/docs/guides/cursor" },
+  { name: "Claude", slug: "claude", href: "/docs/guides/claude" },
+  { name: "Windsurf", slug: "windsurf", href: "/docs/guides/windsurf" },
+  { name: "Other MCP clients", slug: "mcp", href: "/docs/guides/mcp" },
+] as const;
+
 const mcpCode = `{
   "mcpServers": {
     "inbox-dog": {
@@ -14,15 +24,6 @@ const mcpCode = `{
     }
   }
 }`;
-
-const connectCode = `// User links Gmail at inbox.dog/connect (no redirect in your app)
-// Then fetch tokens with client_id + client_secret:
-const dog = new InboxDog();
-const { 
-  access_token, 
-  refresh_token, 
-  email 
-} = await dog.getGmailTokens(clientId, clientSecret);`;
 
 const npmCode = `import InboxDog from 'inbox.dog';
 const dog = new InboxDog();
@@ -58,7 +59,9 @@ const response = await fetch(
   <section
     class="min-h-[85vh] flex items-center justify-center relative overflow-hidden"
   >
-    <div class="max-w-4xl mx-auto px-4 text-center hero-content">
+    <div
+      class="max-w-4xl mx-auto p-4 text-center hero-content bg-white/05 backdrop-blur rounded-full"
+    >
       <div class="reveal-up delay-3">
         <img
           src="/woof.png"
@@ -100,26 +103,20 @@ const response = await fetch(
         class="flex flex-col sm:flex-row gap-4 justify-center mt-10 reveal-up delay-4"
       >
         <a
-          href="/connect"
+          href={CHAT_APP_URL}
           class="group relative px-8 py-4 bg-primary-900 text-white font-medium rounded-full overflow-hidden transition-all duration-300 hover:shadow-[0_0_40px_rgba(0,0,0,0.2)]"
         >
-          <span class="relative z-10">Connect Gmail</span>
+          <span class="relative z-10">Chat with your inbox</span>
           <div
             class="absolute inset-0 bg-primary-800 transform translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out"
           >
           </div>
         </a>
         <a
-          href="/docs"
+          href="/connect"
           class="group px-8 py-4 border-2 border-primary-200 text-primary-700 font-medium rounded-full transition-all duration-300 hover:border-primary-400 hover:shadow-[0_0_30px_rgba(0,0,0,0.08)]"
         >
-          Docs
-        </a>
-        <a
-          href="https://github.com/acoyfellow/inbox.dog"
-          class="group px-8 py-4 border-2 border-primary-200 text-primary-700 font-medium rounded-full transition-all duration-300 hover:border-primary-400 hover:shadow-[0_0_30px_rgba(0,0,0,0.08)]"
-        >
-          View source
+          Connect Gmail
         </a>
       </div>
     </div>
@@ -131,6 +128,31 @@ const response = await fetch(
       >
         <div class="w-1 h-2 bg-primary-400 rounded-full animate-scroll-down">
         </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Agent harnesses -->
+  <section class="py-16 md:py-24 border-b border-primary-100">
+    <div class="max-w-4xl mx-auto px-4 text-center">
+      <p class="text-sm tracking-[0.2em] uppercase text-primary-400 font-medium mb-3">
+        Works with
+      </p>
+      <h2 class="text-2xl md:text-3xl font-bold text-primary-900 tracking-tight mb-10">
+        Add Gmail to your agent — click for install
+      </h2>
+      <div class="flex flex-wrap justify-center gap-6 md:gap-10">
+        {AGENTS.map((agent) => (
+          <a
+            href={agent.href}
+            class="group flex flex-col items-center gap-3 p-5 rounded-2xl border border-primary-100 bg-white/60 hover:border-primary-300 hover:bg-white hover:shadow-lg transition-all duration-300 min-w-[120px]"
+          >
+            <div class="w-14 h-14 flex items-center justify-center rounded-xl bg-primary-50 group-hover:bg-primary-100 transition-colors p-2">
+              <img src={`/logos/${agent.slug}.svg`} alt="" class="w-8 h-8 object-contain" width="32" height="32" />
+            </div>
+            <span class="text-sm font-medium text-primary-700 group-hover:text-primary-900">{agent.name}</span>
+          </a>
+        ))}
       </div>
     </div>
   </section>
@@ -264,17 +286,16 @@ const response = await fetch(
           Three ways to connect
         </h2>
         <p class="text-lg text-primary-500 mt-4 max-w-xl mx-auto text-balance">
-          Use our /connect browser flow, drop in as an MCP server, or use the
-          npm package for full control.
+          No code, for agents, or full control with the API — pick your path.
         </p>
       </div>
 
-      <div class="space-y-4">
-        <!-- Connect (browser) -->
+      <div class="space-y-10 max-w-2xl mx-auto text-balance">
+        <!-- No code -->
         <div
           class="bg-white rounded-2xl border border-primary-100 shadow-sm hover:border-primary-200 transition-shadow overflow-hidden"
         >
-          <div class="p-4 flex items-start gap-3 border-b border-primary-100">
+          <div class="p-4 flex items-start gap-3">
             <div
               class="w-10 h-10 rounded-xl bg-primary-900 flex items-center justify-center shrink-0"
             >
@@ -294,21 +315,19 @@ const response = await fetch(
             </div>
             <div>
               <h3 class="text-lg font-semibold text-primary-900">
-                Connect (browser)
+                No code
               </h3>
               <p class="text-sm text-primary-500 mt-0.5">
-                Send users to inbox.dog/connect to link Gmail. Fetch tokens with
-                client_id and client_secret.
+                For non-technical users. Go to inbox.dog/connect, link your Gmail — no setup, no code. Your tokens are stored; use them with MCP or the API later.
+              </p>
+              <p class="text-sm mt-2">
+                <a href="/connect" class="text-primary-700 hover:text-primary-900 font-medium underline underline-offset-2">Connect Gmail &rarr;</a>
               </p>
             </div>
           </div>
-          <div class="p-4 bg-[#0d1117] overflow-x-auto">
-            <pre
-              class="text-sm whitespace-pre m-0"><code class="language-javascript">{connectCode}</code></pre>
-          </div>
         </div>
 
-        <!-- MCP -->
+        <!-- MCP — for agents -->
         <div
           class="bg-white rounded-2xl border border-primary-100 shadow-sm hover:border-primary-200 transition-shadow overflow-hidden"
         >
@@ -332,8 +351,7 @@ const response = await fetch(
             <div>
               <h3 class="text-lg font-semibold text-primary-900">MCP Server</h3>
               <p class="text-sm text-primary-500 mt-0.5">
-                Zero-code for Claude, Cursor and more. Your agent gets Gmail as
-                callable tools.
+                For agents. Claude, Cursor, Windsurf, and other MCP clients get Gmail as callable tools — add inbox.dog as a tool server.
               </p>
             </div>
           </div>
@@ -343,7 +361,7 @@ const response = await fetch(
           </div>
         </div>
 
-        <!-- npm -->
+        <!-- npm — code way -->
         <div
           class="bg-white rounded-2xl border border-primary-100 shadow-sm hover:border-primary-200 transition-shadow overflow-hidden"
         >
@@ -370,8 +388,7 @@ const response = await fetch(
                 npm Package
               </h3>
               <p class="text-sm text-primary-500 mt-0.5">
-                Full control. Install the SDK, redirect to authenticate,
-                exchange code for tokens.
+                The code way. When you want to build in code — custom apps, backends, or agents that need an API instead of MCP. Install the SDK, handle OAuth, get raw tokens.
               </p>
             </div>
           </div>
@@ -631,7 +648,7 @@ const response = await fetch(
         </a>
         <a
           href="/connect"
-          class="group inline-flex items-center justify-center gap-3 px-10 py-5 border-2 border-primary-200 text-primary-700 text-lg font-medium rounded-full transition-all duration-300 hover:border-primary-400 hover:shadow-[0_0_30px_rgba(0,0,0,0.08)]"
+          class="group inline-flex items-center justify-center gap-3 px-10 py-5 border-2 border-primary-200 text-primary-700 text-lg font-medium rounded-full transition-all duration-300 hover:border-primary-400 hover:shadow-[0_0_30px_rgba(0,0,0,0.08)] bg-white/10 backdrop-blur-xl"
         >
           Connect Gmail
         </a>
