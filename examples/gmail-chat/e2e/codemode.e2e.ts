@@ -1,7 +1,6 @@
 /**
  * E2E: Asserts the model invokes the codemode tool (tool path only). Run with TEST_INJECT_SECRET set.
  */
-import { expect } from "@playwright/test";
 import { test } from "@playwright/test";
 
 const TEST_SECRET = process.env.TEST_INJECT_SECRET;

@@ -49,7 +49,7 @@ export function ScriptBlock({ code, isStreaming }: ScriptBlockProps) {
       </div>
       <div className="max-h-80 w-full min-w-0 overflow-auto">
         <Highlight theme={prismTheme} code={code ?? ""} language="javascript">
-          {({ style, tokens, getLineProps, getTokenProps }) => {
+          {({ tokens, getLineProps, getTokenProps }) => {
             const wrapStyle = { whiteSpace: "pre-wrap" as const, wordBreak: "break-word" as const };
             return (
               <pre

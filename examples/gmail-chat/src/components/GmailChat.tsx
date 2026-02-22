@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { isTextUIPart, isToolOrDynamicToolUIPart, type UIMessage } from "ai";
+import { isTextUIPart, type UIMessage } from "ai";
 import { useAgentChat } from "@cloudflare/ai-chat/react";
 import { useAgent } from "agents/react";
 import { useAutoScroll } from "../lib/hooks";
 import { toConversationRoomName } from "../lib/conversations";
 import { ChatInput } from "./ChatInput";
-import { ToolInvocation } from "./ToolInvocation";
 
 const ERROR_STORAGE_KEY_PREFIX = "gmail-chat:last-error:";
 

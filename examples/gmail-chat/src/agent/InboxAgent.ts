@@ -12,7 +12,7 @@ import { z } from "zod";
 // https://github.com/cloudflare/agents/tree/main/examples/codemode
 const MODEL = "@cf/zai-org/glm-4.7-flash";
 
-function sanitizePayload(obj: any): any {
+function sanitizePayload(obj: unknown): unknown {
   if (typeof obj === "string") {
     // If it's a massive string, truncate it to save context window
     if (obj.length > 2000) {
@@ -24,12 +24,12 @@ function sanitizePayload(obj: any): any {
     return obj.map(sanitizePayload);
   }
   if (obj !== null && typeof obj === "object") {
-    const newObj: any = {};
+    const newObj: Record<string, unknown> = {};
     for (const key of Object.keys(obj)) {
       if (key === "headers" && Array.isArray(obj[key])) {
         // Drop useless massive headers (ARC, DKIM, etc) to save thousands of tokens
         const keep = ["subject", "from", "to", "cc", "bcc", "date", "message-id", "in-reply-to", "references"];
-        const filtered = obj[key].filter((h: any) => h?.name && keep.includes(h.name.toLowerCase()));
+        const filtered = (obj[key] as { name?: string }[]).filter((h) => h?.name && keep.includes(h.name.toLowerCase()));
         newObj[key] = sanitizePayload(filtered);
       } else if (key === "data" && typeof obj[key] === "string") {
         // Gmail API returns email body data as base64url. Decode it for the LLM.
@@ -45,7 +45,7 @@ function sanitizePayload(obj: any): any {
             decoded = decoded.slice(0, 2000) + "\n... [TRUNCATED DUE TO SIZE: " + decoded.length + " chars]";
           }
           newObj[key] = decoded;
-        } catch (e) {
+        } catch {
           newObj[key] = sanitizePayload(obj[key]);
         }
       } else {
@@ -74,7 +74,6 @@ function sanitizeCodemodeCode(code: string): string {
 function looksTruncated(code: string): boolean {
   const s = code.trim();
   if (!s.length) return true;
-  const last = s.slice(-40);
   return !/[\s}]$/.test(s) || (s.includes("async") && !s.includes("}"));
 }
 
