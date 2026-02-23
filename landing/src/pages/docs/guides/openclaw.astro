@@ -51,14 +51,63 @@ import Layout from '../../../layouts/Layout.astro';
         <pre class="text-primary-100 font-mono"><code class="language-bash">{`mkdir -p ~/.openclaw/workspace/skills/inbox-dog`}</code></pre>
       </div>
 
-      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">2) Create API key</h3>
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">2) Add skill file</h3>
+      <p class="text-primary-600 text-sm mb-3">Create <code class="bg-primary-100 px-1 rounded font-mono">~/.openclaw/workspace/skills/inbox-dog/SKILL.md</code> with the following content:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`# inbox.dog — Gmail for Agents
+
+Gmail read, write, search, and send via OAuth. CASA Tier 2 certified.
+
+## Setup
+
+This skill requires environment variables:
+- \`INBOXDOG_CLIENT_ID\` — your API key client ID
+- \`INBOXDOG_CLIENT_SECRET\` — your API key secret
+
+Get both at https://inbox.dog/connect
+
+## Tools
+
+Run the MCP server: \`npx -y inbox.dog mcp\`
+
+### get_profile
+Returns the authenticated user's Gmail profile (email address, threads, etc).
+
+### read_emails
+Read recent emails from the inbox.
+- \`maxResults\` (optional, default 10): number of emails to return
+
+### read_email
+Read a specific email by ID.
+- \`id\` (required): the email message ID
+
+### search_emails
+Search Gmail with a query string.
+- \`query\` (required): Gmail search query (same syntax as Gmail search bar)
+- \`maxResults\` (optional, default 10): number of results
+
+### send_email
+Send an email.
+- \`to\` (required): recipient email address
+- \`subject\` (required): email subject
+- \`body\` (required): email body (plain text)
+- \`cc\` (optional): CC recipients
+- \`bcc\` (optional): BCC recipients
+
+## Auth Flow
+
+On first use, the user will be prompted to authorize Gmail access via OAuth.
+Tokens refresh automatically — no manual re-auth needed.`}</code></pre>
+      </div>
+
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">3) Create API key</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
         <pre class="text-primary-100 font-mono"><code class="language-bash">{`curl -s -X POST https://inbox.dog/api/keys \\
   -H "Content-Type: application/json" \\
   -d '{"name": "openclaw"}' | jq`}</code></pre>
       </div>
 
-      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">3) Add credentials</h3>
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">4) Add credentials</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
         <pre class="text-primary-100 font-mono"><code class="language-json">{`{
   "skills": {
@@ -75,19 +124,19 @@ import Layout from '../../../layouts/Layout.astro';
 }`}</code></pre>
       </div>
 
-      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">4) Restart gateway</h3>
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">5) Restart gateway</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
         <pre class="text-primary-100 font-mono"><code class="language-bash">{`openclaw gateway restart`}</code></pre>
       </div>
 
-      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">5) Auth without localhost callback</h3>
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">6) Auth without localhost callback</h3>
       <p class="text-primary-600 text-sm mb-3">Use a hosted redirect (no localhost 404). Open this URL in your browser:</p>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
         <pre class="text-primary-100 font-mono"><code>{`https://inbox.dog/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https%3A%2F%2Finbox.dog%2Fconnect%2Foauth&scope=email`}</code></pre>
       </div>
       <p class="text-primary-600 text-sm mb-3">After consent, you'll land on a hosted success page with an easy copy button for the one-time <code class="bg-primary-100 px-1 rounded font-mono">code</code>. Paste that code to your OpenClaw agent if it asks.</p>
 
-      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">6) Verify</h3>
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">7) Verify</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
         <pre class="text-primary-100 font-mono"><code>{`What's my email address?`}</code></pre>
       </div>

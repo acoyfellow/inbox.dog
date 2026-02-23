@@ -19,15 +19,24 @@ import Layout from '../../layouts/Layout.astro';
             Create API Key
           </button>
           <div id="credentials" class="mt-4 hidden">
+            <div class="p-4 bg-amber-50 rounded-xl border border-amber-200 mb-3">
+              <p class="text-amber-800 text-sm font-medium">⚠ Save these credentials now — the secret won't be shown again.</p>
+            </div>
             <div class="p-4 bg-primary-50 rounded-xl border border-primary-100">
-              <div class="space-y-2 text-sm font-mono">
-                <div class="flex justify-between items-center gap-2">
-                  <span class="text-primary-400">Client ID</span>
-                  <span id="client-id" class="text-primary-700 truncate"></span>
+              <div class="space-y-3 text-sm font-mono">
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-primary-400">Client ID</span>
+                    <button id="copy-client-id" type="button" class="text-xs text-primary-500 hover:text-primary-700 bg-primary-100 hover:bg-primary-200 px-2 py-0.5 rounded transition-colors">Copy</button>
+                  </div>
+                  <span id="client-id" class="text-primary-700 block break-all"></span>
                 </div>
-                <div class="flex justify-between items-center gap-2">
-                  <span class="text-primary-400">Secret</span>
-                  <span id="client-secret" class="text-primary-700 truncate"></span>
+                <div>
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-primary-400">Secret</span>
+                    <button id="copy-client-secret" type="button" class="text-xs text-primary-500 hover:text-primary-700 bg-primary-100 hover:bg-primary-200 px-2 py-0.5 rounded transition-colors">Copy</button>
+                  </div>
+                  <span id="client-secret" class="text-primary-700 block break-all"></span>
                 </div>
               </div>
             </div>
@@ -116,7 +125,7 @@ import Layout from '../../layouts/Layout.astro';
       clientSecret = data.client_secret;
 
       document.getElementById('client-id')!.textContent = clientId;
-      document.getElementById('client-secret')!.textContent = clientSecret.substring(0, 20) + '...';
+      document.getElementById('client-secret')!.textContent = clientSecret;
       document.getElementById('credentials')!.classList.remove('hidden');
       (document.getElementById('input-client-id') as HTMLInputElement).value = clientId;
       (document.getElementById('input-client-secret') as HTMLInputElement).value = clientSecret;
@@ -141,6 +150,23 @@ import Layout from '../../layouts/Layout.astro';
       btn.classList.add('bg-green-700');
       updateConnectButton();
     });
+
+    function setupCopyButton(buttonId: string, getValue: () => string) {
+      document.getElementById(buttonId)?.addEventListener('click', async () => {
+        const btn = document.getElementById(buttonId)!;
+        try {
+          await navigator.clipboard.writeText(getValue());
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+        } catch {
+          btn.textContent = 'Failed';
+          setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+        }
+      });
+    }
+
+    setupCopyButton('copy-client-id', () => clientId);
+    setupCopyButton('copy-client-secret', () => clientSecret);
 
     document.getElementById('input-client-id')?.addEventListener('input', (e) => {
       clientId = (e.target as HTMLInputElement).value.trim();
