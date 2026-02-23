@@ -7,7 +7,7 @@ import Layout from '../../layouts/Layout.astro';
     <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
     <h1 class="text-4xl font-bold mb-4 text-primary-900">API Reference</h1>
     <p class="text-primary-600 mb-2">Base URL: <code class="bg-primary-100 px-1 rounded font-mono">https://inbox.dog</code></p>
-    <p class="text-primary-500 text-sm mb-8">All endpoints accept and return JSON. CORS is enabled on all API and OAuth routes. Machine-readable spec: <a href="/openapi.json" class="text-primary-700 underline underline-offset-2 hover:text-primary-900">openapi.json</a></p>
+    <p class="text-primary-500 text-sm mb-8">All endpoints accept and return JSON. CORS on <code class="bg-primary-100 px-1 rounded font-mono">/api/*</code> and <code class="bg-primary-100 px-1 rounded font-mono">/oauth/*</code> is restricted to origins in the <code class="bg-primary-100 px-1 rounded font-mono">ALLOWED_ORIGINS</code> env var (open if unset). MCP and <code class="bg-primary-100 px-1 rounded font-mono">/.well-known</code> routes allow all origins. Machine-readable spec: <a href="/openapi.json" class="text-primary-700 underline underline-offset-2 hover:text-primary-900">openapi.json</a></p>
 
     <!-- Authentication -->
     <section id="authentication" class="mb-12">
@@ -142,6 +142,7 @@ import Layout from '../../layouts/Layout.astro';
               <tr class="border-b border-primary-200"><td class="p-2 font-mono">redirect_uri</td><td class="p-2">Yes</td><td class="p-2">URL to redirect after authentication</td></tr>
               <tr class="border-b border-primary-200"><td class="p-2 font-mono">scope</td><td class="p-2">No</td><td class="p-2">Permission scope. Default: <code class="font-mono">email</code></td></tr>
               <tr class="border-b border-primary-200"><td class="p-2 font-mono">state</td><td class="p-2">No</td><td class="p-2">Opaque value for CSRF protection, passed back in redirect</td></tr>
+              <tr class="border-b border-primary-200"><td class="p-2 font-mono">prompt</td><td class="p-2">No</td><td class="p-2">Google consent screen behavior. Defaults to <code class="font-mono">consent</code> (always shows consent &amp; returns refresh token)</td></tr>
             </tbody>
           </table>
           <h4 class="text-sm font-semibold text-primary-900 mb-2">Callback</h4>
@@ -211,6 +212,30 @@ import Layout from '../../layouts/Layout.astro';
         </div>
       </div>
 
+      <!-- POST /oauth/revoke -->
+      <div id="oauth-revoke" class="mb-10 border border-primary-200 rounded-lg overflow-hidden">
+        <div class="bg-primary-100 px-4 py-3 flex items-center gap-3">
+          <span class="bg-green-600 text-white text-xs font-bold px-2 py-1 rounded">POST</span>
+          <code class="font-mono text-primary-900">/oauth/revoke</code>
+          <span class="text-primary-500 text-sm ml-auto">Revoke a session token</span>
+        </div>
+        <div class="p-4">
+          <p class="text-primary-600 text-sm mb-3">Revoke an MCP session token. Requires client credentials to prove ownership. Returns 200 regardless of whether the token existed (per <a href="https://datatracker.ietf.org/doc/html/rfc7009" class="text-primary-700 underline underline-offset-2 hover:text-primary-900">RFC 7009</a>). Accepts JSON or <code class="font-mono">application/x-www-form-urlencoded</code>.</p>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Request Body</h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto mb-3">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+  "token": "mcp_...",
+  "client_id": "id_...",
+  "client_secret": "sk_..."
+}`}</code></pre>
+          </div>
+          <h4 class="text-sm font-semibold text-primary-900 mb-2">Response <span class="text-primary-400 font-normal">200</span></h4>
+          <div class="bg-primary-900 rounded p-3 text-sm overflow-x-auto">
+            <pre class="text-primary-100 font-mono"><code class="language-json">{`{ "revoked": true }`}</code></pre>
+          </div>
+        </div>
+      </div>
+
       <!-- GET /health -->
       <div id="health" class="mb-10 border border-primary-200 rounded-lg overflow-hidden">
         <div class="bg-primary-100 px-4 py-3 flex items-center gap-3">
@@ -264,6 +289,11 @@ import Layout from '../../layouts/Layout.astro';
           <tr class="border-b border-primary-200"><td class="p-2">OAuth state TTL</td><td class="p-2">10 minutes</td><td class="p-2">User must complete consent within this window</td></tr>
           <tr class="border-b border-primary-200"><td class="p-2">Authorization code TTL</td><td class="p-2">5 minutes</td><td class="p-2">Exchange the code promptly after callback</td></tr>
           <tr class="border-b border-primary-200"><td class="p-2">Access token lifetime</td><td class="p-2">3600 seconds (1 hour)</td><td class="p-2">Set by Google. Use refresh token to renew.</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">POST /api/keys</td><td class="p-2">5/min per IP</td><td class="p-2">Key creation</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">POST /oauth/register</td><td class="p-2">10/min per IP</td><td class="p-2">Dynamic client registration</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">POST /oauth/token</td><td class="p-2">20/min per IP</td><td class="p-2">Token exchange and refresh</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">GET /api/tokens</td><td class="p-2">20/min per IP</td><td class="p-2">Token retrieval</td></tr>
+          <tr class="border-b border-primary-200"><td class="p-2">POST /mcp</td><td class="p-2">60/min per IP</td><td class="p-2">MCP JSON-RPC calls</td></tr>
         </tbody>
       </table>
     </section>

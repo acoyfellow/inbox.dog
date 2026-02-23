@@ -30,10 +30,11 @@ app.use('*', async (c, next) => {
   return next();
 });
 
-// CORS helper — parse ALLOWED_ORIGINS env, fall back to deny-all
+// CORS helper — parse ALLOWED_ORIGINS env; unset = allow all (backwards-compatible)
 function corsOrigin(c: { env: Env }) {
   const raw = c.env.ALLOWED_ORIGINS ?? '';
   const allowed = raw.split(',').map((s) => s.trim()).filter(Boolean);
+  if (allowed.length === 0) return '*';
   return (origin: string) => (allowed.includes(origin) ? origin : '');
 }
 
