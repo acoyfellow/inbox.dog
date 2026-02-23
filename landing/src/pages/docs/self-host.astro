@@ -38,7 +38,13 @@ import Layout from '../../layouts/Layout.astro';
       <ol class="list-decimal list-inside text-primary-600 space-y-3">
         <li>Clone the repo: <code class="bg-primary-100 px-1 rounded font-mono">git clone https://github.com/acoyfellow/inbox.dog</code></li>
         <li>Configure <code class="bg-primary-100 px-1 rounded font-mono">worker/wrangler.jsonc</code> with your KV namespace and bindings</li>
-        <li>Set <code class="bg-primary-100 px-1 rounded font-mono">GOOGLE_CLIENT_ID</code>, <code class="bg-primary-100 px-1 rounded font-mono">GOOGLE_CLIENT_SECRET</code> in secrets</li>
+        <li>Set secrets:
+          <ul class="list-disc list-inside ml-4 mt-1 space-y-1">
+            <li><code class="bg-primary-100 px-1 rounded font-mono">GOOGLE_CLIENT_ID</code>, <code class="bg-primary-100 px-1 rounded font-mono">GOOGLE_CLIENT_SECRET</code> — your Google OAuth credentials</li>
+            <li><code class="bg-primary-100 px-1 rounded font-mono">ENCRYPTION_SECRET</code> — at least 32 characters, used to encrypt tokens at rest in KV</li>
+            <li><code class="bg-primary-100 px-1 rounded font-mono">ALLOWED_ORIGINS</code> — <span class="text-primary-400">(optional)</span> comma-separated origins for CORS, e.g. <code class="bg-primary-100 px-1 rounded font-mono">https://your-domain.com</code>. Open to all origins if unset.</li>
+          </ul>
+        </li>
         <li>Add your OAuth redirect URIs in the Google Cloud Console</li>
         <li>Deploy: <code class="bg-primary-100 px-1 rounded font-mono">cd worker && wrangler deploy</code></li>
       </ol>

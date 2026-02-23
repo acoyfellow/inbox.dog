@@ -30,19 +30,34 @@ app.use('*', async (c, next) => {
   return next();
 });
 
-// CORS for API routes — explicit methods and headers
-app.use('/api/*', cors({
-  origin: '*',
-  allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'X-Client-Secret'],
-  maxAge: 86400,
-}));
-app.use('/oauth/*', cors({
-  origin: '*',
-  allowMethods: ['GET', 'POST', 'OPTIONS'],
-  allowHeaders: ['Content-Type'],
-  maxAge: 86400,
-}));
+// CORS helper — parse ALLOWED_ORIGINS env; unset = allow all (backwards-compatible)
+function corsOrigin(c: { env: Env }) {
+  const raw = c.env.ALLOWED_ORIGINS ?? '';
+  const allowed = raw.split(',').map((s) => s.trim()).filter(Boolean);
+  if (allowed.length === 0) return '*';
+  return (origin: string) => (allowed.includes(origin) ? origin : '');
+}
+
+// CORS for API + OAuth routes — origin-restricted
+app.use('/api/*', async (c, next) => {
+  const mw = cors({
+    origin: corsOrigin(c),
+    allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+    allowHeaders: ['Content-Type', 'X-Client-Secret', 'X-Client-ID'],
+    maxAge: 86400,
+  });
+  return mw(c, next);
+});
+app.use('/oauth/*', async (c, next) => {
+  const mw = cors({
+    origin: corsOrigin(c),
+    allowMethods: ['GET', 'POST', 'OPTIONS'],
+    allowHeaders: ['Content-Type'],
+    maxAge: 86400,
+  });
+  return mw(c, next);
+});
+// MCP: server-to-server, keep open (auth is on the Bearer token)
 app.use('/mcp', cors({
   origin: '*',
   allowMethods: ['POST', 'OPTIONS'],
@@ -57,6 +72,7 @@ app.use('/mcp/*', cors({
   exposeHeaders: ['WWW-Authenticate'],
   maxAge: 86400,
 }));
+// .well-known: public metadata, must be open per spec
 app.use('/.well-known/*', cors({
   origin: '*',
   allowMethods: ['GET', 'OPTIONS'],
@@ -127,6 +143,28 @@ app.use('/oauth/token', async (c, next) => {
   const current = parseInt(await c.env.KV.get(key) ?? '0', 10);
   if (current >= 20) {
     return c.json({ error: { code: 'RATE_LIMITED', message: 'Too many token requests. Max 20 per minute.', action: 'Wait before retrying', docs: 'https://inbox.dog/docs/errors' } }, 429);
+  }
+  await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
+  return next();
+});
+app.use('/api/tokens', async (c, next) => {
+  if (c.req.method !== 'GET') return next();
+  const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
+  const key = `ratelimit:get_tokens:${ip}`;
+  const current = parseInt(await c.env.KV.get(key) ?? '0', 10);
+  if (current >= 20) {
+    return c.json({ error: { code: 'RATE_LIMITED', message: 'Too many token requests. Max 20 per minute.', action: 'Wait before retrying', docs: 'https://inbox.dog/docs/errors' } }, 429);
+  }
+  await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
+  return next();
+});
+app.use('/mcp', async (c, next) => {
+  if (c.req.method !== 'POST') return next();
+  const ip = c.req.header('cf-connecting-ip') ?? 'unknown';
+  const key = `ratelimit:mcp:${ip}`;
+  const current = parseInt(await c.env.KV.get(key) ?? '0', 10);
+  if (current >= 60) {
+    return c.json({ error: { code: 'RATE_LIMITED', message: 'Too many MCP requests. Max 60 per minute.', action: 'Wait before retrying', docs: 'https://inbox.dog/docs/errors' } }, 429);
   }
   await c.env.KV.put(key, String(current + 1), { expirationTtl: 60 });
   return next();

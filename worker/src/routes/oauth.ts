@@ -336,7 +336,7 @@ oauthRoutes.post('/token', async (c) => {
           .replace(/\+/g, '-')
           .replace(/\//g, '_')
           .replace(/=+$/, '');
-        return computed === authData.codeChallenge;
+        return timingSafeEqual(computed, authData.codeChallenge!);
       });
       if (!verified) {
         return yield* Effect.fail(
@@ -487,18 +487,25 @@ function mapScope(scope: string): string {
 }
 
 // POST /oauth/revoke (RFC 7009)
+// Requires client_id + client_secret to prove caller owns the token.
 oauthRoutes.post('/revoke', async (c) => {
   let token: string | undefined;
+  let clientId: string | undefined;
+  let clientSecret: string | undefined;
 
   const contentType = c.req.header('content-type') ?? '';
   if (contentType.includes('application/x-www-form-urlencoded')) {
     const formData = await c.req.parseBody();
     token = formData['token'] as string | undefined;
+    clientId = formData['client_id'] as string | undefined;
+    clientSecret = formData['client_secret'] as string | undefined;
   } else {
     const body = await c.req
-      .json<{ token?: string }>()
-      .catch(() => ({}) as { token?: string });
+      .json<{ token?: string; client_id?: string; client_secret?: string }>()
+      .catch(() => ({}) as { token?: string; client_id?: string; client_secret?: string });
     token = body.token;
+    clientId = body.client_id;
+    clientSecret = body.client_secret;
   }
 
   if (!token) {
@@ -511,8 +518,51 @@ oauthRoutes.post('/revoke', async (c) => {
     );
   }
 
-  // Delete the MCP session
-  await c.env.KV.delete(`mcp_session:${token}`);
+  if (!clientId || !clientSecret) {
+    return c.json(
+      {
+        error: 'invalid_client',
+        error_description: 'client_id and client_secret are required',
+      },
+      401,
+    );
+  }
+
+  // Authenticate the caller
+  const authResult = await runEffectEither(authenticateApiKey(clientId, clientSecret), c.env);
+  if (!authResult.ok) {
+    return c.json(
+      {
+        error: 'invalid_client',
+        error_description: 'Invalid client credentials',
+      },
+      401,
+    );
+  }
+
+  // Verify the token belongs to this client (best-effort — if session
+  // doesn't exist we still return 200 per RFC 7009)
+  const sessionRaw = await c.env.KV.get(`mcp_session:${token}`, 'text');
+  if (sessionRaw) {
+    // Only delete if the session belongs to this client
+    // We can't fully decrypt here without the service layer, but we can
+    // let the Effect-based lookup handle it.
+    const program = Effect.gen(function* () {
+      const kv = yield* KVService;
+      const session = yield* kv.getMcpSession(token!).pipe(
+        Effect.catchAll(() => Effect.succeed(null)),
+      );
+      if (session && session.clientId !== clientId) {
+        // Token belongs to a different client — don't reveal this, just no-op
+        return false;
+      }
+      if (session) {
+        yield* kv.deleteMcpSession(token!);
+      }
+      return true;
+    });
+    await runEffectEither(program, c.env);
+  }
 
   // RFC 7009: always return 200, even if token didn't exist
   return c.json({ revoked: true });
