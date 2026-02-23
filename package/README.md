@@ -228,6 +228,24 @@ try {
 }
 ```
 
+## Examples
+
+### [MCP Gmail Server](https://github.com/acoyfellow/inbox.dog/tree/main/examples/mcp-gmail)
+
+Expose Gmail as MCP tools for Claude Desktop, Cursor, or any MCP client. Stateless Cloudflare Worker — ~80 lines.
+
+### [Chat Agent](https://github.com/acoyfellow/inbox.dog/tree/main/examples/chat-agent)
+
+Talk to your inbox in natural language. "What's unread?" / "Archive all newsletters." Built with Cloudflare Agents + Anthropic — ~70 lines.
+
+### [Auto-Triage](https://github.com/acoyfellow/inbox.dog/tree/main/examples/auto-triage)
+
+Scheduled agent that classifies and triages unread email every 5 minutes using Workers AI — ~80 lines.
+
+### [AI Email Agent](https://github.com/acoyfellow/inbox.dog/tree/main/examples/ai-email-agent)
+
+Standalone script that triages email with Claude. No deployment needed — `npx tsx index.ts`.
+
 ## Links
 
 - Docs: https://inbox.dog/docs
