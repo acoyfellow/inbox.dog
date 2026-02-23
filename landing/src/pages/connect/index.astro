@@ -31,6 +31,13 @@ import Layout from '../../layouts/Layout.astro';
                 </div>
               </div>
             </div>
+            <div id="config-block" class="mt-3">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs text-primary-400">MCP config — copy now, secret won't be shown again</span>
+                <button id="copy-config" class="text-xs text-primary-500 hover:text-primary-700 transition-colors">Copy</button>
+              </div>
+              <pre id="config-json" class="p-3 bg-primary-900 text-green-400 text-xs rounded-lg overflow-x-auto select-all"></pre>
+            </div>
           </div>
           <div class="mt-4 pt-4 border-t border-primary-100">
             <p class="text-primary-500 text-xs mb-2">Or use existing credentials:</p>
@@ -114,6 +121,21 @@ import Layout from '../../layouts/Layout.astro';
       (document.getElementById('input-client-id') as HTMLInputElement).value = clientId;
       (document.getElementById('input-client-secret') as HTMLInputElement).value = clientSecret;
 
+      // Show ready-to-copy MCP config
+      const config = JSON.stringify({
+        mcpServers: {
+          'inbox-dog': {
+            command: 'npx',
+            args: ['-y', 'inbox.dog', 'mcp'],
+            env: {
+              INBOX_DOG_CLIENT_ID: clientId,
+              INBOX_DOG_CLIENT_SECRET: clientSecret,
+            },
+          },
+        },
+      }, null, 2);
+      document.getElementById('config-json')!.textContent = config;
+
       btn.textContent = 'Created';
       btn.classList.remove('bg-primary-900', 'hover:bg-primary-800');
       btn.classList.add('bg-green-700');
@@ -127,6 +149,15 @@ import Layout from '../../layouts/Layout.astro';
     document.getElementById('input-client-secret')?.addEventListener('input', (e) => {
       clientSecret = (e.target as HTMLInputElement).value.trim();
       updateConnectButton();
+    });
+
+    document.getElementById('copy-config')?.addEventListener('click', () => {
+      const json = document.getElementById('config-json')?.textContent ?? '';
+      navigator.clipboard.writeText(json).then(() => {
+        const btn = document.getElementById('copy-config')!;
+        btn.textContent = 'Copied!';
+        setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+      });
     });
 
     document.getElementById('connect-gmail')?.addEventListener('click', async () => {
