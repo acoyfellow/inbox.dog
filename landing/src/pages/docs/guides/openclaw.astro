@@ -2,27 +2,29 @@
 import Layout from '../../../layouts/Layout.astro';
 ---
 
-<Layout title="Open Claw Integration — inbox.dog" description="Give your Open Claw agent Gmail access with inbox.dog.">
+<Layout title="OpenClaw — inbox.dog" description="Give your OpenClaw agent Gmail access with inbox.dog.">
   <div class="max-w-4xl mx-auto px-4 py-12">
     <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
-    <h1 class="text-4xl font-bold mb-4 text-primary-900">inbox.dog for Open Claw</h1>
-    <p class="text-primary-600 mb-8"><strong>Fastest path to Gmail tools for agents.</strong> Read/search/send via OAuth. CASA Tier 2 certified. Self-host optional.</p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">inbox.dog for OpenClaw</h1>
+    <p class="text-primary-600 mb-8"><strong>Full Gmail tools for your OpenClaw agent.</strong> Read, search, send via OAuth. CASA Tier 2 certified. Self-host optional.</p>
 
+    <!-- At a glance box -->
     <section class="mb-10 p-6 bg-primary-50 border border-primary-200 rounded-xl">
-      <h2 class="text-lg font-semibold text-primary-900 mb-3">At a glance (pick one path)</h2>
+      <h2 class="text-lg font-semibold text-primary-900 mb-3">At a glance</h2>
       <ul class="list-disc list-inside text-primary-600 text-sm space-y-2">
         <li><strong>Path A — MCP config (recommended):</strong> Use if your OpenClaw version supports <code class="bg-primary-100 px-1 rounded font-mono">mcpServers</code>.</li>
-        <li><strong>Path B — Workspace Skill (compat mode):</strong> Use if adding <code class="bg-primary-100 px-1 rounded font-mono">mcpServers</code> fails/invalid config.</li>
+        <li><strong>Path B — Workspace Skill:</strong> Use if <code class="bg-primary-100 px-1 rounded font-mono">mcpServers</code> is unsupported.</li>
       </ul>
-      <p class="text-primary-600 text-sm mt-3"><strong>Both paths expose the same Gmail tools:</strong> <code class="bg-primary-100 px-1 rounded font-mono">get_profile</code>, <code class="bg-primary-100 px-1 rounded font-mono">read_emails</code>, <code class="bg-primary-100 px-1 rounded font-mono">search_emails</code>, <code class="bg-primary-100 px-1 rounded font-mono">read_email</code>, <code class="bg-primary-100 px-1 rounded font-mono">send_email</code>.</p>
+      <p class="text-primary-600 text-sm mt-3"><strong>Both paths expose:</strong> <code class="bg-primary-100 px-1 rounded font-mono">get_profile</code>, <code class="bg-primary-100 px-1 rounded font-mono">read_emails</code>, <code class="bg-primary-100 px-1 rounded font-mono">search_emails</code>, <code class="bg-primary-100 px-1 rounded font-mono">read_email</code>, <code class="bg-primary-100 px-1 rounded font-mono">send_email</code>.</p>
     </section>
 
+    <!-- PATH A -->
     <section class="mb-12">
       <h2 class="text-2xl font-bold mb-4 text-primary-900">Path A: MCP config (recommended)</h2>
 
       <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">1) Add MCP server</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
-        <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+        <pre class="text-primary-100 font-mono"><code>{`{
   "mcpServers": {
     "inbox-dog": {
       "url": "https://inbox.dog/mcp"
@@ -33,26 +35,42 @@ import Layout from '../../../layouts/Layout.astro';
 
       <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">2) Restart gateway</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
-        <pre class="text-primary-100 font-mono"><code class="language-bash">{`openclaw gateway restart`}</code></pre>
+        <pre class="text-primary-100 font-mono"><code>{`openclaw gateway restart`}</code></pre>
       </div>
 
-      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">3) Verify</h3>
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">3) Connect OAuth (durable mode)</h3>
+      <p class="text-primary-600 text-sm mb-3">Open this URL in your browser (replace <code class="bg-primary-100 px-1 rounded font-mono">YOUR_CLIENT_ID</code>):</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`https://inbox.dog/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https%3A%2F%2Finbox.dog%2Fconnect%2Foauth&scope=email&prompt=consent`}</code></pre>
+      </div>
+      <div class="p-4 bg-primary-50 border border-primary-200 rounded-lg text-sm text-primary-600 mb-4">
+        <p><strong>Why <code class="bg-primary-100 px-1 rounded font-mono">prompt=consent</code>?</strong> This ensures Google returns a refresh token. Without it, you get an access token that expires in ~1 hour with no way to renew. The server already sets <code class="bg-primary-100 px-1 rounded font-mono">access_type=offline</code> automatically.</p>
+      </div>
+      <p class="text-primary-600 text-sm mb-3">Complete consent and copy the one-time code from the success page.</p>
+
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-6">4) Verify</h3>
+      <p class="text-primary-600 text-sm mb-3">Test both profile and search:</p>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
         <pre class="text-primary-100 font-mono"><code>{`What's my email address?`}</code></pre>
       </div>
-      <p class="text-primary-600 text-sm">If this path fails because <code class="bg-primary-100 px-1 rounded font-mono">mcpServers</code> is unsupported, use Path B below.</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`Search my email for "welcome"`}</code></pre>
+      </div>
+      <p class="text-primary-600 text-sm">If both return real data, you're production-ready. If the first works but search fails, restart the gateway and retry.</p>
     </section>
 
+    <!-- PATH B -->
     <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
-      <h2 class="text-lg font-semibold text-primary-900 mb-3">Path B: Workspace Skill (compat mode)</h2>
+      <h2 class="text-lg font-semibold text-primary-900 mb-3">Path B: Workspace Skill</h2>
+      <p class="text-primary-600 text-sm mb-4">Use this if your OpenClaw runtime doesn't support <code class="bg-primary-100 px-1 rounded font-mono">mcpServers</code>.</p>
 
       <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">1) Create skill folder</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
-        <pre class="text-primary-100 font-mono"><code class="language-bash">{`mkdir -p ~/.openclaw/workspace/skills/inbox-dog`}</code></pre>
+        <pre class="text-primary-100 font-mono"><code>{`mkdir -p ~/.openclaw/workspace/skills/inbox-dog`}</code></pre>
       </div>
 
       <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">2) Add skill file</h3>
-      <p class="text-primary-600 text-sm mb-3">Create <code class="bg-primary-100 px-1 rounded font-mono">~/.openclaw/workspace/skills/inbox-dog/SKILL.md</code> with the following content:</p>
+      <p class="text-primary-600 text-sm mb-3">Create <code class="bg-primary-100 px-1 rounded font-mono">~/.openclaw/workspace/skills/inbox-dog/SKILL.md</code> with:</p>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
         <pre class="text-primary-100 font-mono"><code>{`# inbox.dog — Gmail for Agents
 
@@ -71,7 +89,7 @@ Get both at https://inbox.dog/connect
 Run the MCP server: \`npx -y inbox.dog mcp\`
 
 ### get_profile
-Returns the authenticated user's Gmail profile (email address, threads, etc).
+Returns the authenticated user's Gmail profile (email, threads count).
 
 ### read_emails
 Read recent emails from the inbox.
@@ -96,20 +114,20 @@ Send an email.
 
 ## Auth Flow
 
-On first use, the user will be prompted to authorize Gmail access via OAuth.
+On first use, the user is prompted to authorize Gmail access via OAuth.
 Tokens refresh automatically — no manual re-auth needed.`}</code></pre>
       </div>
 
       <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">3) Create API key</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
-        <pre class="text-primary-100 font-mono"><code class="language-bash">{`curl -s -X POST https://inbox.dog/api/keys \\
+        <pre class="text-primary-100 font-mono"><code>{`curl -s -X POST https://inbox.dog/api/keys \\
   -H "Content-Type: application/json" \\
   -d '{"name": "openclaw"}' | jq`}</code></pre>
       </div>
 
       <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">4) Add credentials</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
-        <pre class="text-primary-100 font-mono"><code class="language-json">{`{
+        <pre class="text-primary-100 font-mono"><code>{`{
   "skills": {
     "entries": {
       "inbox-dog": {
@@ -126,37 +144,70 @@ Tokens refresh automatically — no manual re-auth needed.`}</code></pre>
 
       <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">5) Restart gateway</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
-        <pre class="text-primary-100 font-mono"><code class="language-bash">{`openclaw gateway restart`}</code></pre>
+        <pre class="text-primary-100 font-mono"><code>{`openclaw gateway restart`}</code></pre>
       </div>
 
-      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">6) Auth without localhost callback</h3>
-      <p class="text-primary-600 text-sm mb-3">Use a hosted redirect (no localhost 404). Open this URL in your browser:</p>
+      <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">6) Connect OAuth (durable mode)</h3>
       <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
-        <pre class="text-primary-100 font-mono"><code>{`https://inbox.dog/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https%3A%2F%2Finbox.dog%2Fconnect%2Foauth&scope=email`}</code></pre>
+        <pre class="text-primary-100 font-mono"><code>{`https://inbox.dog/oauth/authorize?client_id=YOUR_CLIENT_ID&redirect_uri=https%3A%2F%2Finbox.dog%2Fconnect%2Foauth&scope=email&prompt=consent`}</code></pre>
       </div>
-      <p class="text-primary-600 text-sm mb-3">After consent, you'll land on a hosted success page with an easy copy button for the one-time <code class="bg-primary-100 px-1 rounded font-mono">code</code>. Paste that code to your OpenClaw agent if it asks.</p>
+      <p class="text-primary-600 text-sm mb-3">Complete consent and copy the one-time code. Paste it when your OpenClaw agent asks.</p>
 
       <h3 class="text-lg font-semibold text-primary-900 mb-3 mt-4">7) Verify</h3>
-      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-2">
         <pre class="text-primary-100 font-mono"><code>{`What's my email address?`}</code></pre>
+      </div>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`Search my email for "welcome"`}</code></pre>
       </div>
     </section>
 
+    <!-- EXPECTED TOKEN OUTCOME -->
     <section class="mb-12">
-      <h2 class="text-2xl font-bold mb-4 text-primary-900">Trust notes</h2>
-      <ul class="list-disc list-inside text-primary-600 space-y-2 text-sm">
-        <li>OAuth flow with PKCE (no Gmail password handling)</li>
-        <li>CASA Tier 2 certified for restricted Gmail scopes</li>
-        <li><a href="https://github.com/acoyfellow/inbox.dog" class="text-primary-900 underline">Self-host available</a></li>
-      </ul>
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Expected OAuth outcome</h2>
+      <p class="text-primary-600 mb-4">After exchanging the code for tokens, you should see:</p>
+      <div class="p-4 bg-primary-50 border border-primary-200 rounded-xl text-sm">
+        <ul class="space-y-2 text-primary-600">
+          <li>✅ <code class="bg-primary-100 px-1 rounded font-mono">access_token</code> — present</li>
+          <li>✅ <code class="bg-primary-100 px-1 rounded font-mono">expires_in</code> — present</li>
+          <li>✅ <code class="bg-primary-100 px-1 rounded font-mono">email</code> — present</li>
+          <li>✅ <code class="bg-primary-100 px-1 rounded font-mono">refresh_token</code> — <strong>non-empty</strong> (required for durable installs)</li>
+        </ul>
+        <p class="text-primary-600 mt-3"><strong>If <code class="bg-primary-100 px-1 rounded font-mono">refresh_token</code> is empty:</strong> Re-run OAuth with <code class="bg-primary-100 px-1 rounded font-mono">prompt=consent</code> to force a fresh consent flow. This is the most common cause of "connected but not durable" installs.</p>
+      </div>
     </section>
 
-    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
-      <h2 class="text-lg font-semibold text-primary-900 mb-3">Auth behavior (important)</h2>
-      <ul class="list-disc list-inside text-primary-600 text-sm space-y-1">
-        <li>OAuth <code class="bg-primary-100 px-1 rounded font-mono">code</code> values are one-time use. Reusing a code will fail.</li>
-        <li>If you complete auth but still can’t read mail, run the verify prompt again: <code class="bg-primary-100 px-1 rounded font-mono">What's my email address?</code></li>
-        <li>For Workspace Skill installs, prefer hosted redirect URIs (like this docs page), not localhost callbacks.</li>
+    <!-- TROUBLESHOOTING -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Troubleshooting</h2>
+      <div class="space-y-4 text-sm text-primary-600">
+        <div>
+          <p class="font-semibold text-primary-900">mcpServers rejected / unsupported</p>
+          <p>Use Path B (Workspace Skill).</p>
+        </div>
+        <div>
+          <p class="font-semibold text-primary-900">OAuth code fails</p>
+          <p>Codes are one-time use and expire quickly. Exchange promptly. If it fails, start a new auth flow.</p>
+        </div>
+        <div>
+          <p class="font-semibold text-primary-900">"Connected" but email tools unavailable</p>
+          <p>Restart gateway, re-run verification prompts. Confirm credentials are in the active config.</p>
+        </div>
+        <div>
+          <p class="font-semibold text-primary-900">No refresh token</p>
+          <p>Re-run OAuth with <code class="bg-primary-100 px-1 rounded font-mono">prompt=consent</code>. Without a refresh token, access expires in ~1 hour.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- TRUST -->
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Security</h2>
+      <ul class="list-disc list-inside text-primary-600 space-y-2 text-sm">
+        <li>OAuth + PKCE flow — no Gmail passwords handled</li>
+        <li>CASA Tier 2 certified for restricted Gmail scopes</li>
+        <li>Prefer hosted redirect URIs (avoid localhost confusion for remote setups)</li>
+        <li><a href="https://github.com/acoyfellow/inbox.dog" class="text-primary-900 underline">Self-host available</a> (MIT)</li>
       </ul>
     </section>
   </div>

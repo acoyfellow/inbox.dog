@@ -211,7 +211,7 @@ import Layout from '../../layouts/Layout.astro';
         return;
       }
 
-      const authUrl = `${API_URL}/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(CONNECT_CALLBACK)}&state=${encodeURIComponent(data.state)}&scope=gmail:full`;
+      const authUrl = `${API_URL}/oauth/authorize?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(CONNECT_CALLBACK)}&state=${encodeURIComponent(data.state)}&scope=gmail:full&prompt=consent`;
       window.location.href = authUrl;
     });
   </script>
