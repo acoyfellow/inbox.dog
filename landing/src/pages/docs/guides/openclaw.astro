@@ -179,6 +179,40 @@ Tokens refresh automatically — no manual re-auth needed.`}</code></pre>
 
     <!-- TROUBLESHOOTING -->
     <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">Verification checklist</h2>
+      <p class="text-primary-600 mb-4">Run through these after setup to confirm you're production-ready, not just partially connected.</p>
+      <div class="space-y-3 text-sm">
+        <div class="flex items-start gap-2">
+          <span class="text-primary-400 mt-0.5">☐</span>
+          <p class="text-primary-600"><strong class="text-primary-900">Integration loaded</strong> — MCP or skill enabled, <code class="bg-primary-100 px-1 rounded font-mono">client_id</code> and <code class="bg-primary-100 px-1 rounded font-mono">client_secret</code> present in config</p>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-primary-400 mt-0.5">☐</span>
+          <p class="text-primary-600"><strong class="text-primary-900">Gateway restarted</strong> — config changes don't take effect until restart</p>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-primary-400 mt-0.5">☐</span>
+          <p class="text-primary-600"><strong class="text-primary-900">OAuth completed</strong> — used hosted redirect, exchanged code for tokens</p>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-primary-400 mt-0.5">☐</span>
+          <p class="text-primary-600"><strong class="text-primary-900">Refresh token present</strong> — if empty, re-auth with <code class="bg-primary-100 px-1 rounded font-mono">prompt=consent</code>. Without it you're connected but not durable (~1 hour expiry)</p>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-primary-400 mt-0.5">☐</span>
+          <p class="text-primary-600"><strong class="text-primary-900">Profile works</strong> — ask <em>"What's my email address?"</em> and get a real answer</p>
+        </div>
+        <div class="flex items-start gap-2">
+          <span class="text-primary-400 mt-0.5">☐</span>
+          <p class="text-primary-600"><strong class="text-primary-900">Search works</strong> — ask <em>"Search my email for welcome"</em> and get results</p>
+        </div>
+      </div>
+      <div class="mt-4 p-4 bg-primary-50 border border-primary-200 rounded-lg text-sm text-primary-600">
+        <p><strong>All six checked?</strong> You're production-ready. If profile works but search doesn't, restart the gateway. If refresh token is missing, you're connected but will lose access in ~1 hour — re-auth with <code class="bg-primary-100 px-1 rounded font-mono">prompt=consent</code>.</p>
+      </div>
+    </section>
+
+    <section class="mb-12">
       <h2 class="text-2xl font-bold mb-4 text-primary-900">Troubleshooting</h2>
       <div class="space-y-4 text-sm text-primary-600">
         <div>
