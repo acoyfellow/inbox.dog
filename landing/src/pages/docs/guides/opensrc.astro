@@ -1,0 +1,100 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+---
+
+<Layout title="opensrc — inbox.dog" description="Give your coding agent full inbox.dog source code for deeper context.">
+  <div class="max-w-4xl mx-auto px-4 py-12">
+    <p class="text-sm text-primary-400 mb-2"><a href="/docs" class="hover:text-primary-600">&larr; Docs</a></p>
+    <h1 class="text-4xl font-bold mb-4 text-primary-900">inbox.dog + opensrc</h1>
+    <p class="text-primary-600 mb-8">Give your coding agent the full inbox.dog source code — not just types. <a href="https://github.com/vercel-labs/opensrc" class="text-primary-900 underline">opensrc</a> fetches implementation source so agents can understand <em>how</em> things work, not just their interface.</p>
+
+    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-2">Why?</h2>
+      <p class="text-primary-600 text-sm">When your agent is building with inbox.dog, types tell it <em>what</em> methods exist. Source tells it <em>how</em> they work — OAuth flows, token refresh logic, error handling, edge cases. That's the difference between an agent that guesses and one that gets it right.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">1. Fetch the source</h2>
+      <p class="text-primary-600 mb-4">In your project directory (where inbox.dog is installed):</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`npx opensrc inbox.dog`}</code></pre>
+      </div>
+      <p class="text-primary-600 text-sm">This detects your installed version from the lockfile, clones the matching source, and drops it into <code class="bg-primary-100 px-1 rounded font-mono">opensrc/inbox.dog/</code>.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">2. What you get</h2>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`opensrc/
+├── settings.json       # Your preferences
+├── sources.json        # Index of fetched packages
+└── repos/
+    └── github.com/
+        └── acoyfellow/
+            └── inbox.dog/
+                └── package/
+                    ├── src/
+                    │   ├── index.ts    # Client, OAuth, key management
+                    │   ├── gmail.ts    # Gmail API wrapper
+                    │   ├── mcp.ts      # MCP server implementation
+                    │   └── types.ts    # All type definitions
+                    ├── package.json
+                    └── tsconfig.json`}</code></pre>
+      </div>
+      <p class="text-primary-600 text-sm">Your agent now has the full implementation to reference — token refresh logic, error types, how scopes map, how the MCP tools are defined.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">3. Agent discovery</h2>
+      <p class="text-primary-600 mb-4">opensrc automatically updates two files so agents find the source:</p>
+      <div class="space-y-4">
+        <div>
+          <p class="font-semibold text-primary-900 text-sm">AGENTS.md</p>
+          <p class="text-primary-600 text-sm">Adds a "Source Code Reference" section. Agents that read AGENTS.md (Cursor, Claude, Copilot, etc.) will discover the source automatically.</p>
+        </div>
+        <div>
+          <p class="font-semibold text-primary-900 text-sm">opensrc/sources.json</p>
+          <p class="text-primary-600 text-sm">Machine-readable index of what's been fetched, with versions and paths.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">4. Keep it updated</h2>
+      <p class="text-primary-600 mb-4">When you upgrade inbox.dog, re-run the same command:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`npm update inbox.dog
+npx opensrc inbox.dog`}</code></pre>
+      </div>
+      <p class="text-primary-600 text-sm">opensrc detects the new version from your lockfile and updates the source to match.</p>
+    </section>
+
+    <section class="mb-12">
+      <h2 class="text-2xl font-bold mb-4 text-primary-900">5. Fetch more context</h2>
+      <p class="text-primary-600 mb-4">You can fetch source for any dependency your agent needs to understand:</p>
+      <div class="bg-primary-900 rounded-lg p-4 text-sm overflow-x-auto mb-4">
+        <pre class="text-primary-100 font-mono"><code>{`# Fetch multiple packages at once
+npx opensrc inbox.dog zod hono
+
+# Fetch a GitHub repo directly
+npx opensrc acoyfellow/inbox.dog
+
+# List what's been fetched
+npx opensrc list
+
+# Clean up
+npx opensrc remove inbox.dog`}</code></pre>
+      </div>
+    </section>
+
+    <section class="mb-12 p-6 bg-primary-50 border border-primary-200 rounded-xl">
+      <h2 class="text-lg font-semibold text-primary-900 mb-3">Good to know</h2>
+      <ul class="list-disc list-inside text-primary-600 text-sm space-y-2">
+        <li><code class="bg-primary-100 px-1 rounded font-mono">opensrc/</code> is automatically added to <code class="bg-primary-100 px-1 rounded font-mono">.gitignore</code> and excluded from <code class="bg-primary-100 px-1 rounded font-mono">tsconfig.json</code></li>
+        <li>Source is read-only context for agents — don't edit files in <code class="bg-primary-100 px-1 rounded font-mono">opensrc/</code></li>
+        <li>Works with npm, PyPI, crates.io, and direct GitHub/GitLab repos</li>
+        <li><a href="https://github.com/vercel-labs/opensrc" class="text-primary-900 underline">opensrc on GitHub</a> — by Vercel Labs</li>
+      </ul>
+    </section>
+  </div>
+</Layout>
